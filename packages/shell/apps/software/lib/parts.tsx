@@ -1,7 +1,7 @@
 /** Small pieces the pages share: what a click asks the window for, and an app's or applet's icon. */
 
 import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
-import { tintFor } from "@dashi/ui";
+import { ON_TINT, RADIUS, tintFor, WEIGHT } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
 import type { StoreApplet } from "../../../src/shared/applet-store/index.ts";
@@ -56,6 +56,12 @@ export function useActions(): Actions {
   return actions;
 }
 
+/** RADIUS.icon is an app icon's corner on its 44 tile; an icon of another size keeps its shape. */
+const ICON_TILE = 44;
+export const iconRadius = (size: number): number => (RADIUS.icon * size) / ICON_TILE;
+/** A letter tile's initial, as a share of the tile. */
+const INITIAL_SHARE = 0.46;
+
 /** An app's (or applet's) icon from a file or a URL in its image cache; until it is here, its first letter on a tinted tile. */
 export function AppIcon({
   url,
@@ -76,7 +82,7 @@ export function AppIcon({
   if (path)
     return (
       <View style={{ width: size, height: size, flexShrink: 0 }}>
-        <Image source={path} style={{ width: size, height: size, borderRadius: size * 0.22 }} />
+        <Image source={path} style={{ width: size, height: size, borderRadius: iconRadius(size) }} />
       </View>
     );
   return (
@@ -85,13 +91,15 @@ export function AppIcon({
         width: size,
         height: size,
         flexShrink: 0,
-        borderRadius: size * 0.22,
+        borderRadius: iconRadius(size),
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: tintFor(name),
       }}
     >
-      <Text style={{ fontSize: Math.round(size * 0.46), fontWeight: "semibold", color: "#ffffffee" }}>{([...name.trim()][0] ?? "?").toUpperCase()}</Text>
+      <Text style={{ fontSize: Math.round(size * INITIAL_SHARE), fontWeight: WEIGHT.semibold, color: ON_TINT }}>
+        {([...name.trim()][0] ?? "?").toUpperCase()}
+      </Text>
     </View>
   );
 }

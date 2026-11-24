@@ -52,21 +52,8 @@ export function daysIn(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
-/** A month's grid, six weeks from Sunday: each cell its day of the month, or null outside it. */
-export function monthCells(year: number, month: number): (number | null)[] {
-  const first = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
-  const count = daysIn(year, month);
-  return Array.from({ length: 42 }, (_, index) => {
-    const day = index - first + 1;
-    return day >= 1 && day <= count ? day : null;
-  });
-}
-
 /** The day `by` days from year, month, day (another month's when it crosses one). */
 export function addDays(year: number, month: number, day: number, by: number): { year: number; month: number; day: number } {
   const date = new Date(Date.UTC(year, month - 1, day + by));
   return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() };
 }
-
-export const MONTH_NAMES: readonly string[] = MONTHS;
-export const WEEKDAY_LETTERS: readonly string[] = DAYS.map((name) => name.slice(0, 2));

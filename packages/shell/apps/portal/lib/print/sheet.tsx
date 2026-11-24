@@ -6,13 +6,13 @@
  * Copies keeps what is typed, and Print waits until it reads as a count.
  */
 
-import { Button, Choices, Group, MoreButton, PopUpButton, Row, TextField, useColors } from "@dashi/ui";
+import { Button, Checkbox, Choices, Group, MoreButton, PopUpButton, Row, SPACE, TextField, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { variant } from "../../../../src/shared/dbus/index.ts";
 import type { ChooseFiles } from "../file-chooser/chooser.tsx";
 import { parseChooser } from "../file-chooser/options.ts";
-import { CheckBox, PortalFrame } from "../ui/frame.tsx";
+import { PortalFrame } from "../ui/frame.tsx";
 import type { ShowDialog } from "../windows.ts";
 import type { PrintDeps, SheetAnswer, SheetRequest } from "./backend.ts";
 import { defaultPrinter, listPrinters, printPdf } from "./cups.ts";
@@ -30,7 +30,7 @@ interface PagesChoiceProps {
 /** All the pages, or a range typed beside the choice. */
 function PagesChoice({ rangeMode, setRangeMode, pages, onPages, onSubmit, onKeyPress }: PagesChoiceProps) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
       <Choices
         testID="print:pages"
         options={[
@@ -64,7 +64,6 @@ function PaperRow({ media, chosen, onChange }: { media: string[]; chosen: string
 }
 
 function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value: SheetAnswer) => void }) {
-  const colors = useColors();
   const [choice, setChoice] = useState<PrintChoice>(request.start);
   const [more, setMore] = useState(false);
   const [rangeMode, setRangeMode] = useState(request.start.pages !== "");
@@ -95,10 +94,7 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
         { label: "Print", testID: "print:print", onPress: print, primary: true, disabled: !canPrint },
       ]}
     >
-      {request.printers.length === 0 && (
-        <Text style={{ fontSize: 13, color: colors.textMuted }}>No printers are set up. Add one in Settings, or save a PDF.</Text>
-      )}
-      {printer && !printer.accepting && <Text style={{ fontSize: 12, color: colors.critical }}>This printer isn’t taking jobs right now.</Text>}
+      {request.printers.length === 0 && <PrinterNote text="No printers are set up. Add one in Settings, or save a PDF." />}
       {/* The rows on a card, so their 12 of inset is the card's: the words around it, More… and the buttons keep the sheet's edge. */}
       <Group testID="print:rows">
         {request.printers.length > 0 && (
@@ -134,13 +130,28 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
           />
         </Row>
       </Group>
-      {twoSided && <CheckBox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}
-      <MoreButton testID="print:more" open={more} more="More Options" less="Fewer Options" onPress={() => setMore(!more)} />
+      {/* The printer's problem, under the card that holds it, in ume ink (PA-6). */}
+      {printer && !printer.accepting && <PrinterNote problem text="This printer isn’t taking jobs right now." />}
+      {twoSided && <Checkbox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}
+      <MoreButton testID="print:more" open={more} more="More options" less="Fewer options" onPress={() => setMore(!more)} />
       {more && media.length > 0 && <PaperRow media={media} chosen={choice.media ?? media[0] ?? ""} onChange={(keyword) => update({ media: keyword })} />}
-      {more && printer?.color && <CheckBox testID="print:color" label="Color" checked={choice.color} onChange={(on) => update({ color: on })} />}
+      {more && printer?.color && <Checkbox testID="print:color" label="Color" checked={choice.color} onChange={(on) => update({ color: on })} />}
     </PortalFrame>
   );
 }
+
+/** A line about the printers: none set up (muted), or the chosen one's problem (ume, 12, under its card). */
+function PrinterNote({ text, problem = false }: { text: string; problem?: boolean }) {
+  const colors = useColors();
+  return (
+    <View testID={problem ? "print:not-accepting" : "print:no-printers"}>
+      <Text style={{ fontSize: problem ? TYPE.secondary.size : TYPE.body.size, color: problem ? colors.critical : colors.textMuted }}>{text}</Text>
+    </View>
+  );
+}
+
+/** The least the print sheet takes (LA-3): the printer, copies and pages rows and the buttons, at their least width. */
+const PRINT_LEAST = { width: 400, height: 300 } as const;
 
 /** The print backend's machine side: CUPS, the sheet on screen, and the portal's save sheet for PDFs. */
 export function printOnScreen(show: ShowDialog, chooseFiles: ChooseFiles): PrintDeps {
@@ -150,7 +161,7 @@ export function printOnScreen(show: ShowDialog, chooseFiles: ChooseFiles): Print
     print: (printer, title, pdf, choice) => printPdf(printer, title, pdf, jobOptions(choice)),
     ask: (request, signal) =>
       show<SheetAnswer>(
-        { parent: request.parent, title: "Print", width: 460, height: 360 },
+        { parent: request.parent, title: "Print", width: 460, height: 360, least: PRINT_LEAST },
         (answer) => <PrintSheet request={request} answer={answer} />,
         signal,
         null,

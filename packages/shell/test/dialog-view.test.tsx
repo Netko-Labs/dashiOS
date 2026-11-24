@@ -2,11 +2,11 @@ import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { parseArgs } from "../apps/dialog/lib/args.ts";
-import { CalendarDialog } from "../apps/dialog/lib/calendar.tsx";
-import { EntryDialog, PasswordDialog } from "../apps/dialog/lib/entry.tsx";
+import { CalendarView } from "../apps/dialog/lib/calendar.tsx";
+import { EntryView, PasswordView } from "../apps/dialog/lib/entry.tsx";
 import type { Answer } from "../apps/dialog/lib/frame.tsx";
-import { ListDialog } from "../apps/dialog/lib/list-view.tsx";
-import { MessageDialog } from "../apps/dialog/lib/message.tsx";
+import { ListView } from "../apps/dialog/lib/list-view.tsx";
+import { MessageView } from "../apps/dialog/lib/message.tsx";
 import { type DialogSpec, specFrom } from "../apps/dialog/lib/spec.ts";
 import { settle } from "./support/time.ts";
 
@@ -54,11 +54,11 @@ async function mount(element: (answer: Answer) => ReactElement) {
 
 test("a question: Yes, No, Esc, and an extra button", async () => {
   const question = spec("question", "--text=Delete it?", "--extra-button=Later");
-  const yes = await mount((answer) => <MessageDialog spec={question} answer={answer} />);
+  const yes = await mount((answer) => <MessageView spec={question} answer={answer} />);
   await yes.press("dialog:ok");
   expect(yes.answers).toEqual([[0, undefined]]);
 
-  const no = await mount((answer) => <MessageDialog spec={question} answer={answer} />);
+  const no = await mount((answer) => <MessageView spec={question} answer={answer} />);
   await no.press("dialog:cancel");
   await no.emit(windowKey(no.node("dialog:keys"), "escape"));
   expect(no.answers).toEqual([
@@ -66,42 +66,42 @@ test("a question: Yes, No, Esc, and an extra button", async () => {
     [1, undefined],
   ]);
 
-  const later = await mount((answer) => <MessageDialog spec={question} answer={answer} />);
+  const later = await mount((answer) => <MessageView spec={question} answer={answer} />);
   await later.press("dialog:extra:0");
   expect(later.answers).toEqual([[1, "Later\n"]]);
 });
 
 test("Enter presses the default button; --default-cancel makes it No", async () => {
-  const plain = await mount((answer) => <MessageDialog spec={spec("question")} answer={answer} />);
+  const plain = await mount((answer) => <MessageView spec={spec("question")} answer={answer} />);
   await plain.emit(windowKey(plain.node("dialog:keys"), "enter"));
   expect(plain.answers).toEqual([[0, undefined]]);
-  const cautious = await mount((answer) => <MessageDialog spec={spec("question", "--default-cancel")} answer={answer} />);
+  const cautious = await mount((answer) => <MessageView spec={spec("question", "--default-cancel")} answer={answer} />);
   await cautious.emit(windowKey(cautious.node("dialog:keys"), "enter"));
   expect(cautious.answers).toEqual([[1, undefined]]);
 });
 
 test("info has only OK; --switch leaves only the extra buttons", async () => {
-  const info = await mount((answer) => <MessageDialog spec={spec("info")} answer={answer} />);
+  const info = await mount((answer) => <MessageView spec={spec("info")} answer={answer} />);
   expect(info.root.nodeId("dialog:cancel")).toBeUndefined();
   expect(info.root.nodeId("dialog:ok")).toBeDefined();
-  const switched = await mount((answer) => <MessageDialog spec={spec("question", "--switch", "--extra-button=One")} answer={answer} />);
+  const switched = await mount((answer) => <MessageView spec={spec("question", "--switch", "--extra-button=One")} answer={answer} />);
   expect(switched.root.nodeId("dialog:ok")).toBeUndefined();
   expect(switched.root.nodeId("dialog:cancel")).toBeUndefined();
   expect(switched.root.nodeId("dialog:extra:0")).toBeDefined();
 });
 
 test("an entry prints what was typed", async () => {
-  const entry = await mount((answer) => <EntryDialog spec={spec("entry", "--entry-text=start")} answer={answer} />);
+  const entry = await mount((answer) => <EntryView spec={spec("entry", "--entry-text=start")} answer={answer} />);
   await entry.emit({ type: "change", nodeId: entry.node("dialog:entry"), value: "hello" });
   await entry.press("dialog:ok");
   expect(entry.answers).toEqual([[0, "hello\n"]]);
-  const submitted = await mount((answer) => <EntryDialog spec={spec("entry")} answer={answer} />);
+  const submitted = await mount((answer) => <EntryView spec={spec("entry")} answer={answer} />);
   await submitted.emit({ type: "submit", nodeId: submitted.node("dialog:entry"), value: "typed" });
   expect(submitted.answers).toEqual([[0, "typed\n"]]);
 });
 
 test("a password with a username prints user|password", async () => {
-  const password = await mount((answer) => <PasswordDialog spec={spec("password", "--username")} answer={answer} />);
+  const password = await mount((answer) => <PasswordView spec={spec("password", "--username")} answer={answer} />);
   await password.emit({ type: "change", nodeId: password.node("dialog:username"), value: "ada" });
   await password.emit({ type: "change", nodeId: password.node("dialog:password"), value: "s3cret" });
   await password.emit({ type: "submit", nodeId: password.node("dialog:password"), value: "s3cret" });
@@ -109,29 +109,29 @@ test("a password with a username prints user|password", async () => {
 });
 
 test("a list prints the chosen row; a checklist its ticked rows", async () => {
-  const list = await mount((answer) => <ListDialog spec={spec("list", "--column=Name", "--column=Size", "a", "1", "b", "2")} answer={answer} />);
+  const list = await mount((answer) => <ListView spec={spec("list", "--column=Name", "--column=Size", "a", "1", "b", "2")} answer={answer} />);
   await list.press("dialog:list:row:1");
   await list.press("dialog:ok");
   expect(list.answers).toEqual([[0, "b\n"]]);
 
   const checks = await mount((answer) => (
-    <ListDialog spec={spec("list", "--checklist", "--column=", "--column=App", "TRUE", "Steam", "FALSE", "Files", "FALSE", "Notes")} answer={answer} />
+    <ListView spec={spec("list", "--checklist", "--column=", "--column=App", "TRUE", "Steam", "FALSE", "Files", "FALSE", "Notes")} answer={answer} />
   ));
   await checks.press("dialog:list:row:2");
   await checks.press("dialog:ok");
   expect(checks.answers).toEqual([[0, "Steam|Notes\n"]]);
 
-  const nothing = await mount((answer) => <ListDialog spec={spec("list", "--column=Name", "a")} answer={answer} />);
+  const nothing = await mount((answer) => <ListView spec={spec("list", "--column=Name", "a")} answer={answer} />);
   await nothing.press("dialog:ok");
   expect(nothing.answers).toEqual([[0, undefined]]);
 });
 
 test("a calendar prints the day picked, in --date-format", async () => {
   const calendar = await mount((answer) => (
-    <CalendarDialog spec={spec("calendar", "--day=3", "--month=11", "--year=2026", "--date-format=%Y-%m-%d")} answer={answer} />
+    <CalendarView spec={spec("calendar", "--day=3", "--month=11", "--year=2026", "--date-format=%Y-%m-%d")} answer={answer} />
   ));
-  await calendar.press("dialog:day:20");
-  await calendar.press("dialog:next");
+  await calendar.press("dialog:month:2026-11-20");
+  await calendar.press("dialog:month:next");
   await calendar.press("dialog:ok");
   expect(calendar.answers).toEqual([[0, "2026-12-20\n"]]);
 });

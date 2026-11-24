@@ -37,7 +37,7 @@ export function SheetLayer({
     case "new-calendar":
       return (
         <CalendarSheet
-          title="New Calendar"
+          title="New calendar"
           initialName=""
           initialColor={paletteColor(calendars.length)}
           confirmLabel="Create"
@@ -48,7 +48,7 @@ export function SheetLayer({
     case "edit-calendar":
       return (
         <CalendarSheet
-          title="Edit Calendar"
+          title="Edit calendar"
           initialName={sheet.name}
           initialColor={sheet.color}
           confirmLabel="Save"

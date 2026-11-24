@@ -6,7 +6,7 @@
  * it is dragged it stays faintly where it was.
  */
 
-import { useColors, useSurface } from "@dashi/ui";
+import { OPACITY, RADIUS, SHADOW, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { type Bounds, type PointerInfo, Text, View } from "@mirinjs/metal";
 import type { Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
@@ -17,6 +17,19 @@ import type { DragKind } from "./drag.ts";
 
 /** The strip at a block's foot that stretches it. */
 export const RESIZE_EDGE = 6;
+/** An event's edge in its calendar's colour, at its start; how far a block keeps from its column's sides. */
+export const EVENT_EDGE = 3;
+/** The ink ring round a picked bar (an all-day event, a month's bar). */
+export const PICKED_RING = 2;
+const SIDE = { left: 2, right: 4 } as const;
+/** A block's least height, and a ghost's. */
+const BLOCK_LEAST = 16;
+const GHOST_LEAST = 14;
+/** Its calendar's colour washed over the window's ground: at rest, under the pointer, picked, picked and under the pointer. */
+const WASH = { rest: 0.26, hover: 0.4, picked: 0.55, pickedHover: 0.6, ghost: 0.5 } as const;
+/** A block shorter than this is one line; from this tall it shows its place too. */
+const ONE_LINE_BELOW = 34;
+const PLACE_FROM = 46;
 
 export const occurrenceKey = (occurrence: Pick<Occurrence, "calendarId" | "event" | "start">): string =>
   `${occurrence.calendarId}:${occurrence.event.uid}:${occurrence.start}`;
@@ -43,12 +56,12 @@ export const TIME_UNDER_FROM = 60;
 
 /** What a block `width` wide and `height` tall shows besides its title. */
 export function blockParts(width: number, height: number): { oneLine: boolean; time: boolean; place: boolean } {
-  const oneLine = height < 34;
+  const oneLine = height < ONE_LINE_BELOW;
   const known = width > 0;
   return {
     oneLine,
     time: !known || width >= (oneLine ? TIME_BESIDE_FROM : TIME_UNDER_FROM),
-    place: !oneLine && height >= 46 && (!known || width >= TIME_UNDER_FROM),
+    place: !oneLine && height >= PLACE_FROM && (!known || width >= TIME_UNDER_FROM),
   };
 }
 
@@ -58,8 +71,8 @@ export function EventBlock({ placed, color, width, prefs, selected, dragged, res
   const { occurrence } = placed;
   const { event } = occurrence;
   const top = yAtMinutes(placed.top);
-  const height = Math.max(yAtMinutes(placed.bottom - placed.top) - 1, 16);
-  const room = width > 0 ? width - 6 : 0;
+  const height = Math.max(yAtMinutes(placed.bottom - placed.top) - 1, BLOCK_LEAST);
+  const room = width > 0 ? width - SIDE.left - SIDE.right : 0;
   const blockWidth = room > 0 ? (placed.right - placed.left) * room - 2 : 0;
   const parts = blockParts(blockWidth, height);
   const compact = parts.oneLine;
@@ -67,7 +80,9 @@ export function EventBlock({ placed, color, width, prefs, selected, dragged, res
     <View
       testID={`event:${occurrenceKey(occurrence)}`}
       focusable
-      accessibilityRole="button"
+      // An event is a thing on the grid the person picks (its state says so), not a button.
+      accessibilityRole="option"
+      accessibilityState={{ selected }}
       accessibilityLabel={`${titleOf(event)}, ${clock(occurrence.start, prefs)}`}
       onPress={(info) => onPress(info.bounds)}
       onPointer={(info) => onPointer("move", info)}
@@ -75,41 +90,41 @@ export function EventBlock({ placed, color, width, prefs, selected, dragged, res
         position: "absolute",
         top,
         height,
-        left: room > 0 ? 2 + placed.left * room : 2,
+        left: room > 0 ? SIDE.left + placed.left * room : SIDE.left,
         width: room > 0 ? blockWidth : "100%",
         flexDirection: compact ? "row" : "column",
-        gap: compact ? 6 : 1,
+        gap: compact ? SPACE.s : SPACE.px,
         alignItems: compact ? "center" : "flex-start",
         overflow: "hidden",
-        paddingHorizontal: 6,
-        paddingVertical: compact ? 0 : 3,
-        borderRadius: 5,
-        borderLeftWidth: 3,
+        paddingHorizontal: SPACE.s,
+        paddingVertical: compact ? 0 : SPACE.xxs,
+        borderRadius: RADIUS.row,
+        borderLeftWidth: EVENT_EDGE,
         borderColor: color,
         // Solid, on the window's ground: the hour lines stop at its edge, and a block drawn over another hides what it covers.
-        backgroundColor: over(color, selected ? 0.55 : 0.26, surface.window),
-        hoverBackgroundColor: over(color, selected ? 0.6 : 0.4, surface.window),
-        ...(placed.left > 0 ? { shadow: "sm" as const } : {}),
-        opacity: dragged ? 0.35 : 1,
+        backgroundColor: over(color, selected ? WASH.picked : WASH.rest, surface.window),
+        hoverBackgroundColor: over(color, selected ? WASH.pickedHover : WASH.hover, surface.window),
+        ...(placed.left > 0 ? { shadow: SHADOW.sm } : {}),
+        opacity: dragged ? OPACITY.disabled : 1,
         focusRingColor: colors.focusRing,
       }}
     >
       {/* The title first: it takes the room, and the time gives way before it does. */}
       <View style={compact ? { flexShrink: 1, minWidth: 0 } : { width: "100%" }}>
-        <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
           {titleOf(event)}
         </Text>
       </View>
       {parts.time && (
         <View style={compact ? { flexShrink: 0 } : { width: "100%" }}>
-          <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {clock(occurrence.start, prefs)}
           </Text>
         </View>
       )}
       {parts.place && event.location !== "" && (
         <View style={{ width: "100%" }}>
-          <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {event.location}
           </Text>
         </View>
@@ -134,25 +149,26 @@ export function GhostBlock({ top, bottom, color, title, times }: { top: number; 
       style={{
         position: "absolute",
         top: yAtMinutes(top),
-        height: Math.max(yAtMinutes(bottom - top) - 1, 14),
-        left: 2,
-        right: 4,
+        height: Math.max(yAtMinutes(bottom - top) - 1, GHOST_LEAST),
+        left: SIDE.left,
+        right: SIDE.right,
         flexDirection: "column",
-        gap: 1,
+        gap: SPACE.px,
         overflow: "hidden",
-        paddingHorizontal: 6,
-        paddingVertical: 3,
-        borderRadius: 5,
-        borderLeftWidth: 3,
+        paddingHorizontal: SPACE.s,
+        paddingVertical: SPACE.xxs,
+        borderRadius: RADIUS.row,
+        borderLeftWidth: EVENT_EDGE,
         borderColor: color,
-        backgroundColor: tint(color, 0.5),
-        shadow: "md",
+        backgroundColor: tint(color, WASH.ghost),
+        // What a drag carries floats, as a menu does (DE-1).
+        shadow: SHADOW.xl,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
         {title}
       </Text>
-      <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
         {times}
       </Text>
     </View>

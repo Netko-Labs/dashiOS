@@ -4,12 +4,13 @@
  * applets that match come first (the catalog is local), then Flathub's apps.
  */
 
-import { Button, EmptyState, glyphs, Loading } from "@dashi/ui";
+import { Button, EmptyState, Loading, NoResults, SPACE } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { Answer, AppSummary, CategoryId, Collection, Flathub, Page } from "../../../src/shared/software/index.ts";
 import { AppletGroup, useAppletState } from "./applets/rows.tsx";
 import { CardGrid } from "./cards.tsx";
+import { APPS } from "./glyphs.ts";
 import { SectionHeader } from "./heading.tsx";
 import { useLoad } from "./hooks.ts";
 import { matches } from "./nav.ts";
@@ -69,28 +70,21 @@ export function Listing({ source }: { source: Source }) {
   };
 
   if (apps.length === 0 && applets.length === 0) {
-    return (
-      <EmptyState
-        testID="no-results"
-        glyph={glyphs.SEARCH}
-        title="No results"
-        message={
-          source.kind === "search"
-            ? `Nothing in Flathub or the applets matches “${source.query}”. Check the spelling or try fewer words.`
-            : "There are no apps here yet."
-        }
-      />
+    return source.kind === "search" ? (
+      <NoResults query={source.query} hint="Search looks in Flathub and the applets." />
+    ) : (
+      <EmptyState testID="no-results" glyph={APPS} title="No apps here yet" />
     );
   }
   return (
-    <ScrollView testID="listing" style={{ flex: 1, flexDirection: "column", gap: 14, padding: 22 }}>
+    <ScrollView testID="listing" style={{ flex: 1, flexDirection: "column", gap: SPACE.button, padding: SPACE.sheet }}>
       <AppletGroup title="Menu bar applets" entries={applets} testID="applet-results" />
       {apps.length > 0 && (
         <SectionHeader title={title} detail={page.total > 0 ? `${page.total.toLocaleString("en-US")} ${page.total === 1 ? "app" : "apps"}` : undefined} />
       )}
       {apps.length > 0 && <CardGrid apps={apps} />}
       {hasMore && (
-        <View style={{ flexShrink: 0, alignItems: "center", padding: 8 }}>
+        <View style={{ flexShrink: 0, alignItems: "center", padding: SPACE.m }}>
           <Button label={extra.loading ? "Loading…" : "Show more"} testID="show-more" onPress={showMore} disabled={extra.loading} />
         </View>
       )}

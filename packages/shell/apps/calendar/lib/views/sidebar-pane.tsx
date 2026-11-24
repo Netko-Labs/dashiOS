@@ -1,10 +1,8 @@
 /**
  * The window's left side: the mini month and the calendars, or in a narrow
- * window only the calendars as a rail of dots.
+ * window only the calendars, as the rail (LA-5).
  */
 
-import { useMemo } from "react";
-import type { Day } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import type { CalendarChrome } from "../chrome.ts";
 import type { CalendarFiles } from "../hooks/use-calendar-files.ts";
@@ -12,7 +10,7 @@ import type { Overlays } from "../hooks/use-overlays.ts";
 import type { CalendarModel } from "../model.ts";
 import type { CalendarState } from "../state.ts";
 import type { Target } from "../target.ts";
-import { CalendarRail, Sidebar } from "./sidebar.tsx";
+import { Sidebar } from "./sidebar.tsx";
 
 export function SidebarPane({
   model,
@@ -20,7 +18,6 @@ export function SidebarPane({
   chrome,
   prefs,
   firstDay,
-  days,
   destination,
   choose,
   files,
@@ -31,35 +28,20 @@ export function SidebarPane({
   chrome: CalendarChrome;
   prefs: ClockPrefs;
   firstDay: number;
-  days: readonly Day[];
   destination: Target | null;
   choose: (calendarId: string) => void;
   files: CalendarFiles;
   overlays: Overlays;
 }) {
-  const { view, anchor, today, calendars, hidden } = state;
-  // The month view shows every day of the mini month, so only the week and day views tint what they show.
-  const shown = useMemo(() => new Set(view === "month" ? [] : days), [days, view]);
+  const { anchor, today, calendars, hidden } = state;
   const newCalendar = (): void => overlays.setSheet({ kind: "new-calendar" });
-  if (chrome.rail) {
-    return (
-      <CalendarRail
-        calendars={calendars}
-        hidden={hidden}
-        onToggle={(id) => model.toggle(id)}
-        onMenu={files.calendarMenu}
-        onNewCalendar={newCalendar}
-        onImport={files.importFile}
-      />
-    );
-  }
   return (
     <Sidebar
+      rail={chrome.rail}
       anchor={anchor}
       today={today}
       firstDay={firstDay}
       prefs={prefs}
-      shown={shown}
       busy={(from, to) => model.busy(from, to)}
       onPick={(day) => {
         model.goTo(day);

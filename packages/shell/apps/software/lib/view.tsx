@@ -1,5 +1,5 @@
 /**
- * Software's window, its layout only: one store for apps and menu bar
+ * The Store's window, its layout only: one store for apps and menu bar
  * applets, composed into the app window (AppWindow) from the sidebar
  * (sidebar.tsx), one toolbar row (toolbar.tsx), the sheets over the page
  * (window-overlay.tsx), and the page for where you are (page-view.tsx). The
@@ -28,6 +28,7 @@ import { useServices } from "./services.ts";
 import { SoftwareSidebar } from "./sidebar.tsx";
 import { SoftwareToolbar } from "./toolbar.tsx";
 import { isCompact } from "./toolbar-fit.ts";
+import { updatesNotice } from "./updates.tsx";
 import { useNavigation } from "./use-navigation.ts";
 import { useWindowActions } from "./use-window-actions.ts";
 import { useWindowMenus } from "./use-window-menus.ts";
@@ -53,6 +54,13 @@ function useUpdateChecks(store: Services["store"], applets: Services["applets"],
   };
 }
 
+/** How many pages show saved results (the stale chip), and how a page reports one coming or going. */
+function useStaleCount(): [number, (delta: 1 | -1) => void] {
+  const [stale, setStale] = useState(0);
+  const report = useCallback((delta: 1 | -1) => setStale((n) => Math.max(0, n + delta)), []);
+  return [stale, report];
+}
+
 export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuery?: string; initialPage?: string } = {}) {
   const { store, applets, catalog, index, packages, appletImages, restart, logOut, openUrl, followApplets } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
@@ -61,13 +69,11 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   const settings = useSettingsOpen();
   const sheets = useWindowSheets({ store, applets, restart, logOut, appletState, index, packages });
   const actions = useWindowActions({ store, applets, catalog, index, openUrl, setNav, enqueue: sheets.enqueue, setPicture: sheets.setPicture });
-  const [stale, setStale] = useState(0);
-  const reportStale = useCallback((delta: 1 | -1) => setStale((n) => Math.max(0, n + delta)), []);
+  const [stale, reportStale] = useStaleCount();
   // The page's width (the window less its sidebar): under 600 the toolbar is compact.
   const [pageWidth, setPageWidth] = useState(820);
   const compact = isCompact(pageWidth);
   const checkForUpdates = useUpdateChecks(store, applets, followApplets);
-
   const systemUpdates = state.system?.updates.length ?? 0;
   const updateCount = (state.appUpdates?.length ?? 0) + systemUpdates + applets.updates().length;
   const askSystem = (): void => sheets.enqueue({ kind: "system", count: systemUpdates, restart: (state.system?.restartCauses.length ?? 0) > 0 });
@@ -84,7 +90,6 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
     askSystem,
     openSources: sheets.openSources,
   });
-
   const leading = canGoBack(nav) ? <ToolbarButton testID="back" glyph={BACK} tooltip="Back" onPress={goBack} /> : undefined;
 
   return (
@@ -94,7 +99,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
           title="Store"
           leading={leading}
           // Compact: the window's name gives way to the controls (the sidebar says where you are).
-          {...(compact ? { center: <View style={{ flex: 1 }} /> } : {})}
+          hideTitle={compact}
           sidebar={<SoftwareSidebar nav={nav} updates={updateCount} go={go} />}
           toolbar={
             <SoftwareToolbar
@@ -115,6 +120,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
               onCheckUpdates={checkForUpdates}
             />
           }
+          notice={nav.page.kind === "updates" ? updatesNotice(state, updateCount, checkForUpdates) : null}
           overlay={windowOverlay({ sheets, settings, openUrl, failure: state.failure, applets, appletImages })}
         >
           <View testID="page-room" onLayout={(bounds) => setPageWidth(bounds.width)} style={{ flex: 1, minHeight: 0, flexDirection: "column" }}>
@@ -124,6 +130,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
               onRestart={() => sheets.enqueue({ kind: "restart" })}
               onUpdateSystem={askSystem}
               onLogOut={() => sheets.enqueue({ kind: "logout" })}
+              onCheckUpdates={checkForUpdates}
               replace={(page) => setNav((now) => ({ ...now, page }))}
               onSeeAll={(where) => setNav((now) => push(now, where === "applets" ? { kind: "applets" } : { kind: "collection", id: where }))}
             />

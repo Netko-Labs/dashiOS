@@ -6,18 +6,18 @@
  * the person's color, so neither wears it.
  */
 
-import { useColors } from "@dashi/ui";
+import { ON_TINT, useColors } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { REVIEWED, VERIFIED, VERIFIED_CHECK } from "./glyphs.ts";
 
 /** A check in a seal: Flathub has verified who publishes the app. */
-export function VerifiedBadge({ size = 14 }: { size?: number }) {
+export function VerifiedMark({ size = 14 }: { size?: number }) {
   const colors = useColors();
   return (
     <View testID="mark:verified" style={{ width: size, height: size, alignItems: "center", justifyContent: "center", position: "relative" }}>
       <Svg markup={VERIFIED} size={size} color={colors.verified} />
       <View style={{ position: "absolute", left: 0, top: 0, width: size, height: size, alignItems: "center", justifyContent: "center" }}>
-        <Svg markup={VERIFIED_CHECK} size={size * 0.8} color="#ffffff" />
+        <Svg markup={VERIFIED_CHECK} size={size * 0.8} color={ON_TINT} />
       </View>
     </View>
   );

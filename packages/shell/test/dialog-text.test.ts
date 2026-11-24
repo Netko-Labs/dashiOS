@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { addDays, daysIn, formatDate, monthCells } from "../apps/dialog/lib/date-format.ts";
+import { addDays, daysIn, formatDate } from "../apps/dialog/lib/date-format.ts";
 import { compressEscapes, decodeEntities, displayText, splitMessage, stripMarkup } from "../apps/dialog/lib/markup.ts";
 import { LineSplitter } from "../apps/dialog/lib/stdin.ts";
 
@@ -46,13 +46,6 @@ describe("date format", () => {
     expect(daysIn(2024, 2)).toBe(29);
     expect(daysIn(2026, 2)).toBe(28);
     expect(daysIn(2026, 12)).toBe(31);
-    const november = monthCells(2026, 11);
-    expect(november).toHaveLength(42);
-    // November 1st 2026 is a Sunday.
-    expect(november[0]).toBe(1);
-    expect(november[29]).toBe(30);
-    expect(november[30]).toBeNull();
-    expect(monthCells(2026, 10).slice(0, 5)).toEqual([null, null, null, null, 1]);
     expect(addDays(2026, 12, 28, 7)).toEqual({ year: 2027, month: 1, day: 4 });
   });
 });

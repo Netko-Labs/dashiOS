@@ -3,7 +3,7 @@
  * and the name being typed, shared by all of them.
  */
 
-import { TRUE_BLACK, useColors, useDark, useSurface } from "@dashi/ui";
+import { CLEAR, pill, SPACE, TRUE_BLACK, TYPE, useColors, useDark, useSurface, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { addMinutes, type Day, dayPart, monthOf, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
@@ -12,15 +12,26 @@ import { dayNumber, monthDay } from "../format.ts";
 import { occurrenceKey } from "../grid/event-block.tsx";
 import type { GridHandlers, GridState } from "../grid/grid-props.ts";
 import { InlineTitle } from "../grid/inline-title.tsx";
+import { MoreEvents } from "../grid/more-events.tsx";
 import { fitChips, MONTH_CHIP_HEIGHT, onDay } from "../layout.ts";
-import { EventChip, MoreChip } from "./chips.tsx";
+import { EventLine } from "./chips.tsx";
+
+/** A day's number on its disc; the cell's padding; the hairlines between cells; the ring round the picked day; a dragged event's wash. */
+const NUMBER_DISC = 20;
+const CELL_PADDING = 3;
+const RULE = 1;
+const PICKED_EDGE = 1;
+const LANDING_WASH = 0.2;
 
 /**
  * Days outside the month (design.html CO-8): sunk below the window's ground
- * in Light. Dark's ground is true black, with nothing below it, so there they
- * take the first lift instead: told apart, without a gray wash.
+ * in Light (a field's ground). Dark's ground is true black, with nothing
+ * below it, so there they take the first lift instead: told apart, without a
+ * gray wash.
  */
-export const OUTSIDE_WASH = { light: "#0000000a", dark: TRUE_BLACK.lift } as const;
+function outsideWash(dark: boolean, field: string): string {
+  return dark ? TRUE_BLACK.lift : field;
+}
 
 /** Whether a dragged event's new times cover `day`. */
 function covers(preview: { start: string; end: string; allDay: boolean }, day: Day): boolean {
@@ -65,28 +76,32 @@ function DayNumber({
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View style={{ height: 20, flexShrink: 0, flexDirection: "row", justifyContent: "flex-end" }}>
+    <View style={{ height: NUMBER_DISC, flexShrink: 0, flexDirection: "row", justifyContent: "flex-end" }}>
       <View
         testID={`day-number:${day}`}
         onPress={onPress}
         style={{
-          minWidth: 20,
-          height: 20,
-          paddingHorizontal: 4,
-          borderRadius: 10,
+          minWidth: NUMBER_DISC,
+          height: NUMBER_DISC,
+          paddingHorizontal: SPACE.xs,
+          borderRadius: pill(NUMBER_DISC),
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
           // Today is an ink mark: green means "on".
-          backgroundColor: isToday ? colors.text : picked ? colors.button : "#00000000",
-          borderWidth: picked && !isToday ? 1 : 0,
+          backgroundColor: isToday ? colors.text : picked ? colors.button : CLEAR,
+          borderWidth: picked && !isToday ? PICKED_EDGE : 0,
           borderColor: colors.selection,
           hoverBackgroundColor: isToday ? colors.text : colors.button,
         }}
       >
         <Text
           numberOfLines={1}
-          style={{ fontSize: 12, fontWeight: isToday ? "bold" : "normal", color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted }}
+          style={{
+            fontSize: TYPE.secondary.size,
+            fontWeight: isToday ? WEIGHT.bold : WEIGHT.regular,
+            color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted,
+          }}
         >
           {day.endsWith("-01") ? monthDay(day, prefs) : dayNumber(day)}
         </Text>
@@ -97,6 +112,7 @@ function DayNumber({
 
 export function DayCell({ day, row, column, shared }: { day: Day; row: number; column: number; shared: MonthShared }) {
   const colors = useColors();
+  const surface = useSurface();
   const dark = useDark();
   const { today, month, prefs, occurrences, colorOf, state, handlers, capacity, timed, weeks, geometry } = shared;
   const { drag, pending, selected, selectedEvent } = state;
@@ -107,7 +123,7 @@ export function DayCell({ day, row, column, shared }: { day: Day; row: number; c
   const { shown, more } = fitChips(here, Math.max(0, capacity - (naming ? 1 : 0)));
   const isToday = day === today;
   const inMonth = monthOf(day).month === month;
-  const target = preview && drag?.occurrence && covers(preview, day) ? tint(colorOf(drag.occurrence.calendarId), 0.2) : null;
+  const target = preview && drag?.occurrence && covers(preview, day) ? tint(colorOf(drag.occurrence.calendarId), LANDING_WASH) : null;
   return (
     <View
       key={day}
@@ -118,12 +134,12 @@ export function DayCell({ day, row, column, shared }: { day: Day; row: number; c
         minWidth: 0,
         minHeight: 0,
         flexDirection: "column",
-        gap: 1,
-        padding: 3,
-        borderRightWidth: column === 6 ? 0 : 1,
-        borderBottomWidth: row === weeks - 1 ? 0 : 1,
+        gap: SPACE.px,
+        padding: CELL_PADDING,
+        borderRightWidth: column === 6 ? 0 : RULE,
+        borderBottomWidth: row === weeks - 1 ? 0 : RULE,
         borderColor: colors.separator,
-        backgroundColor: target ?? (inMonth ? "#00000000" : dark ? OUTSIDE_WASH.dark : OUTSIDE_WASH.light),
+        backgroundColor: target ?? (inMonth ? CLEAR : outsideWash(dark, surface.field)),
         overflow: "hidden",
       }}
     >
@@ -143,7 +159,7 @@ export function DayCell({ day, row, column, shared }: { day: Day; row: number; c
       {shown.map((occurrence) => {
         const key = occurrenceKey(occurrence);
         return (
-          <EventChip
+          <EventLine
             key={key}
             occurrence={occurrence}
             color={colorOf(occurrence.calendarId)}
@@ -159,7 +175,7 @@ export function DayCell({ day, row, column, shared }: { day: Day; row: number; c
           />
         );
       })}
-      {more > 0 && <MoreChip testID={`more:${day}`} count={more} onPress={() => handlers.showDay(day)} />}
+      {more > 0 && <MoreEvents testID={`more:${day}`} count={more} onPress={() => handlers.showDay(day)} />}
     </View>
   );
 }

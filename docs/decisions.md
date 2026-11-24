@@ -7534,3 +7534,171 @@ short words, as the rulebook is written.
 - **Why:** PA-14: one formatter; upper case is presentation, not a second format.
 - **Cost:** a screen reader reads the day in capitals, as it did.
 - **Undo:** a `textTransform` in mirin Metal, then drop the call.
+
+### D660. The Installer is the panel look, a wizard with no footer bar
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-4, AB-7, AB-8, AB-9, AB-10, VS-3, CO-2, CO-9, TK-2).
+- **Question:** the Installer put Back and Continue on a 64-tall bar with a hairline, titled its
+  pages 28/22 in Title Case, tinted its mark, ticks and running dot with the accent, drew its
+  disks as radio cards, and mixed the window look's `Row`, `Switch` and `TextField` into Settings'
+  cards.
+- **Choice:** the buttons sit on the window's ground at the content's foot; every title is
+  `TYPE.title` (20 Bold) in sentence case with curly apostrophes; the mark is ink, a done step a
+  moss `CHECK`, the running one the kit's `Spinner`; the disks are one list (`listbox`, each disk an
+  `option` in the selection look, a focus group whose arrows choose); fields and the switch are the
+  kit's `look="panel"`, in rows of Settings' geometry (56 tall, 16 in, the name 13.5 SemiBold, its
+  line 11.5) kept in `installer/lib/rows.tsx`, since Settings' own row lives in `settings-app`
+  (W4's) and an app may not import it. Least size 600 × 480.
+- **Why:** VS-3 (no footer bar, a wizard's buttons on the ground), TY-1, VO-1, CO-2, CO-9, TK-2.
+- **Cost:** a second copy of Settings' row geometry, small; it should become one row in
+  `shared/cards` once W4's work lands.
+- **Undo:** `apps/installer/lib/{view,rows}.tsx`.
+
+### D661. Activity Monitor's view is a pop-up of four views; the field shrinks before it folds
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-2, AB-20, AB-27, AB-28, AB-37, UI-2, UI-11).
+- **Question:** the view button was hand-drawn ("Apps ▼", a typed ▼ at 9, no edge or Tab stop, its
+  menu 40 pt left of it) and held toggles as well as the view.
+- **Choice:** the kit's `PopUpButton` with the four views a person picks between (Apps, My apps,
+  All processes, My processes); Kernel Threads and Show Summary stay in the menu bar's View menu,
+  where they always were. In a narrow window its glyph opens the same four as a menu hung from it.
+  The search field is the kit's 210, shrinking to its least 96 before it becomes a glyph, so the
+  window opens 1000 wide (was 940) to show the whole row. Waiting is `Loading`, a search that finds
+  nothing `NoResults`; the title gives way through `AppWindow`'s `hideTitle` (the old `center`
+  prop no longer existed, so it had silently stopped giving way). The app's disclosure chevron is
+  bare (the row lights under the pointer), and the right-click menu is the kit's `PopupMenu` with
+  the menu bar's keys.
+- **Why:** UI-2 (a pick of one of several is a pop-up), UI-8, UI-11, VS-7, PA-5, PA-17, VS-8.
+- **Cost:** the two toggles are one menu away; the window opens 60 wider.
+- **Undo:** `apps/activity-monitor/lib/views/view-menus.tsx`, `toolbar-fit.ts`, `sizes.ts`.
+
+### D662. The kit gains TextArea, InlineField and CheckMark; Checkbox can hide its words; a small TextLink
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; UI-1, UI-9, UI-10, KB-2).
+- **Question:** dashi-dialog's editable text and Calendar's notes needed a field of many lines,
+  Calendar's new event an in-place name, dashi-dialog's checklist a box in a row that is itself
+  the control, Calendar's calendar rows a checkbox whose words the row already says, and a day's
+  "3 more" a link at 11; the kit had none, and each module drew its own.
+- **Choice:** `TextArea` (a text field's edge, ground and focus over many lines, 13, 12 `small`),
+  `InlineField` (no box; a 1 px focus-ring edge while it has the keyboard), `CheckMark` (the box
+  alone, no role or Tab stop, round for a pick-one list), `Checkbox hideLabel` (its words only for
+  screen readers) and `TextLink size="small"` (11). Each has a test, a Components app entry and a
+  row in design.html.
+- **Why:** UI-1: a second user moves it into the kit before a second copy ships.
+- **Cost:** five more names in the kit.
+- **Undo:** the files in `packages/dashi-ui/src/`.
+
+### D663. A window's own view is named for what it is, not as a control
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; H22).
+- **Question:** H22 counts a component named like a control (`…Dialog`, `…Sheet`, `…Chip`,
+  `…Field`) that does not render a kit frame. dashi-dialog's nine Zenity modes and the portal's
+  Open With and Add to Dock were such names, and so were Calendar's event bars and its sheet's
+  rows of kit controls.
+- **Choice:** a name says what the thing is. dashi-dialog's modes are views of a window built on
+  `AppWindow` and the kit's `Button`s (`EntryView`, `ListView`, …); Open With is `OpenWith`; Add
+  to Dock moved onto the kit's `AlertWindow` (it asks a question) with the launcher's icon and its
+  name field under the words; Calendar's event bars are options you pick (`EventBar`,
+  `EventLine`, `AllDayBar`, role `option`) and its sheet's rows (`DayInput`, `TimeInput`,
+  `ZoneInput`, `NotesRow`) only combine kit controls. A component that draws a control is moved
+  onto the kit's control, never renamed.
+- **Why:** H22 is about controls drawn outside the kit; these draw none.
+- **Cost:** none.
+- **Undo:** the names.
+
+### D664. Every portal and dialog window states its least size
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-25, LA-3).
+- **Question:** the Store, the Installer, Open With, Print and dashi-dialog's windows could be
+  squeezed past where their one row and buttons fit.
+- **Choice:** the portal's `least` is required. Open With 360 × 240, Print 400 × 300, an alert
+  (access, share your name, Add to Dock) opens at its least; dashi-dialog's least is 320 × 160, or
+  the size it opened at when `--width`/`--height` make that smaller; the Installer 600 × 480; the
+  Store 610 × 400, from its compact row's parts.
+- **Why:** LA-3.
+- **Cost:** none.
+- **Undo:** each `least` / `minSize`.
+
+### D665. Open With: the kit's pick rows, More apps, and the kind's name
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-24, AB-29, AB-38, VO-8, VO-11, PA-18).
+- **Question:** Open With's rows were 34 tall and its own; "Other…" showed the rest in place; the
+  box said "Always use for application/pdf" and was hand-drawn with a typed ✓.
+- **Choice:** the kit's `PickRow`s in a `PickList` (30, the selection look, a focus group,
+  "Default" at the row's end); `MoreButton` "More apps" / "Fewer apps"; the kit's `Checkbox`
+  reading "Always use for PDF documents", the MIME database's description in the plural, its
+  first word lowered unless it is an initialism (`shared/files` now exports `mimeKind`, the
+  existing `kindOf` of `mime.ts`). The print sheet's and the access sheet's boxes are the kit's
+  too.
+- **Why:** PA-18 (one pick row), VO-8, VO-11, UI-10.
+- **Cost:** an app icon that fails to load shows no generic icon in Open With (`PickRow` draws an
+  `Image`, not `AppIcon`).
+- **Undo:** `apps/portal/lib/app-chooser/`.
+
+### D666. The Store's cards are list items, its links ink, its failures ume
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-17 to AB-21, AB-27 to AB-31, AB-37, AB-40, AB-41, AB-48, AB-49, CD-15).
+- **Question:** the Store drew its own chips, disclosures, links, error and empty pages, sheet
+  titles and search width.
+- **Choice:** app and entry cards are `listitem`s in a `list` grid, not buttons (moving the role to a
+  plain outer view would square their focus ring); screenshot thumbnails are options in a
+  listbox, the chosen one with the accent edge (chosen); Get, Open and Update are the kit's small
+  `Button`; chips are the kit's `Chip` (the stale one broth, like the offline state); "See all"
+  and the facts' links are `TextLink` (ink); disclosures `MoreButton`; offline, Flathub, the applet
+  catalogs, Flatpak missing and "couldn't check" are `ErrorState`, a partial failure a `Notice`;
+  no results `NoResults`, an empty category "No apps here yet"; Sources, Catalogs, Add a catalog
+  and an extension's settings are `FormSheet`s (its title "‹name› settings"); the failure sheet's
+  tile is danger (ume); one `PageHeader` for an app's, a package's and an applet's page, the
+  byline 12 muted; the placeholder "Search apps and add-ons" on the kit's 210 → 96.
+- **Why:** UI-8 to UI-15, PA-6, PA-17, VO-8, CO-1, Q3.
+- **Cost:** the activity chip's words are not cut with an ellipsis yet (the kit's `Chip` has no
+  width cap).
+- **Undo:** `apps/software/lib/`.
+
+### D667. Calendar: the lit calendar, the rail, and its commands in the menu bar
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-11, AB-12, AB-13, LA-5, UI-17).
+- **Question:** Calendar's rows were hand-made and unfocusable, with a round tick of their own; the
+  sidebar menu's commands were nowhere else.
+- **Choice:** each calendar is a `SidebarItem` whose tile wears its colour, in the section's focus
+  group; the lit row is where new events go; its accessory holds the kit's `Checkbox`
+  (`hideLabel`, "Show ‹name›" for screen readers) and the `MORE` button; the sidebar folds to the
+  kit's rail. File gains Edit Calendar…, Hide or Show Calendar and Delete Calendar…, acting on the
+  lit calendar (UI-17, PA-8). The event sheet's calendar is a `PopUpButton` and its weekdays the
+  kit's `Checkbox`es with the region's short names; Today is the kit's small `Button`; Find is a
+  `SearchField` (`variant="find"`: Esc closes Find and keeps the query); the steppers' ‹ › are
+  drawn chevrons on `ToolbarButton`s with tooltips.
+- **Why:** UI-2, UI-8, UI-10, UI-11, KB-1, LA-5, IC-3, UI-17.
+- **Cost:** the pop-up's options carry no colour dot; the week's shown days are no longer washed
+  in the sidebar's month.
+- **Undo:** `apps/calendar/lib/views/sidebar.tsx`, `menus.ts`, `sheets/`.
+
+### D668. Calendar's grid and floating panels
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-1, AB-14, AB-15, AB-27, AB-34, AB-36, CD-16).
+- **Question:** the now line wore the accent, captions were 10, the floating panels were three
+  cards, and the sheets were bare `Sheet`s.
+- **Choice:** the now line is ink (2 px on today with its dot, 1 px muted elsewhere); every caption
+  `TYPE.caption`, the week's day number 13 Bold, the popover's title 13 Bold; Find's answers hang
+  as a menu (`MENU`, `menuEdge`, `SHADOW.xl`, "No results" in its one row); the popover is radius
+  12, padding 14, `menuEdge`, `SHADOW.xl`; the drag ghost `SHADOW.xl`; the sidebar's month and the
+  sheet's date picker are `MonthGrid` (six weeks tall, so the list under it never jumps); New and
+  Edit calendar, Import and Export are `FormSheet`s, the problems sheet an `AlertSheet` (broth);
+  "3 more" a small `TextLink`; days outside the month on `surface.field`.
+- **Why:** CO-2, TY-1, LA-4, DE-1, UI-14, UI-15, PA-17.
+- **Cost:** none beyond each line.
+- **Undo:** `apps/calendar/lib/grid/`, `views/`, `sheets/`.
+
+### D669. Small calls made in W6
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's.
+- **Question:** small choices, recorded together.
+- **Choice:** sentence case for buttons, headings and window titles that are not commands
+  ("Start over", "Erase and install", "Don’t share", "Share your name", "More options");
+  menu-bar and context-menu rows keep Title Case; line heights snap to their size's role and
+  spacing by tokens.md (3 → 2, 5 → 4, 22 → 20); process timers are named where they are used;
+  dashi-dialog's month is drawn in the region's first weekday and names while `--date-format`
+  stays Zenity's C locale; the portal's and dashi-dialog's frames pad by `ALERT_WINDOW.padding`.
+- **Why:** VO-1, TK-1, UI-14.
+- **Cost:** none.
+- **Undo:** per line.

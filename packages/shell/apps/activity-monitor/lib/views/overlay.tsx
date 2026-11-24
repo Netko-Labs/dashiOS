@@ -5,10 +5,11 @@
  * overlay at all, so the window draws nothing over its content.
  */
 
+import { PopupMenu } from "@dashi/ui";
 import type { ReactNode } from "react";
 import type { MonitorModel } from "../hooks/use-monitor-window.ts";
 import { factsRoom, InspectSheet, QuitSheet, RefusedSheet, StillRunningSheet } from "./sheets.tsx";
-import { ContextMenu, ViewMenu } from "./view-menus.tsx";
+import { lineMenuItems, viewMenuItems } from "./view-menus.tsx";
 
 export function monitorOverlay(model: MonitorModel): ReactNode | undefined {
   const { actions, state, size, insetTop, view, setView, listing, sheets } = model;
@@ -29,18 +30,27 @@ export function monitorOverlay(model: MonitorModel): ReactNode | undefined {
       maxFacts={factsRoom(size.height, Math.max(insetTop, 0), sheet.line.kind === "app" && sheet.line.members.length > 1)}
     />
   ) : menu?.kind === "view" ? (
-    <ViewMenu x={menu.x} y={menu.y} view={view} onChange={(patch) => setView({ ...view, ...patch })} onClose={sheets.closeMenu} />
-  ) : menu?.kind === "context" && selectedLine ? (
-    <ContextMenu
+    <PopupMenu
+      testID="view-menu-items"
       x={menu.x}
       y={menu.y}
-      line={selectedLine}
-      canQuit={sheets.refusal === null}
-      onInspect={() => sheets.inspect()}
-      onQuit={() => sheets.quit()}
-      onToggle={() => listing.toggle(selectedLine.key.slice(4))}
-      onCopy={(text) => actions.copy(text)}
       onClose={sheets.closeMenu}
+      items={viewMenuItems(view, (patch) => setView({ ...view, ...patch }))}
+    />
+  ) : menu?.kind === "context" && selectedLine ? (
+    <PopupMenu
+      testID="line-menu"
+      x={menu.x}
+      y={menu.y}
+      onClose={sheets.closeMenu}
+      items={lineMenuItems({
+        line: selectedLine,
+        canQuit: sheets.refusal === null,
+        onInspect: () => sheets.inspect(),
+        onQuit: () => sheets.quit(),
+        onToggle: () => listing.toggle(selectedLine.key.slice(4)),
+        onCopy: (text) => actions.copy(text),
+      })}
     />
   ) : undefined;
 }

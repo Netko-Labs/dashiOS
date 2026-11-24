@@ -6,10 +6,10 @@
  */
 
 import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
-import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
+import { Button, EmptyState, ErrorState, Group, Loading, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { StoreApplet } from "../../../../src/shared/applet-store/index.ts";
-import { APPLETS, OFFLINE } from "../glyphs.ts";
+import { APPLETS } from "../glyphs.ts";
 import { useReportStale } from "../hooks.ts";
 import { AppIcon, ROW, useActions } from "../parts.tsx";
 import { useServices } from "../services.ts";
@@ -35,16 +35,16 @@ export function AppletsProblem() {
       />
     );
   return (
-    <EmptyState
+    <ErrorState
       testID="applets-problem"
-      glyph={problem.kind === "offline" ? OFFLINE : glyphs.WARNING}
+      kind={problem.kind === "offline" ? "offline" : "failed"}
       title={problem.kind === "offline" ? "You’re offline" : "The applet catalogs didn’t check out"}
       message={
         problem.kind === "offline"
           ? "Applets need the internet to be found. The ones you have keep working."
           : "Dashi couldn’t confirm the catalogs are the real ones, so nothing from them is shown. Try again in a minute."
       }
-      action={<Button label="Try again" testID="retry" onPress={() => void applets.refresh()} />}
+      actions={<Button label="Try again" testID="retry" onPress={() => void applets.refresh()} />}
     />
   );
 }
@@ -62,7 +62,7 @@ export function AppletsPage() {
   const categories = Object.keys(CATEGORY_LABELS) as Array<keyof typeof CATEGORY_LABELS>;
   const skipped = skippedWords(state.skipped);
   return (
-    <ScrollView testID="applets" style={{ flex: 1, flexDirection: "column", gap: 18, padding: 22 }}>
+    <ScrollView testID="applets" style={{ flex: 1, flexDirection: "column", gap: SPACE.page, padding: SPACE.sheet }}>
       <AppletGroup title="Made for this computer" detail="They know this machine’s hardware" entries={forHere} testID="for-here" />
       {categories.map((category) => (
         <AppletGroup
@@ -74,8 +74,8 @@ export function AppletsPage() {
       ))}
       <AppletGroup title="Other" entries={rest.filter((entry) => entry.manifest.categories.length === 0)} testID="applets:other" />
       {skipped !== null && (
-        <View testID="applets-skipped" style={{ flexShrink: 0, paddingHorizontal: 12 }}>
-          <Text style={{ fontSize: 11, color: colors.textMuted }}>{skipped}</Text>
+        <View testID="applets-skipped" style={{ flexShrink: 0, paddingHorizontal: SPACE.inset }}>
+          <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{skipped}</Text>
         </View>
       )}
     </ScrollView>
@@ -106,21 +106,28 @@ function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry:
   return (
     <View
       testID={`installed:${applet.manifest.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.inset,
+        minHeight: ROW.minHeight,
+        paddingHorizontal: SPACE.inset,
+        paddingVertical: SPACE.m,
+      }}
     >
       <View
         focusable
         accessibilityRole="button"
         accessibilityLabel={applet.manifest.name}
         onPress={() => actions.openApplet(applet.manifest.id)}
-        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}
       >
         <AppIcon url={entry?.icon ?? null} name={applet.manifest.name} size={ROW.icon} source="applets" />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
             {applet.manifest.name}
           </Text>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: pulled ? colors.ume : colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: pulled ? colors.ume : colors.textMuted }}>
             {detail}
           </Text>
         </View>
@@ -141,7 +148,7 @@ function UnreadableAppletRow({ applet, entry }: { applet: UnreadableApplet; entr
   return (
     <View
       testID={`installed:${applet.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, minHeight: 56, paddingHorizontal: SPACE.inset, paddingVertical: SPACE.m }}
     >
       <View
         testID={`installed:${applet.id}:open`}
@@ -149,14 +156,14 @@ function UnreadableAppletRow({ applet, entry }: { applet: UnreadableApplet; entr
         accessibilityRole="button"
         accessibilityLabel={name}
         onPress={() => actions.openApplet(applet.id)}
-        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}
       >
         <AppIcon url={entry?.icon ?? null} name={name} size={36} source="applets" />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
             {name}
           </Text>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {[applet.record?.version, "Needs an update"].filter((part): part is string => part !== undefined).join(" · ")}
           </Text>
         </View>

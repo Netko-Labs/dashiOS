@@ -7,15 +7,15 @@
  * need it: they are drawn, named, moved, and stretched on the grid.
  */
 
-import { Choices, Sheet, Switch, sheetBodyRoom, TextField, useColors, useTitleBarInset } from "@dashi/ui";
+import { BUTTON, Choices, Sheet, SPACE, Switch, sheetBodyRoom, TextField, TYPE, useColors, useTitleBarInset } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Calendar } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { type Draft, moveStart, problemWith, type RepeatChoice, setAllDay } from "../draft.ts";
-import { alertChoicesFor, CalendarChoice, NotesField, SheetButtons } from "./event-choices.tsx";
+import { alertChoicesFor, CalendarChoice, NotesRow, SheetButtons } from "./event-choices.tsx";
 import { RepeatFields } from "./event-repeat.tsx";
-import { DayField, FIELD_LINE, FormRow, TimeField, ZoneField } from "./form-fields.tsx";
+import { DayInput, FIELD_LINE, FormRow, TimeInput, ZoneInput } from "./form-fields.tsx";
 
 export interface EventSheetProps {
   draft: Draft;
@@ -32,11 +32,12 @@ export interface EventSheetProps {
   windowHeight?: number;
 }
 
-/** The form's most, in a tall window. */
+/** The sheet's width, and the form's most in a tall window. */
+const SHEET_WIDTH = 520;
 const FORM_MAX = 540;
-/** Under the form: the buttons (28, 2 above) and the gap before them; the problem's line (16 and a gap) when there is one. */
-const FOOTER = 10 + 2 + 28;
-const PROBLEM = 10 + 16;
+/** Under the form: the buttons (2 above) and the sheet's gap before them; the problem's line when there is one. */
+const FOOTER = SPACE.gap + SPACE.xxs + BUTTON.window.height;
+const PROBLEM = SPACE.gap + TYPE.secondary.line;
 
 const REPEATS: ReadonlyArray<{ value: RepeatChoice; label: string }> = [
   { value: "none", label: "Never" },
@@ -52,18 +53,18 @@ function WhenRows({ draft, prefs, firstDay, setDraft }: { draft: Draft; prefs: C
   return (
     <>
       <FormRow label="Starts">
-        <DayField id="start" value={draft.startDay} {...fields} onChange={(day) => setDraft(moveStart(draft, day, draft.startMinutes))} />
+        <DayInput id="start" value={draft.startDay} {...fields} onChange={(day) => setDraft(moveStart(draft, day, draft.startMinutes))} />
         {!draft.allDay && (
-          <TimeField id="start" minutes={draft.startMinutes} prefs={prefs} onChange={(minutes) => setDraft(moveStart(draft, draft.startDay, minutes))} />
+          <TimeInput id="start" minutes={draft.startMinutes} prefs={prefs} onChange={(minutes) => setDraft(moveStart(draft, draft.startDay, minutes))} />
         )}
       </FormRow>
       <FormRow label="Ends">
-        <DayField id="end" value={draft.endDay} {...fields} onChange={(endDay) => setDraft({ ...draft, endDay })} />
-        {!draft.allDay && <TimeField id="end" minutes={draft.endMinutes} prefs={prefs} onChange={(endMinutes) => setDraft({ ...draft, endMinutes })} />}
+        <DayInput id="end" value={draft.endDay} {...fields} onChange={(endDay) => setDraft({ ...draft, endDay })} />
+        {!draft.allDay && <TimeInput id="end" minutes={draft.endMinutes} prefs={prefs} onChange={(endMinutes) => setDraft({ ...draft, endMinutes })} />}
       </FormRow>
       {!draft.allDay && (
         <FormRow label="Time zone">
-          <ZoneField zone={draft.zone} onChange={(zone) => setDraft({ ...draft, zone })} />
+          <ZoneInput zone={draft.zone} onChange={(zone) => setDraft({ ...draft, zone })} />
         </FormRow>
       )}
     </>
@@ -84,15 +85,15 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
   const formMax = windowHeight > 0 ? Math.min(FORM_MAX, sheetBodyRoom(windowHeight, inset.top, FOOTER + (problem !== null ? PROBLEM : 0))) : FORM_MAX;
 
   return (
-    <Sheet testID="event-sheet" width={520} onCancel={onCancel}>
+    <Sheet testID="event-sheet" width={SHEET_WIDTH} onCancel={onCancel}>
       {/* The form scrolls, and gives way first in a short window; the problem and the buttons stay in reach. */}
       <ScrollView testID="event-form" style={{ maxHeight: formMax }}>
-        <View style={{ flexDirection: "column", gap: 10, paddingBottom: 2 }}>
+        <View style={{ flexDirection: "column", gap: SPACE.gap, paddingBottom: SPACE.xxs }}>
           <FormRow label="Title">
             <TextField
               testID="event-title"
               value={draft.title}
-              placeholder="New Event"
+              placeholder="New event"
               autoFocus
               onChangeText={(title) => change({ title })}
               onSubmit={save}
@@ -128,12 +129,12 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
               onChange={(value) => change({ alert: value === "none" ? null : Number(value) })}
             />
           </FormRow>
-          <NotesField value={draft.notes} onChange={(notes) => change({ notes })} onCancel={onCancel} />
+          <NotesRow value={draft.notes} onChange={(notes) => change({ notes })} onCancel={onCancel} />
         </View>
       </ScrollView>
       {problem !== null && (
         <View testID="event-problem" style={{ flexShrink: 0 }}>
-          <Text style={{ fontSize: 12, color: colors.ume }}>{problem}</Text>
+          <Text style={{ fontSize: TYPE.secondary.size, color: colors.ume }}>{problem}</Text>
         </View>
       )}
       <SheetButtons editing={editing !== null} problem={problem !== null} onDelete={onDelete} onCancel={onCancel} onSave={save} />

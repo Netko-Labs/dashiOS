@@ -4,7 +4,7 @@
  * geometry (`ROW`), as Installed and Updates draw apps.
  */
 
-import { Group, useColors } from "@dashi/ui";
+import { Group, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { StoreApplet } from "../../../../src/shared/applet-store/index.ts";
@@ -34,8 +34,8 @@ export function useAppletOperation(id: string): Operation | undefined {
   );
 }
 
-/** The chip for `entry`, with what pressing it does. */
-export function AppletChip({ entry, testID, wide }: { entry: StoreApplet; testID: string; wide?: boolean }) {
+/** The state (Get, Open, Update, its progress) for `entry`, with what pressing it does. */
+export function AppletAction({ entry, testID, wide }: { entry: StoreApplet; testID: string; wide?: boolean }) {
   const { applets } = useServices();
   const actions = useActions();
   useAppletState();
@@ -56,9 +56,9 @@ export function AppletChip({ entry, testID, wide }: { entry: StoreApplet; testID
 export function ForHere() {
   const colors = useColors();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xxs }}>
       <Svg markup={CHECK_MARK} size={10} color={colors.moss} />
-      <Text style={{ fontSize: 11, color: colors.moss }}>Made for this computer</Text>
+      <Text style={{ fontSize: TYPE.caption.size, color: colors.moss }}>Made for this computer</Text>
     </View>
   );
 }
@@ -73,7 +73,14 @@ export function AppletRow({ entry }: { entry: StoreApplet }) {
   return (
     <View
       testID={`applet:${manifest.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.inset,
+        minHeight: ROW.minHeight,
+        paddingHorizontal: SPACE.inset,
+        paddingVertical: SPACE.m,
+      }}
     >
       <View
         testID={`applet:${manifest.id}:open`}
@@ -81,24 +88,24 @@ export function AppletRow({ entry }: { entry: StoreApplet }) {
         accessibilityRole="button"
         accessibilityLabel={manifest.name}
         onPress={() => actions.openApplet(manifest.id)}
-        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}
       >
         <AppIcon url={entry.icon ?? null} name={manifest.name} size={ROW.icon} source="applets" />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
               {manifest.name}
             </Text>
             {entry.reviewed && <ReviewedSeal size={12} />}
             {here && <ForHere />}
           </View>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {/* An added catalog's applet says whose list it is on first, where a long summary can't cut it off (never Dashi's review mark). */}
             {`${entry.from.builtIn ? "" : `From ${entry.from.name} · `}${manifest.summary} · ${manifest.author.name}`}
           </Text>
         </View>
       </View>
-      <AppletChip entry={entry} testID={`get:${manifest.id}`} />
+      <AppletAction entry={entry} testID={`get:${manifest.id}`} />
     </View>
   );
 }
@@ -107,7 +114,7 @@ export function AppletRow({ entry }: { entry: StoreApplet }) {
 export function AppletGroup({ title, detail, entries, testID }: { title?: string; detail?: string; entries: readonly StoreApplet[]; testID: string }) {
   if (entries.length === 0) return null;
   return (
-    <View style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
+    <View style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.m }}>
       {title !== undefined && <SectionHeader title={title} {...(detail === undefined ? {} : { detail })} />}
       <Group testID={testID}>
         {entries.map((entry) => (

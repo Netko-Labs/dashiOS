@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import { SEARCH_FIELD } from "@dashi/ui";
 import { COLUMNS, fitColumns, NAME_MIN } from "../apps/activity-monitor/lib/columns.ts";
 import { middleCut } from "../apps/activity-monitor/lib/format.ts";
+import { MONITOR_SIZE } from "../apps/activity-monitor/lib/sizes.ts";
 import { briefFigures } from "../apps/activity-monitor/lib/summary-figures.ts";
 import {
   SEARCH_CHROME,
@@ -23,7 +25,7 @@ const LEADING = 76;
 
 describe("toolbar", () => {
   test("at the default size everything shows: the title, Quit…'s words, the view's words, the tabs and the field", () => {
-    expect(toolbarFit(toolbarRoom(940, LEADING))).toEqual(TOOLBAR_STEPS[0] as ToolbarFit);
+    expect(toolbarFit(toolbarRoom(MONITOR_SIZE.width, LEADING))).toEqual(TOOLBAR_STEPS[0] as ToolbarFit);
   });
 
   test("each step is narrower than the one before, so the row gives way in order", () => {
@@ -31,11 +33,12 @@ describe("toolbar", () => {
     for (let index = 1; index < widths.length; index++) expect(widths[index] as number).toBeLessThan(widths[index - 1] as number);
   });
 
-  test("the title goes first, then Quit's words, then the field becomes a glyph", () => {
+  test("the title goes first, then Quit's words, then the field shrinks to its least, then it becomes a glyph", () => {
     const at = (width: number) => toolbarFit(toolbarRoom(width, LEADING));
-    expect(at(900)).toMatchObject({ title: false, quitLabel: true, searchField: true });
-    expect(at(780)).toMatchObject({ title: false, quitLabel: false, searchField: true });
-    expect(at(640)).toMatchObject({ title: false, quitLabel: false, searchField: false, segment: 64 });
+    expect(at(900)).toMatchObject({ title: false, quitLabel: true, searchField: true, search: SEARCH_FIELD.width });
+    expect(at(840)).toMatchObject({ title: false, quitLabel: false, searchField: true, search: SEARCH_FIELD.width });
+    expect(at(780)).toMatchObject({ title: false, quitLabel: false, searchField: true, search: SEARCH_FIELD.least });
+    expect(at(680)).toMatchObject({ title: false, quitLabel: false, searchField: false, segment: 64 });
   });
 
   test("at the least width (the brief's 520 × 400, and a half-screen tile) the whole row fits", () => {

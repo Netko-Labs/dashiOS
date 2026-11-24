@@ -21,7 +21,7 @@ test("Catalogs…: one that doesn't check isn't added, one that does lists its a
   await type("add-catalog:key", wrong.publicKey);
   await press("add-catalog:add");
   await settle(100);
-  expect(view.nodeId("add-catalog:error")).toBeDefined();
+  expect(view.nodeId("add-catalog:key:message")).toBeDefined();
   expect(view.lastTree()).toContain("isn’t signed with this key");
   expect(saved()).toEqual([]);
 

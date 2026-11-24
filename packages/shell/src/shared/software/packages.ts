@@ -17,6 +17,9 @@ import { run as defaultRun, type Runner, type RunResult } from "./lib/run.ts";
 import type { OnProgress, Outcome } from "./manager.ts";
 import type { Source } from "./sources.ts";
 
+/** How long PackageKit may take (ms): a full refresh, and one command. */
+const TIMERS = { refresh: 300_000, command: 120_000 } as const;
+
 const KEEP = 20_000;
 const LONG = 3 * 60 * 60_000;
 
@@ -64,7 +67,7 @@ export class Packages {
 
   /** Fetches every enabled repository's metadata (PackageKit lets an active session do this without a password). */
   async refresh(): Promise<boolean> {
-    const result = await this.run(["pkcon", "refresh"], { timeoutMs: 300_000 });
+    const result = await this.run(["pkcon", "refresh"], { timeoutMs: TIMERS.refresh });
     return result.code === 0 && pkconError(result.output) === null;
   }
 
@@ -73,7 +76,7 @@ export class Packages {
     const commands = source.kind === "flathub" ? installations.map((each) => flathubToggle(each, on)) : source.repoIds.map((id) => pkconRepo(id, on));
     let last: Outcome = { ok: true, message: "" };
     for (const command of commands) {
-      const result = await this.run(command, { timeoutMs: 120_000 });
+      const result = await this.run(command, { timeoutMs: TIMERS.command });
       // A Flathub remote missing from one installation is not a failure.
       if (source.kind === "flathub" && result.code !== 0 && /not found|no remote/i.test(result.output)) continue;
       last = this.outcome(result, undefined, systemFailure(result.output));

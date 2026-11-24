@@ -7,7 +7,7 @@
  * window controls' strip, so a short window still reaches every category.
  */
 
-import { SidebarItem, SidebarSection } from "@dashi/ui";
+import { SidebarItem, SidebarSection, SPACE } from "@dashi/ui";
 import { ScrollView } from "@mirinjs/metal";
 import { APPLETS, APPS, DISCOVER, EXTENSIONS, INSTALLED, UPDATES, WIDGETS } from "./glyphs.ts";
 import type { Nav, Page } from "./nav.ts";
@@ -42,7 +42,7 @@ export function SoftwareSidebar({ nav, updates, go }: { nav: Nav; updates: numbe
     // The sidebar's 10 of side padding moves inside the scroll, so a row's focus ring isn't clipped.
     <ScrollView
       testID="sidebar-rows"
-      style={{ flex: 1, minHeight: 0, flexDirection: "column", gap: 2, marginLeft: -10, marginRight: -10, paddingHorizontal: 10 }}
+      style={{ flex: 1, minHeight: 0, flexDirection: "column", gap: SPACE.xxs, marginLeft: -SPACE.gap, marginRight: -SPACE.gap, paddingHorizontal: SPACE.gap }}
     >
       <SidebarSection>
         {item({ kind: "discover" }, "Discover", DISCOVER)}

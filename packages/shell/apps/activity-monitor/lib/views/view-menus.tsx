@@ -1,13 +1,16 @@
 /**
- * The window's own menus: the toolbar's view button (what the list shows,
- * the twin of the menu bar's View menu) and a line's right-click menu
- * (Inspect, Quit, show or hide an app's processes, and copies).
+ * The window's own menus: the toolbar's view pop-up (what the list shows,
+ * apps or processes and whose: UI-2's pop-up button), and a line's
+ * right-click menu (Inspect, Quit, show or hide an app's processes, and
+ * copies). Kernel threads and the summary are the menu bar's View menu's.
+ * The menus are the kit's PopupMenu; these are only their rows.
  */
 
-import { MENU_SEPARATOR, type MenuEntry, PopupMenu, ToolbarButton, useColors } from "@dashi/ui";
-import { type PressInfo, Text, View } from "@mirinjs/metal";
+import { MENU_SEPARATOR, type MenuEntry, PopUpButton, ToolbarButton } from "@dashi/ui";
+import type { PressInfo } from "@mirinjs/metal";
 import type { Line } from "../lines.ts";
 import type { ViewChoices } from "../menus.ts";
+import { TOOLBAR } from "../toolbar-fit.ts";
 
 /** The button's words: what is listed ("Apps" or "All processes"), and whose. */
 export function viewLabel(view: Pick<ViewChoices, "grouped" | "mine">): string {
@@ -15,107 +18,89 @@ export function viewLabel(view: Pick<ViewChoices, "grouped" | "mine">): string {
   return view.mine ? "My processes" : "All processes";
 }
 
+/** The four views the pop-up picks from, each a grouping and a scope. */
+export type ViewScope = "apps" | "my-apps" | "all" | "mine";
+
+const SCOPES: readonly { value: ViewScope; grouped: boolean; mine: boolean }[] = [
+  { value: "apps", grouped: true, mine: false },
+  { value: "my-apps", grouped: true, mine: true },
+  { value: "all", grouped: false, mine: false },
+  { value: "mine", grouped: false, mine: true },
+];
+
 /** Every label the button can show: it is as wide as the longest, whichever it shows, so Quit… and the tabs never move. */
-export const VIEW_LABELS = [
-  viewLabel({ grouped: true, mine: false }),
-  viewLabel({ grouped: true, mine: true }),
-  viewLabel({ grouped: false, mine: false }),
-  viewLabel({ grouped: false, mine: true }),
-] as const;
+export const VIEW_LABELS = SCOPES.map(viewLabel);
+
+/** Which of the four a view is. */
+export function viewScope(view: Pick<ViewChoices, "grouped" | "mine">): ViewScope {
+  return SCOPES.find((each) => each.grouped === view.grouped && each.mine === view.mine)?.value ?? "apps";
+}
+
+/** The grouping and scope a choice sets. */
+export function scopePatch(scope: ViewScope): Pick<ViewChoices, "grouped" | "mine"> {
+  const found = SCOPES.find((each) => each.value === scope) ?? SCOPES[0];
+  return { grouped: found?.grouped ?? true, mine: found?.mine ?? false };
+}
 
 /** A list, for the view button in a narrow window. */
 const LIST =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M6 4.5h7.5M6 8h7.5M6 11.5h7.5" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round"/><circle cx="3" cy="4.5" r="1" fill="#000"/><circle cx="3" cy="8" r="1" fill="#000"/><circle cx="3" cy="11.5" r="1" fill="#000"/></svg>';
 
-const menuPoint = (event: PressInfo): [number, number] => [Math.max((event.bounds?.x ?? 0) - 40, 8), (event.bounds?.y ?? 0) + (event.bounds?.height ?? 28) + 4];
+/** The narrow window's menu hangs from the glyph's bottom left, as a toolbar button's menu does (PA-9). */
+const menuPoint = (event: PressInfo): [number, number] => [event.bounds?.x ?? 0, (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0)];
 
-export function ViewButton({ view, compact = false, onOpen }: { view: ViewChoices; compact?: boolean; onOpen: (x: number, y: number) => void }) {
-  const colors = useColors();
-  const shown = viewLabel(view);
+/** The view: the kit's pop-up button, or in a narrow window its glyph, which opens the same choices as a menu. */
+export function ViewPicker({
+  view,
+  compact = false,
+  onChange,
+  onOpen,
+}: {
+  view: ViewChoices;
+  compact?: boolean;
+  onChange: (patch: Partial<ViewChoices>) => void;
+  onOpen: (x: number, y: number) => void;
+}) {
   if (compact) {
     // A narrow window: the glyph alone, its words in the tooltip.
-    return <ToolbarButton glyph={LIST} testID="view-menu" tooltip={`Showing ${shown.toLowerCase()}`} onPress={(event) => onOpen(...menuPoint(event))} />;
+    return (
+      <ToolbarButton glyph={LIST} testID="view-menu" tooltip={`Showing ${viewLabel(view).toLowerCase()}`} onPress={(event) => onOpen(...menuPoint(event))} />
+    );
   }
   return (
-    <View
+    <PopUpButton
       testID="view-menu"
-      accessibilityRole="button"
-      accessibilityLabel={`Showing ${shown.toLowerCase()}`}
-      onPress={(event) => onOpen(...menuPoint(event))}
-      style={{
-        height: 28,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        paddingHorizontal: 8,
-        borderRadius: 7,
-        hoverBackgroundColor: colors.button,
-      }}
-    >
-      {/* Every label stacked, the others folded to no height: the column is as wide as the longest. */}
-      <View testID="view-menu:labels" style={{ flexDirection: "column", flexShrink: 0 }}>
-        {VIEW_LABELS.map((label) => (
-          <View key={label} style={label === shown ? {} : { height: 0, overflow: "hidden" }}>
-            <Text numberOfLines={1} style={{ fontSize: 12, color: label === shown ? colors.text : "#00000000" }}>
-              {label}
-            </Text>
-          </View>
-        ))}
-      </View>
-      <Text style={{ fontSize: 9, color: colors.textMuted }}>▼</Text>
-    </View>
+      width={TOOLBAR.viewLabel}
+      options={SCOPES.map((each) => ({ value: each.value, label: viewLabel(each) }))}
+      value={viewScope(view)}
+      onChange={(scope) => onChange(scopePatch(scope))}
+    />
   );
 }
 
-export function ViewMenu({
-  x,
-  y,
-  view,
-  onChange,
-  onClose,
-}: {
-  x: number;
-  y: number;
-  view: ViewChoices;
-  onChange: (patch: Partial<ViewChoices>) => void;
-  onClose: () => void;
-}) {
-  const items: MenuEntry[] = [
-    { label: "Group by App", checked: view.grouped, onPress: () => onChange({ grouped: !view.grouped }) },
-    MENU_SEPARATOR,
-    { label: "All Processes", checked: !view.mine, onPress: () => onChange({ mine: false }) },
-    { label: "My Processes", checked: view.mine, onPress: () => onChange({ mine: true }) },
-    { label: "Kernel Threads", checked: view.kernel, onPress: () => onChange({ kernel: !view.kernel }) },
-    MENU_SEPARATOR,
-    { label: "Show Summary", checked: view.summary, onPress: () => onChange({ summary: !view.summary }) },
-  ];
-  return <PopupMenu testID="view-menu-items" x={x} y={y} onClose={onClose} items={items} />;
+/** The narrow window's view menu: the pop-up's four choices. */
+export function viewMenuItems(view: ViewChoices, onChange: (patch: Partial<ViewChoices>) => void): MenuEntry[] {
+  return SCOPES.map((each) => ({ label: viewLabel(each), checked: viewScope(view) === each.value, onPress: () => onChange(scopePatch(each.value)) }));
 }
 
-export function ContextMenu({
-  x,
-  y,
+/** A line's right-click menu: what the menu bar's Process menu holds for it, with the same keys (UI-17). */
+export function lineMenuItems({
   line,
   canQuit,
   onInspect,
   onQuit,
   onToggle,
   onCopy,
-  onClose,
 }: {
-  x: number;
-  y: number;
   line: Line;
   canQuit: boolean;
   onInspect: () => void;
   onQuit: () => void;
   onToggle: () => void;
   onCopy: (text: string) => void;
-  onClose: () => void;
-}) {
+}): MenuEntry[] {
   const process = line.process;
-  const items: MenuEntry[] = [
+  return [
     { label: "Inspect…", keys: "❖I", onPress: onInspect },
     { label: "Quit…", keys: "❖K", onPress: onQuit, disabled: !canQuit },
     ...(line.expandable ? [MENU_SEPARATOR, { label: line.expanded ? "Hide Processes" : "Show Processes", onPress: onToggle }] : []),
@@ -127,5 +112,4 @@ export function ContextMenu({
         ]
       : [{ label: "Copy Name", onPress: () => onCopy(line.name) }]),
   ];
-  return <PopupMenu testID="line-menu" x={x} y={y} onClose={onClose} items={items} />;
 }

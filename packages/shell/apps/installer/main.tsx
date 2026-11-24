@@ -7,10 +7,10 @@
 
 import { runApp } from "../kit/index.ts";
 import { isDryRun } from "./lib/helper.ts";
-import { INSTALLER_SIZE, InstallerWindow } from "./lib/view.tsx";
+import { INSTALLER_LEAST, INSTALLER_SIZE, InstallerWindow } from "./lib/view.tsx";
 
 const app = runApp(
-  { id: "dev.dashi.installer", title: "Install Dashi", size: INSTALLER_SIZE },
+  { id: "dev.dashi.installer", title: "Install Dashi", size: INSTALLER_SIZE, minSize: INSTALLER_LEAST },
   <InstallerWindow
     restart={() => {
       // A practice run has nothing to start into.

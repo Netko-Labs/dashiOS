@@ -7,7 +7,7 @@
  * shelf it contributes to (its manifest's `shows`, D352's `showsOf`). Themes stay hidden until the themes release (D326).
  */
 
-import { Choices, EmptyState, Loading } from "@dashi/ui";
+import { Choices, EmptyState, Loading, SPACE } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import type { StoreApplet } from "../../../src/shared/applet-store/index.ts";
 import { CATEGORIES, type CategoryId } from "../../../src/shared/software/index.ts";
@@ -30,7 +30,7 @@ export function AppsPage({ category, onCategory }: { category: CategoryId | unde
   const chosen = CATEGORIES.find((each) => each.id === category);
   return (
     <View testID="apps-page" style={{ flex: 1, minHeight: 0, flexDirection: "column" }}>
-      <View style={{ flexShrink: 0, paddingHorizontal: 22, paddingTop: 16 }}>
+      <View style={{ flexShrink: 0, paddingHorizontal: SPACE.sheet, paddingTop: SPACE.page }}>
         <Choices
           testID="apps-chips"
           options={options}
@@ -61,7 +61,7 @@ export function ExtensionsPage() {
     );
   }
   return (
-    <ScrollView testID="extensions-page" style={{ flex: 1, flexDirection: "column", gap: 14, padding: 22 }}>
+    <ScrollView testID="extensions-page" style={{ flex: 1, flexDirection: "column", gap: SPACE.button, padding: SPACE.sheet }}>
       <AppletGroup
         title="Launcher extensions"
         detail="Commands for the launcher, each reviewed by Dashi and run in its own sandbox"

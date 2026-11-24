@@ -4,13 +4,18 @@
  * writes a calendar, and the events that couldn't be shown.
  */
 
-import { Button, PopUpButton, Sheet, TextField, useColors } from "@dashi/ui";
+import { AlertSheet, FormSheet, PopUpButton, SPACE, TextField, TYPE, useColors, WARNING } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Calendar } from "../../../../src/shared/calendar/index.ts";
 
 /** The choice for a new calendar in the import sheet. */
 export const NEW_CALENDAR = "";
+
+/** The sheets' widths: a path to type, the import's target, the problems' list and its most height. */
+const IMPORT_WIDTH = 420;
+const INTO_WIDTH = 300;
+const PROBLEMS = { width: 480, listHeight: 260 } as const;
 
 /** Where there is no file chooser (a development run), the path of the file is typed. */
 export function ImportPathSheet({ reason, onSubmit, onCancel }: { reason: string; onSubmit: (path: string) => void; onCancel: () => void }) {
@@ -20,9 +25,17 @@ export function ImportPathSheet({ reason, onSubmit, onCancel }: { reason: string
     if (path.trim() !== "") onSubmit(path);
   };
   return (
-    <Sheet testID="import-sheet" width={420}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Import a calendar</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{reason}</Text>
+    <FormSheet
+      testID="import-sheet"
+      title="Import a calendar"
+      width={IMPORT_WIDTH}
+      keys={false}
+      buttons={[
+        { label: "Cancel", testID: "import-sheet:cancel", onPress: onCancel, cancel: true },
+        { label: "Import", testID: "import-sheet:ok", kind: "primary", disabled: path.trim() === "", onPress: submit },
+      ]}
+    >
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{reason}</Text>
       <TextField
         testID="import-path"
         value={path}
@@ -32,11 +45,7 @@ export function ImportPathSheet({ reason, onSubmit, onCancel }: { reason: string
         onSubmit={submit}
         onKeyPress={(key) => key === "Escape" && onCancel()}
       />
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="import-sheet:cancel" onPress={onCancel} />
-        <Button label="Import" testID="import-sheet:ok" primary disabled={path.trim() === ""} onPress={submit} />
-      </View>
-    </Sheet>
+    </FormSheet>
   );
 }
 
@@ -61,24 +70,27 @@ export function ImportTargetSheet({
   const [into, setInto] = useState<string>(same?.id ?? NEW_CALENDAR);
   const options = [{ value: NEW_CALENDAR, label: `New calendar “${name}”` }, ...calendars.map((calendar) => ({ value: calendar.id, label: calendar.name }))];
   return (
-    <Sheet testID="import-target" width={420} onCancel={onCancel} onConfirm={() => onImport(into === NEW_CALENDAR ? undefined : into)}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Import “${fileName}”`}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>Events a calendar has already are left out.</Text>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>Into</Text>
-        <PopUpButton testID="import-target:into" options={options} value={into} onChange={setInto} width={300} />
+    <FormSheet
+      testID="import-target"
+      title={`Import “${fileName}”`}
+      width={IMPORT_WIDTH}
+      buttons={[
+        { label: "Cancel", testID: "import-target:cancel", onPress: onCancel, cancel: true },
+        { label: "Import", testID: "import-target:ok", kind: "primary", onPress: () => onImport(into === NEW_CALENDAR ? undefined : into) },
+      ]}
+    >
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>Events a calendar has already are left out.</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap }}>
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>Into</Text>
+        <PopUpButton testID="import-target:into" options={options} value={into} onChange={setInto} width={INTO_WIDTH} />
       </View>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="import-target:cancel" onPress={onCancel} />
-        <Button label="Import" testID="import-target:ok" primary onPress={() => onImport(into === NEW_CALENDAR ? undefined : into)} />
-      </View>
-    </Sheet>
+    </FormSheet>
   );
 }
 
-/** The Export sheet's width, and its column inside (less its 20 of padding and 1 of edge a side): the pop-up and the path end on one edge. */
+/** The Export sheet's width, and its column inside (less its padding and 1 of edge a side): the pop-up and the path end on one edge. */
 const EXPORT_WIDTH = 440;
-export const EXPORT_COLUMN = EXPORT_WIDTH - 2 * 21;
+export const EXPORT_COLUMN = EXPORT_WIDTH - 2 * (SPACE.sheet + 1);
 
 /** File › Export…: a calendar written as an .ics file where the person says. */
 export function ExportSheet({
@@ -94,7 +106,6 @@ export function ExportSheet({
   onExport: (calendarId: string, path: string) => void;
   onCancel: () => void;
 }) {
-  const colors = useColors();
   const [calendarId, setCalendarId] = useState(initial);
   const nameOf = (id: string): string => calendars.find((calendar) => calendar.id === id)?.id ?? "Calendar";
   const [path, setPath] = useState(`${home}/${nameOf(initial)}.ics`);
@@ -102,51 +113,54 @@ export function ExportSheet({
     if (path.trim() !== "") onExport(calendarId, path);
   };
   return (
-    <Sheet testID="export-sheet" width={EXPORT_WIDTH}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Export a calendar</Text>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <PopUpButton
-          testID="export:calendar"
-          options={calendars.map((calendar) => ({ value: calendar.id, label: calendar.name }))}
-          value={calendarId}
-          onChange={(id) => {
-            // The file name follows the calendar while it is still the one made for the last.
-            if (path === `${home}/${nameOf(calendarId)}.ics`) setPath(`${home}/${nameOf(id)}.ics`);
-            setCalendarId(id);
-          }}
-          width={EXPORT_COLUMN}
-        />
-      </View>
+    <FormSheet
+      testID="export-sheet"
+      title="Export a calendar"
+      width={EXPORT_WIDTH}
+      keys={false}
+      buttons={[
+        { label: "Cancel", testID: "export:cancel", onPress: onCancel, cancel: true },
+        { label: "Export", testID: "export:ok", kind: "primary", disabled: path.trim() === "", onPress: submit },
+      ]}
+    >
+      <PopUpButton
+        testID="export:calendar"
+        options={calendars.map((calendar) => ({ value: calendar.id, label: calendar.name }))}
+        value={calendarId}
+        onChange={(id) => {
+          // The file name follows the calendar while it is still the one made for the last.
+          if (path === `${home}/${nameOf(calendarId)}.ics`) setPath(`${home}/${nameOf(id)}.ics`);
+          setCalendarId(id);
+        }}
+        width={EXPORT_COLUMN}
+      />
       <TextField testID="export:path" value={path} autoFocus onChangeText={setPath} onSubmit={submit} onKeyPress={(key) => key === "Escape" && onCancel()} />
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="export:cancel" onPress={onCancel} />
-        <Button label="Export" testID="export:ok" primary disabled={path.trim() === ""} onPress={submit} />
-      </View>
-    </Sheet>
+    </FormSheet>
   );
 }
 
-/** What couldn't be shown, one line each: kept in the files as written. */
+/** What couldn't be shown, one line each: kept in the files as written. It only informs, so it is the alert frame with Done (UI-5). */
 export function ProblemsSheet({ problems, onClose }: { problems: readonly string[]; onClose: () => void }) {
   const colors = useColors();
   return (
-    <Sheet testID="problems" width={480} onCancel={onClose} onConfirm={onClose}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-        {problems.length === 1 ? "1 event couldn't be shown" : `${problems.length} events couldn't be shown`}
-      </Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>They stay in their calendar files as they were written.</Text>
-      <ScrollView style={{ maxHeight: 260 }}>
-        <View style={{ flexDirection: "column", gap: 6 }}>
+    <AlertSheet
+      testID="problems"
+      width={PROBLEMS.width}
+      glyph={WARNING}
+      tone="warning"
+      question={problems.length === 1 ? "1 event couldn’t be shown" : `${problems.length} events couldn’t be shown`}
+      message="They stay in their calendar files as they were written."
+      buttons={[{ label: "Done", testID: "problems:done", kind: "primary", onPress: onClose, cancel: true }]}
+    >
+      <ScrollView style={{ maxHeight: PROBLEMS.listHeight }}>
+        <View style={{ flexDirection: "column", gap: SPACE.s }}>
           {problems.map((problem, index) => (
-            <Text key={String(index)} style={{ fontSize: 12, color: colors.text }}>
+            <Text key={String(index)} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>
               {problem}
             </Text>
           ))}
         </View>
       </ScrollView>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 4 }}>
-        <Button label="Done" testID="problems:done" primary onPress={onClose} />
-      </View>
-    </Sheet>
+    </AlertSheet>
   );
 }

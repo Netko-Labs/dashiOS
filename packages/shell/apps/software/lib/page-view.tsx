@@ -1,6 +1,6 @@
 /** The page for where the window is: a sidebar place, a list, an app's or an applet's page. */
 
-import { EmptyState, glyphs } from "@dashi/ui";
+import { ErrorState } from "@dashi/ui";
 import { useSyncExternalStore } from "react";
 import { CATEGORIES, type Collection } from "../../../src/shared/software/index.ts";
 import { AppPage } from "./app-page.tsx";
@@ -22,21 +22,22 @@ export interface PageViewProps {
   onRestart: () => void;
   onUpdateSystem: () => void;
   onLogOut: () => void;
+  /** Checks for updates again (Updates' Try again). */
+  onCheckUpdates: () => void;
   /** Goes to a page in place (the Apps page's chips). */
   replace: (page: Page) => void;
   onSeeAll: (place: Collection | "applets") => void;
 }
 
-export function PageView({ nav, query, onRestart, onUpdateSystem, onLogOut, replace, onSeeAll }: PageViewProps) {
+export function PageView({ nav, query, onRestart, onUpdateSystem, onLogOut, onCheckUpdates, replace, onSeeAll }: PageViewProps) {
   const { store } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const { page } = nav;
   const flathub = page.kind === "discover" || page.kind === "category" || page.kind === "collection" || page.kind === "app" || page.kind === "apps";
   if (flathub && !state.hasFlatpak) {
     return (
-      <EmptyState
+      <ErrorState
         testID="no-flatpak"
-        glyph={glyphs.WARNING}
         title="Flatpak isn’t installed"
         message="The Store installs Flathub’s apps with Flatpak. Install the flatpak package, then open the Store again. Search still finds Fedora’s packages."
       />
@@ -68,7 +69,7 @@ export function PageView({ nav, query, onRestart, onUpdateSystem, onLogOut, repl
     case "installed":
       return <Installed query={query} />;
     case "updates":
-      return <Updates onRestart={onRestart} onUpdateSystem={onUpdateSystem} onLogOut={onLogOut} />;
+      return <Updates onRestart={onRestart} onUpdateSystem={onUpdateSystem} onLogOut={onLogOut} onCheck={onCheckUpdates} />;
     case "applets":
       return <AppletsPage />;
     case "applet":

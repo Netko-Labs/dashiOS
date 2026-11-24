@@ -12,14 +12,14 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { Picture, TextField, useColors } from "@dashi/ui";
+import { AlertWindow, Picture, RADIUS, SPACE, TextField, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type InterfaceSpec, Variant } from "../../../src/shared/dbus/index.ts";
 import { appInfo } from "./apps.ts";
 import { parseIcon } from "./notification.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
-import { PortalFrame } from "./ui/frame.tsx";
+import { DOCK } from "./ui/glyphs.ts";
 import { bool, cleanString, str, u32, vardict } from "./vardict.ts";
 import type { ShowDialog } from "./windows.ts";
 
@@ -122,57 +122,62 @@ function hostOf(target: string | null): string | null {
   }
 }
 
-function InstallSheet({ request, answer }: { request: InstallRequest; answer: (name: string | null) => void }) {
+/** The launcher's icon as the Dock will show it, and a name field's label column. */
+const ADD = { icon: 48, label: 44, width: 440, height: 210 } as const;
+
+/** "Add to Dock?": the one alert frame (UI-5), the launcher's icon and, when the site lets it be renamed, its name under the words. */
+function AddToDock({ request, answer }: { request: InstallRequest; answer: (name: string | null) => void }) {
   const colors = useColors();
   const [name, setName] = useState(request.name);
   const browser = appInfo(request.appId).name;
   const host = hostOf(request.target);
   const picture = iconPicture(request.icon);
   // With no icon, a themed one, or bytes the host cannot draw.
-  const tile = <View style={{ width: 48, height: 48, borderRadius: 11, backgroundColor: colors.button }} />;
+  const tile = <View style={{ width: ADD.icon, height: ADD.icon, borderRadius: RADIUS.icon, backgroundColor: colors.button }} />;
   const chosen = launcherName(name);
   const add = () => chosen && answer(chosen);
   return (
-    <PortalFrame
-      title="Add to Dock"
+    <AlertWindow
+      testID="launcher"
       keys={!request.editableName}
+      question={`Add “${chosen ?? request.name}” to the Dock?`}
+      message={`${host ? `Opens ${host} in its own ${browser} window.` : `It opens in ${browser}.`} It shows in the Dock and the launcher, and is removed like any app.`}
+      glyph={DOCK}
+      tone="neutral"
       onCancel={() => answer(null)}
       buttons={[
-        { label: "Cancel", testID: "launcher:cancel", onPress: () => answer(null) },
-        { label: "Add", testID: "launcher:add", onPress: add, primary: true, disabled: chosen === null },
+        { label: "Cancel", testID: "launcher:cancel", onPress: () => answer(null), cancel: true },
+        { label: "Add", testID: "launcher:add", onPress: add, kind: "primary", disabled: chosen === null },
       ]}
     >
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
-        {picture ? <Picture source={picture} style={{ width: 48, height: 48, borderRadius: 11 }} fallback={tile} /> : tile}
-        <View style={{ flex: 1, flexDirection: "column", gap: 6, minWidth: 0 }}>
-          <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Add “${chosen ?? request.name}” to the Dock?`}</Text>
-          <Text style={{ fontSize: 12, color: colors.textMuted }}>
-            {`${host ? `Opens ${host} in its own ${browser} window.` : `It opens in ${browser}.`} It shows in the Dock and the launcher, and is removed like any app.`}
-          </Text>
-          {request.editableName && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Text style={{ fontSize: 13, color: colors.text }}>Name</Text>
-              <TextField
-                testID="launcher:name"
-                value={name}
-                autoFocus
-                onChangeText={setName}
-                onSubmit={add}
-                onKeyPress={(key) => key === "Escape" && answer(null)}
-              />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset }}>
+        {picture ? <Picture source={picture} style={{ width: ADD.icon, height: ADD.icon, borderRadius: RADIUS.icon }} fallback={tile} /> : tile}
+        {request.editableName && (
+          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.m, minWidth: 0 }}>
+            <View style={{ width: ADD.label }}>
+              <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>Name</Text>
             </View>
-          )}
-        </View>
+            <TextField
+              testID="launcher:name"
+              value={name}
+              label="Name"
+              autoFocus
+              onChangeText={setName}
+              onSubmit={add}
+              onKeyPress={(key) => key === "Escape" && answer(null)}
+            />
+          </View>
+        )}
       </View>
-    </PortalFrame>
+    </AlertWindow>
   );
 }
 
 export function askInstallOnScreen(show: ShowDialog): AskInstall {
   return (request, signal) =>
     show<string | null>(
-      { parent: request.parent, title: "Add to Dock", width: 440, height: 210 },
-      (answer) => <InstallSheet request={request} answer={answer} />,
+      { parent: request.parent, title: "Add to Dock", width: ADD.width, height: ADD.height, least: { width: ADD.width, height: ADD.height } },
+      (answer) => <AddToDock request={request} answer={answer} />,
       signal,
       null,
     );

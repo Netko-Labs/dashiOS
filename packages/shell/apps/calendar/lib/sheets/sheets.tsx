@@ -4,8 +4,8 @@
  * the following ones, or all of them. The file sheets are in file-sheets.tsx.
  */
 
-import { AlertSheet, alertButtonsWidth, Button, ConfirmSheet, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { AlertSheet, alertButtonsWidth, ConfirmSheet, FormSheet, pill, SPACE, TextField, useColors, WARNING } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type EventInput, isColor, PALETTE } from "../../../../src/shared/calendar/index.ts";
 import type { Scope } from "../edits.ts";
@@ -33,6 +33,11 @@ export type SheetState =
   | { kind: "export"; calendarId: string }
   | { kind: "problems" };
 
+/** A calendar's colour swatch, and the ring round the chosen one. */
+const SWATCH = { size: 24, ring: 2 } as const;
+/** The New and Edit calendar sheet's width. */
+const CALENDAR_SHEET_WIDTH = 340;
+
 export function CalendarSheet({
   title,
   initialName,
@@ -55,8 +60,16 @@ export function CalendarSheet({
     if (name.trim() !== "") onSubmit(name, color);
   };
   return (
-    <Sheet testID="calendar-sheet" width={340}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
+    <FormSheet
+      testID="calendar-sheet"
+      title={title}
+      width={CALENDAR_SHEET_WIDTH}
+      keys={false}
+      buttons={[
+        { label: "Cancel", testID: "calendar-sheet:cancel", onPress: onCancel, cancel: true },
+        { label: confirmLabel, testID: "calendar-sheet:ok", kind: "primary", disabled: name.trim() === "" || !isColor(color), onPress: submit },
+      ]}
+    >
       <TextField
         testID="calendar-name"
         value={name}
@@ -66,33 +79,31 @@ export function CalendarSheet({
         onSubmit={submit}
         onKeyPress={(key) => key === "Escape" && onCancel()}
       />
-      <View testID="calendar-colors" style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
+      <View testID="calendar-colors" focusGroup accessibilityRole="listbox" style={{ flexDirection: "row", gap: SPACE.m, paddingVertical: SPACE.xxs }}>
         {PALETTE.map((each) => (
           <View
             key={each}
             testID={`calendar-color:${each}`}
+            focusable
             accessibilityRole="option"
             accessibilityLabel={`Colour ${each}`}
             accessibilityState={{ selected: each === color }}
             onPress={() => setColor(each)}
             style={{
-              width: 24,
-              height: 24,
-              borderRadius: 12,
+              width: SWATCH.size,
+              height: SWATCH.size,
+              borderRadius: pill(SWATCH.size),
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: each,
-              borderWidth: color.toLowerCase() === each ? 2 : 0,
+              borderWidth: color.toLowerCase() === each ? SWATCH.ring : 0,
               borderColor: colors.text,
+              focusRingColor: colors.focusRing,
             }}
           />
         ))}
       </View>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="calendar-sheet:cancel" onPress={onCancel} />
-        <Button label={confirmLabel} testID="calendar-sheet:ok" primary disabled={name.trim() === "" || !isColor(color)} onPress={submit} />
-      </View>
-    </Sheet>
+    </FormSheet>
   );
 }
 
@@ -100,12 +111,15 @@ const CANCEL = "Cancel";
 const THIS = "This event";
 const FOLLOWING = "This and following";
 const ALL = "All events";
-/** The sheet's card: 20 either side of what it holds. */
-const SHEET_PAD = 20;
+/** The sheet's card: its padding either side of what it holds. */
+const SHEET_PAD = SPACE.sheet;
 
-/** The repeat question's width: 460, or wider so its buttons stay on one row. */
+/** The repeat question's least width. */
+const SCOPE_WIDTH = 460;
+
+/** The repeat question's width: `SCOPE_WIDTH`, or wider so its buttons stay on one row. */
 export function scopeSheetWidth(labels: readonly string[]): number {
-  return Math.max(460, alertButtonsWidth(labels) + SHEET_PAD * 2);
+  return Math.max(SCOPE_WIDTH, alertButtonsWidth(labels) + SHEET_PAD * 2);
 }
 
 /**
@@ -125,7 +139,7 @@ export function ScopeSheet({
   onChoose: (scope: Scope) => void;
   onCancel: () => void;
 }) {
-  const name = title || "New Event";
+  const name = title || "New event";
   const deleting = action === "delete";
   const labels = [CANCEL, ...(allowThis ? [THIS] : []), FOLLOWING, ALL];
   return (

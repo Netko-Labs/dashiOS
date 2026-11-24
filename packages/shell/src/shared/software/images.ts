@@ -9,6 +9,9 @@ import { type ImageCache, LIMITS } from "./cache.ts";
 import { type FetchLike, getBytes } from "./fetch.ts";
 import { httpsUrl, MEDIA_HOSTS } from "./parse-values.ts";
 
+/** How long a screenshot or icon download may take (ms). */
+const TIMERS = { image: 30_000 } as const;
+
 const CONCURRENT = 4;
 
 export class Images {
@@ -44,7 +47,7 @@ export class Images {
   private async download(url: string): Promise<string | null> {
     await this.slot();
     try {
-      const bytes = await getBytes(url, { hosts: MEDIA_HOSTS, maxBytes: LIMITS.imageEntry, fetch: this.fetch, timeoutMs: 30_000 });
+      const bytes = await getBytes(url, { hosts: MEDIA_HOSTS, maxBytes: LIMITS.imageEntry, fetch: this.fetch, timeoutMs: TIMERS.image });
       const path = this.cache.put(url, bytes);
       if (path === null) this.failed.add(url);
       return path;

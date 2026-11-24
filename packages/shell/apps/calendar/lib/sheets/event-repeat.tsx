@@ -4,12 +4,12 @@
  * custom rule, which the form cannot change, shows none of it).
  */
 
-import { Choices, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { Checkbox, Choices, SPACE } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { type ClockPrefs, weekdayNames } from "../../../../src/shared/time/index.ts";
 import { type Draft, type EndsChoice, type MonthlyBy, nthOf } from "../draft.ts";
 import { nthName } from "../format.ts";
-import { DayField, FormRow, LineText, Stepper } from "./form-fields.tsx";
+import { DayInput, FormRow, LineText, Stepper } from "./form-fields.tsx";
 
 const ENDS: ReadonlyArray<{ value: EndsChoice; label: string }> = [
   { value: "never", label: "Never" },
@@ -25,38 +25,23 @@ export interface RepeatFieldsProps {
   change: (patch: Partial<Draft>) => void;
 }
 
-/** The weekday buttons, starting on the region's first day and saying its letters. */
+/** The weekdays a weekly repeat falls on: a check box each (UI-10), from the region's first day, in its words. */
 function Weekdays({ draft, prefs, firstDay, change }: RepeatFieldsProps) {
-  const colors = useColors();
   const names = weekdayNames(prefs.locale, 0);
   const order = Array.from({ length: 7 }, (_, offset) => (firstDay + offset) % 7);
   return (
     <FormRow label="On" pills>
-      <View testID="event-weekdays" style={{ flexDirection: "row", gap: 4 }}>
+      <View testID="event-weekdays" style={{ flexDirection: "row", flexWrap: "wrap", columnGap: SPACE.inset }}>
         {order.map((index) => {
           const on = draft.weekdays.includes(index);
           return (
-            <View
+            <Checkbox
               key={index}
               testID={`event-weekday:${index}`}
-              focusable
-              accessibilityRole="checkbox"
-              accessibilityLabel={names[index]}
-              onPress={() => change({ weekdays: on ? draft.weekdays.filter((each) => each !== index) : [...draft.weekdays, index] })}
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: 13,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: on ? colors.selection : colors.button,
-                focusRingColor: colors.focusRing,
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: "semibold", color: on ? colors.onAccent : colors.text }}>
-                {(names[index] ?? "").slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
+              label={names[index] ?? ""}
+              checked={on}
+              onChange={() => change({ weekdays: on ? draft.weekdays.filter((each) => each !== index) : [...draft.weekdays, index] })}
+            />
           );
         })}
       </View>
@@ -92,7 +77,7 @@ export function RepeatFields(props: RepeatFieldsProps) {
             <LineText>times</LineText>
           </>
         )}
-        {draft.ends === "until" && <DayField id="until" value={draft.until} {...fields} onChange={(until) => change({ until })} />}
+        {draft.ends === "until" && <DayInput id="until" value={draft.until} {...fields} onChange={(until) => change({ until })} />}
       </FormRow>
     </>
   );
