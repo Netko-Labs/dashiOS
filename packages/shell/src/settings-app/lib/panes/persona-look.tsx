@@ -4,6 +4,7 @@
  * shape of the person's own (docs/decisions.md D59, D75).
  */
 
+import { PictureChoice, RADIUS, SPACE } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
@@ -18,14 +19,15 @@ import { ONLY_YOU } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { Swatches } from "./persona-parts.tsx";
 
-const TILE = 34;
+/** A mark's tile and a dots' tile: their pictures, ringed in ink when chosen (the choices are Dashi's own colours: CO-9's ink ring). */
+const TILE = { height: 28, mark: 28, dots: 50, glyph: 17 } as const;
 
-/** One round-cornered button of a row of pictures; the chosen one wears a ring in the text's colour. */
+/** One picture of a row of pictures to pick; the chosen one wears the ink ring (PictureChoice). */
 function Tile({
   testID,
   label,
   chosen,
-  width = TILE,
+  width = TILE.mark,
   onPress,
   children,
 }: {
@@ -36,27 +38,10 @@ function Tile({
   onPress(): void;
   children: ReactNode;
 }) {
-  const colors = useColors();
   return (
-    <View
-      testID={testID}
-      focusable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: chosen }}
-      onPress={onPress}
-      style={{
-        width,
-        height: TILE,
-        borderRadius: 9,
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 2,
-        borderColor: chosen ? colors.text : "#00000000",
-      }}
-    >
-      {children}
-    </View>
+    <PictureChoice testID={testID} label={label} chosen={chosen} ring="ink" radius={RADIUS.control} onPress={onPress}>
+      <View style={{ width, height: TILE.height, borderRadius: RADIUS.control, alignItems: "center", justifyContent: "center" }}>{children}</View>
+    </PictureChoice>
   );
 }
 
@@ -71,7 +56,12 @@ export function Look({ settings, persona, guard }: { settings: SettingsStore; pe
         <Swatches value={view.colour.id} onChange={(colour) => guard.mine("persona/colour", () => settings.patch("persona", { colour: colour.to }))} />
       </Setting>
       <Setting id="persona/mark" testID="persona-mark" {...quiet(guard, "persona/mark")} stack>
-        <View testID="persona-marks" style={{ flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+        <View
+          testID="persona-marks"
+          focusGroup
+          accessibilityRole="listbox"
+          style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}
+        >
           {PERSONA_GLYPHS.map((glyph) => (
             <Tile
               key={glyph}
@@ -80,19 +70,24 @@ export function Look({ settings, persona, guard }: { settings: SettingsStore; pe
               chosen={view.mark === glyph}
               onPress={() => guard.mine("persona/mark", () => settings.patch("persona", { mark: glyph }))}
             >
-              <Svg markup={markSvg(glyph)} size={17} color={view.mark === glyph ? view.colour.to : colors.text} />
+              <Svg markup={markSvg(glyph)} size={TILE.glyph} color={view.mark === glyph ? view.colour.to : colors.text} />
             </Tile>
           ))}
         </View>
       </Setting>
       <Setting id="persona/dots" testID="persona-dots" {...quiet(guard, "persona/dots")} stack>
-        <View testID="persona-dot-shapes" style={{ flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+        <View
+          testID="persona-dot-shapes"
+          focusGroup
+          accessibilityRole="listbox"
+          style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}
+        >
           {DOT_SHAPES.map((shape) => (
             <Tile
               key={shape.id}
               testID={`persona-dots:${shape.id}`}
               label={shape.name}
-              width={56}
+              width={TILE.dots}
               chosen={view.dots === shape.id}
               onPress={() => guard.mine("persona/dots", () => settings.patch("persona", { dots: shape.id }))}
             >

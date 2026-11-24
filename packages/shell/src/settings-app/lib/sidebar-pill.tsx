@@ -9,7 +9,7 @@ import { type Bounds, Text, View } from "@mirinjs/metal";
 import { SIDEBAR } from "./sidebar-measures.ts";
 
 /** A row's measures beyond SIDEBAR's: the gap after the knob, its end, the place word's width, the agents' count. */
-const PANE_ROW = { gap: 9, end: SPACE.gap, where: 84, badge: 18, glyph: 15 } as const;
+const PANE_ROW = { afterKnob: 9, end: SPACE.gap, where: 84, badge: 18, glyph: 15 } as const;
 
 /**
  * A pane: its knob, its name, a count at the end; chosen, the knob is the
@@ -52,7 +52,7 @@ export function PaneRow({
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: PANE_ROW.gap,
+        gap: PANE_ROW.afterKnob,
         paddingLeft: PILL_INSET,
         paddingRight: PANE_ROW.end,
         borderRadius: pill(SIDEBAR.row),
@@ -96,7 +96,7 @@ export function PaneRow({
 }
 
 /** A pill's inset before its knob: a group's label starts there too, on the knobs' left edge. */
-export const PILL_INSET = 3;
+export const PILL_INSET = SIDEBAR.pillInset;
 /** A group's label: 10.5 SemiBold, 2 over its first pane. */
 const GROUP_LABEL = { below: SPACE.xxs } as const;
 

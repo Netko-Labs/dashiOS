@@ -1,12 +1,12 @@
 /**
- * Sharing a character (persona.tsx; docs/decisions.md D61, D78): "Add a File…" reads a file
+ * Sharing a character (persona.tsx; docs/decisions.md D61, D78): "Add a file…" reads a file
  * somebody sent, and before anything is copied a sheet shows all of what the assistant would be
  * told; "Export…" writes this Dashi, with its name and look as they are now, as one small file.
  * A file is text and ids only, and only the person's own press adds or writes one.
  */
 
 import { writeFileSync } from "node:fs";
-import type { Confirm } from "@dashi/ui";
+import { type Confirm, SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import { addCharacterFile, type Character, type PersonaSource, readCharacterFile, shareFileText } from "../../../persona/index.ts";
@@ -28,8 +28,8 @@ export interface ShareDialogs {
 }
 
 const PORTAL: ShareDialogs = {
-  choose: () => chooseFile({ title: "Add a Character", filter: JSON_FILES, accept: (path) => path.endsWith(".json") }),
-  save: (name) => chooseSaveFile({ title: "Export This Dashi", name, filter: JSON_FILES }),
+  choose: () => chooseFile({ title: "Add a character", filter: JSON_FILES, accept: (path) => path.endsWith(".json") }),
+  save: (name) => chooseSaveFile({ title: "Export your Dashi", name, filter: JSON_FILES }),
 };
 
 /** All of what a file would tell the assistant, for the sheet: who it is, then its text in both languages. */
@@ -45,7 +45,7 @@ export interface ShareProps {
   guard: PersonOnly;
   /** Opens the pane's sheet (it hangs from the window, so the pane draws it). */
   ask: Confirm["ask"];
-  /** "Make a File", which sits in the same row. */
+  /** "Make a file", which sits in the same row. */
   onMake(): void;
   /** What the row says instead of its own line (the file could not be made). */
   problem?: string | undefined;
@@ -99,10 +99,10 @@ export function Share({ settings, persona, guard, ask, onMake, problem }: ShareP
   return (
     <>
       <Setting id="persona/own" testID="persona-own-row" {...quiet("persona/own", problem ?? (said?.startsWith("Exported") ? null : said))} stack>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <MiniButton testID="persona-open-folder" label="Show Folder" onPress={() => persona.openFile(persona.source.dir)} />
-          <MiniButton testID="persona-make-file" label="Make a File" onPress={onMake} />
-          <MiniButton testID="persona-add-file" label="Add a File…" onPress={add} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, flexWrap: "wrap" }}>
+          <MiniButton testID="persona-open-folder" label="Show folder" onPress={() => persona.openFile(persona.source.dir)} />
+          <MiniButton testID="persona-make-file" label="Make a file" onPress={onMake} />
+          <MiniButton testID="persona-add-file" label="Add a file…" onPress={add} />
         </View>
       </Setting>
       <Setting id="persona/share" testID="persona-share-row" {...quiet("persona/share", said?.startsWith("Exported") ? said : null)}>

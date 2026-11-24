@@ -15,6 +15,8 @@ export const SIDEBAR = {
   paddingX: SPACE.gap,
   paddingBottom: SPACE.gap,
   row: 30,
+  /** A pane's knob, and a group's label, 3 in from the list's edge. */
+  pillInset: 3,
   rowGap: SPACE.px,
   knob: 26,
   /** A group's label: 10.5 SemiBold, 7 over and 2 under. */
