@@ -8342,3 +8342,18 @@ short words, as the rulebook is written.
   it ends), and the row under it is the buttons'. Small and up keep their own line.
 - **Why:** one row of cells has room for a head and one row of controls, not three rows.
 - **Undo:** from git (`widgets/lib/views/timer.tsx`).
+
+### D690. OpenCode answers through a private server of its own, never the person's background service
+
+- **Date:** 2026-11-24. `v10/opencode-standalone`.
+- **Question:** with OpenCode 2 as Dashi's assistant, every question ended "It stopped before it
+  answered." The shell's log said `assistant harness: Location not found: /run/user/1000/dashi-assistant`.
+  OpenCode 2 hands `opencode run` to its shared background service (`opencode serve --service`), which
+  runs outside the agent sandbox and cannot see the turn's folder, which only exists inside it; nor does
+  that service read the turn's `OPENCODE_CONFIG_CONTENT` (Dashi's agent, tools off, its MCP server).
+- **Decision:** the harness runs `opencode run --standalone` (a private server inside the sandbox) and
+  `--archived`, so Dashi's turns stay out of the person's own session list. Reproduced with a folder that
+  exists only inside a bwrap sandbox: without the flag, "Location not found"; with it, the answer.
+- **Cost:** a private server starts for each turn (well under a second on the laptop); an OpenCode
+  older than 2 has no `--standalone` and refuses the turn (the installer gives 2.x).
+- **Undo:** drop the two flags in `agents/ask/harness/catalog.ts`.

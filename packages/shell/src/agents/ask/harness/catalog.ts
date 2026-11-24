@@ -218,6 +218,9 @@ const codex: HarnessSpec = {
   signedOut: (error) => SIGNED_OUT.test(error),
 };
 
+/** `opencode run` as Dashi asks it (D690: its own server, its turns archived). */
+const OPENCODE_RUN = ["run", "--standalone", "--format", "json", "--archived", "--agent", "dashi-plan"];
+
 const opencode: HarnessSpec = {
   id: "opencode",
   binary: "opencode",
@@ -255,7 +258,11 @@ const opencode: HarnessSpec = {
       agent: { "dashi-plan": { description: "Plans actions on Dashi", mode: "primary", prompt: turn.system, tools } },
     };
     return {
-      args: ["run", "--format", "json", "--agent", "dashi-plan", ...(turn.session ? ["--session", turn.session] : []), "--", turn.prompt],
+      // --standalone: OpenCode 2 sends a run to its shared background service, which lives outside the
+      // agent sandbox and cannot see the turn's folder ("Location not found"); a private server can, and
+      // only a private server reads OPENCODE_CONFIG_CONTENT. --archived keeps Dashi's turns out of the
+      // person's own session list.
+      args: [...OPENCODE_RUN, ...(turn.session ? ["--session", turn.session] : []), "--", turn.prompt],
       stdin: "",
       env: { OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
     };
