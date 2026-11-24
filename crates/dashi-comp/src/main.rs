@@ -31,7 +31,13 @@ use state::Dashi;
 fn main() {
     let filter =
         tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    // The log, and the ear on smithay's multi-GPU lines that says how a
+    // screen's frames reach another GPU (backend/udev/copy_path.rs), filtered apart.
+    use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().with_filter(filter))
+        .with(backend::udev::copy_path_layer())
+        .init();
 
     let args = match cli::parse(std::env::args().skip(1)) {
         Ok(Parsed::Run(args)) => args,

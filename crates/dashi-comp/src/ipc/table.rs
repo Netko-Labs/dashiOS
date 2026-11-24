@@ -141,6 +141,7 @@ pub(crate) const METHODS: &[Method] = &[
     shell("gamma", typed!(screens::gamma)),
     anyone("gpus", typed!(screens::gpus)),
     shell("gpu-keep", typed!(screens::gpu_keep)),
+    anyone("frame-stats", typed!(screens::frame_stats)),
     shell("wallpaper", typed!(screens::wallpaper)),
     // Shell chrome and input claims
     shell("chrome", typed!(chrome::chrome)),

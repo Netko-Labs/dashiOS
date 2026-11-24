@@ -6572,3 +6572,91 @@ short words, as the rulebook is written.
   corner lock (`REDACT_LOCK`, `widgets/look.tsx`). The compact "Next" uses it;
   the other blanks keep their fixed widths (they sit in a column, alone).
 - **Undo:** `width={48}` back in `CompactNext` (`widgets/lib/views/calendar.tsx`).
+
+### D510. Every screen counts what its frames cost, and says so while another GPU shows one
+
+- **Date:** 2026-11-23. `v10/screens-gpu`.
+- **Found:** "dual screen is slow, laggy, stutters" on the G14: its Samsung on
+  HDMI-A-1 hangs off the NVIDIA card (card0) while the AMD iGPU (card1)
+  draws. Nothing measured a screen's frames, so nobody could say whether the
+  HDMI screen's frames were copied by the CPU, came late, or held the panel
+  back.
+- **Decision:** each screen counts, in windows of 10 s rolled as frames come
+  (no timer): frames queued, frames shown a vblank or more after the one they
+  were aimed at and the vblanks missed, idle turns, failures, frames the loop
+  waited on, and the time to draw on the loop, to commit, for the GPUs (start
+  to the frame's fence, watched on the loop as a readable sync_file) and to
+  the vblank. How the picture reaches the card that shows it (one GPU, a GPU
+  copy, a CPU copy) is read from smithay's own two log lines by a tracing
+  layer (`udev/copy_path.rs`), not guessed. While a card that does not draw
+  shows a screen, or with `DASHI_FRAME_STATS=1`, dashi.log has a `frames`
+  line per screen every 10 s and the fences are watched; otherwise nothing
+  is watched and only counters move. `frame-stats` (anyone may ask) answers
+  the same numbers.
+- **Cost:** a few counters per frame; while reporting, one more wakeup of the
+  loop per frame (the fence), counted as a frame's turn (wakes.rs).
+- **Undo:** drop `udev/stats.rs`, `udev/report.rs`, `udev/copy_path.rs`, the
+  layer in `main.rs`, and `frame-stats` on both sides and in the doc.
+
+### D511. A screen whose frames come late starts drawing them earlier
+
+- **Date:** 2026-11-23. `v10/screens-gpu`.
+- **Found:** a screen started drawing 0.6 of a frame after its vblank
+  (frame.rs since 0.5), leaving 0.4 for drawing, the copy to another card,
+  and the commit: 6.7 ms at 60 Hz. A frame that takes longer misses its
+  vblank and is shown a whole frame late, and with every frame doing so the
+  screen runs at half its rate in steps (stutter). The HDMI screen's frames
+  are drawn on card1 and then copied by card0, each waiting on the other's
+  fence.
+- **Decision:** each frame that started on schedule and was shown late moves
+  the start a tenth of a frame earlier, down to a tenth; 600 frames on time
+  in a row move it back a twentieth, up to 0.6 (`udev/pacing.rs`). Frames
+  started off schedule (after an idle look) don't move it; with variable
+  refresh none is late. A screen that makes its vblanks is drawn as before.
+- **Cost:** a slow screen draws earlier in the frame, so what it shows is
+  older when it appears: input that comes between the new start and 0.6 of
+  the frame waits one more frame. In the VM (two screens, a glxgears on
+  each) late frames went from 3.4 % to under 0.1 % and the wait from queue
+  to vblank from 6 to 12 ms (dashi-0.10.0-review/01-screens-gpu). Clients'
+  time to draw is the same (they hear when the frame is queued). At most a
+  late frame every 10 s or so while the start settles.
+- **Undo:** `schedule(…, frame_time(&output).mul_f64(0.6))` back in
+  `frame_finished`; drop `Pacing`.
+
+### D512. When the commit cannot carry the GPUs' fence, the loop waits for it
+
+- **Date:** 2026-11-23. `v10/screens-gpu`.
+- **Found:** smithay leaves the wait to the caller when a frame's fence
+  cannot ride the atomic commit (`RenderFrameResult::needs_sync`: no
+  `IN_FENCE_FD`, NVIDIA's driver before 560.35.3, a fence that can't be
+  exported). Dashi never waited, so such a display could show a frame the
+  GPUs (two, for a screen another card shows) had not finished: tearing.
+- **Decision:** wait on the fence before the commit then, and count it
+  (`waited`). On the laptop (NVIDIA 620, AMD) the fence rides the commit and
+  nothing waits.
+- **Cost:** on such a driver the loop blocks for the rest of the frame's GPU
+  work (other screens wait that long); `waited` says how often.
+- **Undo:** drop `settle_sync`'s wait in `udev/queue.rs`.
+
+### D513. A screen on the NVIDIA card is composed on the GPU that draws and copied by the NVIDIA card
+
+- **Date:** 2026-11-23. `v10/screens-gpu`.
+- **Found:** the laptop's log (19 Nov) says smithay set up a GPU copy for
+  HDMI-A-1: "Found dma-copy set for renderD128 <-> renderD129: AB30@[Linear]"
+  (card1 draws into a 10-bit LINEAR buffer card0 imports, and card0 copies
+  it into its own scanout buffer). No CPU copy. Client buffers (the Metal
+  host's, Helium's, GTK's) are allocated on card1 with its tiled modifiers.
+- **Options weighed:** (1) compose the HDMI screen on card0 itself: every
+  client buffer on it would need importing on card0, which takes only LINEAR,
+  so each client there would draw into slow LINEAR buffers (told so by a
+  dmabuf feedback tranche) or be copied per surface per commit: more copies,
+  and windows moving between screens reallocate. (2) Have card0 scan card1's
+  buffer out directly: smithay's exporter offers card0's planes only buffers
+  from card0's own node, and whether NVIDIA's display scans out another
+  card's memory is untested. (3) Keep smithay's MultiRenderer: one composite on card1, one
+  full-frame GPU copy on card0, both on the GPUs; the loop only submits.
+- **Decision:** (3), as is, with the frames measured (D510), the start paced
+  (D511) and the fence honoured (D512). The rest waits for the laptop's
+  numbers: if `path=cpu-copy` or `compose_ms` on HDMI-A-1 is large, (1) is
+  next, with a per-screen dmabuf tranche for card0.
+- **Undo:** nothing to undo; this records why the path stays.
