@@ -170,6 +170,46 @@
     "reply": {},
     "who": "granted"
   },
+  "frame-stats": {
+    "params": {},
+    "reply": {
+      "screens": [
+        {
+          "commitMs": {
+            "max": 0.5,
+            "mean": 0.25
+          },
+          "composeMs": {
+            "max": 4.5,
+            "mean": 1.25
+          },
+          "drawnBy": "card1",
+          "failed": 0,
+          "flipMs": {
+            "max": 23.5,
+            "mean": 6.5
+          },
+          "frames": 598,
+          "gpuMs": {
+            "max": 9.0,
+            "mean": 3.5
+          },
+          "idle": 3,
+          "late": 2,
+          "missedVblanks": 2,
+          "output": "HDMI-A-1",
+          "path": "gpu-copy",
+          "refreshMhz": 60000,
+          "seconds": 10.0,
+          "shownBy": "card0",
+          "startMs": 10.0,
+          "vrr": false,
+          "waited": 0
+        }
+      ]
+    },
+    "who": "anyone"
+  },
   "fullscreen": {
     "params": {
       "on": true,

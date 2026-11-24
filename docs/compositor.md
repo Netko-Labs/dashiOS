@@ -81,7 +81,9 @@ crates/dashi-comp/src/
                     graphics card let go while nothing needs it (sleep.rs; its
                     state machine lifecycle.rs, probes probe.rs, buffers
                     imports.rs, a card gone while open gone.rs), each card's
-                    GLES renderer, with no fence per texture drawn (renderer.rs)
+                    GLES renderer, with no fence per texture drawn (renderer.rs),
+                    each screen's frames counted and paced (stats.rs, pacing.rs,
+                    report.rs, copy_path.rs) and committed (queue.rs)
     winit.rs        nested in another compositor's window (a second, virtual
                     screen beside it with DASHI_NESTED_SCREEN=WxH; a window
                     of another size with DASHI_NESTED_SIZE=WxH)
@@ -289,6 +291,20 @@ Each milestone ends with the shell running on it in the VM.
   again at once if nothing changed. What moves by itself draws something new
   each frame, so its screen stays awake while it runs. The nested (winit)
   backend is unchanged.
+- **Screens on another GPU (0.10.0):** a screen connected to a card that
+  does not draw (the G14's HDMI-A-1 on its NVIDIA card) is composed on the
+  drawing GPU into a LINEAR buffer the other card imports, and that card
+  copies it into its own scanout buffer (smithay's MultiRenderer; a CPU copy
+  only if no shared buffer works). Client buffers stay on the drawing GPU;
+  none is scanned out directly there. Each screen keeps its own timer and
+  vblanks, on the one event loop. Every screen counts its frames
+  (`udev/stats.rs`: frames, late frames and missed vblanks, the time to draw,
+  commit, for the GPUs and to the vblank; `udev/copy_path.rs` hears which way
+  smithay set up), says so every 10 s in the log while another card shows a
+  screen or with `DASHI_FRAME_STATS=1` (`udev/report.rs`), and answers
+  `frame-stats`. A screen whose frames come late starts drawing them earlier
+  (`udev/pacing.rs`), and a commit that cannot carry the GPUs' fence waits
+  for it on the loop (`udev/queue.rs`). decisions.md D510 to D513.
 - **Title bars per scale (done, 0.7.0):** each window keeps its title bar
   image per screen scale (`wm/by_scale.rs`, up to four), so two screens at
   1× and 2× (or a capture at another scale) don't draw each other's out every

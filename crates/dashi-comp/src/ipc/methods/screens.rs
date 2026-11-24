@@ -6,7 +6,7 @@ use super::{Ask, done};
 use crate::{
     backend,
     handlers::layer_regions::InputRegion,
-    ipc::protocol::{Done, Finite, Gpus, Int, Nothing, Outputs, WallpaperParams},
+    ipc::protocol::{Done, Finite, FrameStats, Gpus, Int, Nothing, Outputs, WallpaperParams},
     outputs::{self, MirrorParams, OutputsConfig},
     state::Dashi,
 };
@@ -114,6 +114,10 @@ pub(crate) fn gamma(state: &mut Dashi, _: &Ask, params: Gamma) -> Result<Done, S
 
 pub(crate) fn gpus(state: &mut Dashi, _: &Ask, _: Nothing) -> Result<Gpus, String> {
     Ok(backend::udev::describe_gpus(state))
+}
+
+pub(crate) fn frame_stats(state: &mut Dashi, _: &Ask, _: Nothing) -> Result<FrameStats, String> {
+    Ok(backend::udev::frame_stats(state))
 }
 
 pub(crate) fn gpu_keep(state: &mut Dashi, _: &Ask, params: GpuKeep) -> Result<Done, String> {

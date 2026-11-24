@@ -9,6 +9,7 @@
 //! probed off the event loop before each opening (probe.rs).
 
 mod controls;
+mod copy_path;
 mod devices;
 mod edid;
 mod feedback;
@@ -20,21 +21,27 @@ mod imports;
 mod input_devices;
 mod lifecycle;
 mod pace;
+mod pacing;
 mod planes;
 mod probe;
+mod queue;
 mod renderer;
+mod report;
 mod screens;
 mod sleep;
 mod start;
 mod state;
+mod stats;
 mod vrr;
 mod watchdog;
 
 pub(crate) use controls::power;
+pub(crate) use copy_path::layer as copy_path_layer;
 pub(crate) use frame::wake_screens;
 pub(crate) use holds::describe_gpus;
 pub(crate) use imports::import_dmabuf;
 pub(crate) use pace::agent_acted;
+pub(crate) use report::frame_stats;
 pub(crate) use sleep::keep_gpu;
 pub(crate) use start::init;
 pub(crate) use state::{Serial, UdevData};

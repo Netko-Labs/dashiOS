@@ -33,7 +33,7 @@ use smithay::{
 };
 use smithay_drm_extras::drm_scanner::DrmScanner;
 
-use super::{feedback, flip, input_devices, planes, probe, sleep};
+use super::{feedback, flip, input_devices, planes, probe, sleep, stats};
 use crate::{backend::Backend, render, state::Dashi};
 
 pub(super) type Gpus = GpuManager<GbmGlesBackend<GlesRenderer, DrmDeviceFd>>;
@@ -146,6 +146,8 @@ pub(super) struct Screen {
     pub(super) vrr: smithay::backend::drm::VrrSupport,
     /// What its surfaces hear about buffer formats (feedback.rs).
     pub(super) feedback: Option<feedback::ScreenFeedback>,
+    /// What its frames cost, and when it starts drawing them (stats.rs, pacing.rs).
+    pub(super) stats: stats::FrameStats,
 }
 
 /// Which device and CRTC an output is on.
