@@ -21,7 +21,7 @@ const NAME = 26;
 /** Room around the panel for its shadow. */
 const MARGIN = 24;
 /** A window's picture, its title under it, and the space around. */
-export const THUMB = { width: 184, height: 115, title: 20, gap: 12 } as const;
+export const THUMB = { width: 184, height: 115, title: 20, gap: SPACE.inset } as const;
 
 const rowWidth = (count: number, width: number, gap: number) => (count > 0 ? count * width + (count - 1) * gap : 0);
 const windowRowHeight = (windows: number) => (windows > 0 ? THUMB.gap + THUMB.height + THUMB.title : 0);
