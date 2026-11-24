@@ -80,7 +80,7 @@ export function TextField({
       secureTextEntry={secure}
       onChangeText={onChangeText}
       onSubmitEditing={onSubmit}
-      {...(focusNextOnSubmit ? { focusNextOnSubmit: true } : {})}
+      focusNextOnSubmit={focusNextOnSubmit === true}
       onKeyPress={onKeyPress}
       style={{
         ...box,
@@ -109,17 +109,23 @@ export function TextField({
     >
       <View style={{ height: m.height, flexDirection: "row", position: "relative" }}>
         {field}
-        {glyph !== undefined && (
-          <View style={{ position: "absolute", left: m.glyphInset, top: 0, bottom: 0, justifyContent: "center" }}>
-            <Svg markup={glyph} size={m.glyph} color={colors.textMuted} />
-          </View>
-        )}
+        {glyph !== undefined && <FieldGlyph glyph={glyph} />}
       </View>
       {message !== undefined && message !== "" && (
         <View testID={`${testID}:message`}>
           <Text style={{ fontSize: TYPE.caption.size, lineHeight: TYPE.caption.line, color: invalid ? colors.ume : colors.textMuted }}>{message}</Text>
         </View>
       )}
+    </View>
+  );
+}
+
+/** The glyph over a field's start, muted. */
+function FieldGlyph({ glyph }: { glyph: string }) {
+  const colors = useColors();
+  return (
+    <View style={{ position: "absolute", left: TEXT_FIELD.glyphInset, top: 0, bottom: 0, justifyContent: "center" }}>
+      <Svg markup={glyph} size={TEXT_FIELD.glyph} color={colors.textMuted} />
     </View>
   );
 }
