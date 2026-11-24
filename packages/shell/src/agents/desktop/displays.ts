@@ -65,16 +65,11 @@ export async function setDisplayScale(name: string, scale: number, ctx: RunConte
   ctx.status(`Setting ${screen.name} to scale ${scale}`);
   // Through the arrangement when there is one, so the screens beside it move to keep touching (D553).
   const displays = ctx.desktop.displays;
+  // It keeps the scale by monitor as Settings' is kept, or the next start would undo it.
   if (displays) {
     const result = await displays.setScale(screen.name, scale);
     if (result.error !== undefined) return toolError(result.error);
   } else await ctx.compositor.output({ name: screen.name, scale });
-  // Settings keeps the scale a person chose; one an agent set is kept the same way, or the next start would undo it.
-  try {
-    ctx.desktop.rememberScale(screen, scale);
-  } catch (error) {
-    console.error("dashi-shell: could not save the screen's scale:", error instanceof Error ? error.message : error);
-  }
   return text(`${screen.name} is at scale ${scale} now.`, { name: screen.name, scale });
 }
 

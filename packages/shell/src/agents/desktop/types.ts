@@ -7,7 +7,6 @@
 
 import type { CompositorWindow } from "../../compositor/index.ts";
 import type { DisplayManager } from "../../display-config/index.ts";
-import type { MonitorId } from "../../displays.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
 import type { ForceQuit } from "../../force-quit/index.ts";
 import type { MenuAction, WindowMenu } from "../../menus/index.ts";
@@ -49,8 +48,6 @@ export interface Desktop {
   spaces?: AgentSpaces;
   /** The display arrangement (display-config/): resolution, rotation, main display, positions. Absent without a compositor. */
   displays?: Pick<DisplayManager, "monitors" | "setMode" | "setRotation" | "setPrimary" | "arrange" | "setScale">;
-  /** Remember a screen's scale as Settings does, so the next start keeps what was set. */
-  rememberScale(monitor: MonitorId, scale: number): void;
   /** settings.json, as System Settings writes it: the registry's rows agents may change (get_settings, set_setting) read and write it; the shell follows the file. */
   settings: Pick<SettingsStore, "getSnapshot" | "patch">;
   /** Network, Bluetooth, sound, power, and the account: the machine panes' stores (settings-app/machine-desktop.ts). */

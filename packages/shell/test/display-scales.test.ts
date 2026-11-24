@@ -2,9 +2,10 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DisplayStore, type PortScales, ScreenScales } from "../src/display-config/index.ts";
+import { DisplayManager, DisplayStore, type PortScales, ScreenScales } from "../src/display-config/index.ts";
 import { parseScales } from "../src/display-config/saved.ts";
 import { initialScale, type ScreenInfo } from "../src/displays.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 const samsung = { name: "HDMI-A-1", make: "Samsung Electric Company", model: "LS40BM", serial: "H4ZT600123" };
 const other = { name: "HDMI-A-1", make: "LG Electronics", model: "OLED42C2", serial: "" };
@@ -53,4 +54,26 @@ test("a saved scale that leaves too little room gives way to the default", () =>
   expect(initialScale(screen, () => 1.25)).toBe(1.25);
   expect(initialScale(screen, () => 3)).toBe(1);
   expect(initialScale({ ...screen, width: 3840, height: 2160 }, () => undefined)).toBe(1.5);
+});
+
+test("a scale set through the arrangement is kept for that monitor; one refused is not", async () => {
+  const outputs = {
+    outputs: [
+      {
+        ...samsung,
+        enabled: true,
+        primary: true,
+        scale: 1,
+        mode: { width: 3840, height: 2160, refreshMhz: 60000 },
+        frame: { x: 0, y: 0, width: 3840, height: 2160 },
+      },
+    ],
+  };
+  const compositor = fakeCompositor(async (method) => (method === "outputs" ? outputs : {}), { on: () => () => {} });
+  const scales = new ScreenScales(new DisplayStore({ path: null }));
+  const manager = new DisplayManager({ compositor, store: new DisplayStore({ path: null }), scaleFor: () => 1, scales });
+  expect((await manager.setScale("HDMI-A-1", 1.5)).kept).toBe(true);
+  expect(scales.of({ ...samsung, name: "DP-1" })).toBe(1.5);
+  expect((await manager.setScale("HDMI-A-1", 5)).error).toContain("too little room");
+  expect(scales.of(samsung)).toBe(1.5);
 });

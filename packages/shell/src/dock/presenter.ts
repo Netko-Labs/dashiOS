@@ -14,6 +14,14 @@
  * the Dock's own height while it is out, so the pointer leaving the Dock is
  * heard too.
  *
+ * The Dock follows the person (decisions.md D555): it lives on the main
+ * display, and the pointer resting against the bottom edge of another
+ * screen for `FOLLOW_MS` brings it there, as on a Mac. So while it is not
+ * out, the one-pixel band is claimed along every screen's bottom edge (a
+ * Dock that stays shown claims it too), and an edge on another screen moves
+ * it before it comes out. It goes back to the main display when that
+ * changes or its screen goes away.
+ *
  * Nothing here knows Metal; start.tsx hands in the surfaces.
  */
 
@@ -60,6 +68,9 @@ export function bandFor(settings: DockSettings, revealed: boolean): number {
 /** Where the pointer must be to bring an autohidden Dock: against the edge. */
 export const EDGE_BAND = 1;
 
+/** How long the pointer rests against another screen's bottom edge before the Dock moves there (a brush past does nothing). */
+export const FOLLOW_MS = 250;
+
 /** The variant name of a view (surface.ts): what its host opens as. */
 export const variantOf = (spec: ViewSpec): string => `${spec.style}:${spec.exclusive ? "zone" : "float"}`;
 
@@ -76,6 +87,8 @@ export interface PresenterDeps {
   view: Pick<DockSurface, "show" | "hide" | "close" | "shown" | "variant" | "output">;
   /** Where the pointer is along the bottom edge; null without a compositor, where autohide cannot work and the Dock stays. */
   edges: EdgeClaim | null;
+  /** The screen under the pointer, asked when it reaches a bottom edge; without it the Dock stays on the main display. */
+  pointerScreen?: () => Promise<string | undefined>;
   /** Runs `fn` later; returns the way to cancel it. */
   later?(fn: () => void, ms: number): () => void;
 }
@@ -86,7 +99,11 @@ const defer = (fn: () => void, ms: number): (() => void) => {
 };
 
 export class DockPresenter {
+  /** The main display: the Dock's home. */
+  private home: string | undefined;
+  /** Where it is now: home, or the screen it followed the person to. */
   private output: string | undefined;
+  private cancelFollow: (() => void) | null = null;
   private placed = false;
   private slideTarget: 0 | 1 = 0;
   /** The band last claimed, and on which screen. */
@@ -108,11 +125,47 @@ export class DockPresenter {
     );
   }
 
-  /** The Dock lives on `output` (the primary screen), or wherever the compositor puts it when undefined. */
-  place(output: string | undefined): void {
-    this.output = output;
+  /**
+   * The Dock's home is `home` (the main display; wherever the compositor
+   * puts it when undefined). It goes there when that changes, at first, or
+   * when the screen it followed the person to is not among `screens`.
+   */
+  place(home: string | undefined, screens?: readonly string[]): void {
+    const gone = this.output !== undefined && screens !== undefined && !screens.includes(this.output);
+    if (!this.placed || home !== this.home || gone) {
+      this.home = home;
+      this.output = home;
+    }
     this.placed = true;
     this.update();
+  }
+
+  /** The screen it is on now. */
+  get screen(): string | undefined {
+    return this.output;
+  }
+
+  /** The pointer entered or left the claimed band (IPC `edge`): on another screen's edge, the Dock follows it there first. */
+  edge(inside: boolean): void {
+    const { autohide, pointerScreen } = this.deps;
+    this.cancelFollow?.();
+    this.cancelFollow = null;
+    if (!inside || !pointerScreen) {
+      autohide.edge(inside);
+      return;
+    }
+    void pointerScreen().then((screen) => {
+      if (screen === undefined || screen === this.output) {
+        autohide.edge(true);
+        return;
+      }
+      this.cancelFollow = this.later(() => {
+        this.cancelFollow = null;
+        this.output = screen;
+        this.update();
+        autohide.edge(true);
+      }, FOLLOW_MS);
+    });
   }
 
   close(): void {
@@ -120,18 +173,21 @@ export class DockPresenter {
     this.stops = [];
     this.cancelHide?.();
     this.cancelHide = null;
+    this.cancelFollow?.();
+    this.cancelFollow = null;
     if (this.claimed.band > 0) this.claim(0);
     this.deps.view.close();
   }
 
-  /** Tell the compositor which band to watch, when that changed. */
+  /** Tell the compositor which band to watch, when that changed: every screen's edge for the one-pixel band when the Dock can follow. */
   private claim(band: number): void {
-    const { edges, autohide } = this.deps;
-    if (!edges || (this.claimed.band === band && (band === 0 || this.claimed.output === this.output))) return;
-    this.claimed = { band, output: this.output };
-    void edges.claim(band, this.output).then((inside) => {
+    const { edges } = this.deps;
+    const output = band === EDGE_BAND && this.deps.pointerScreen ? undefined : this.output;
+    if (!edges || (this.claimed.band === band && (band === 0 || this.claimed.output === output))) return;
+    this.claimed = { band, output };
+    void edges.claim(band, output).then((inside) => {
       // The answer is where the pointer is now; a newer claim has its own.
-      if (this.claimed.band === band) autohide.edge(inside);
+      if (this.claimed.band === band && this.claimed.output === output) this.edge(inside);
     });
   }
 
@@ -141,7 +197,9 @@ export class DockPresenter {
     // Without a way to hear the pointer leave, a Dock that hides could never come back.
     const settings = { ...prefs.snapshot, autohide: prefs.snapshot.autohide && this.deps.edges !== null };
     autohide.setEnabled(settings.autohide);
-    this.claim(bandFor(settings, autohide.revealed));
+    // A Dock that stays shown still hears another screen's edge, to follow the person there.
+    const band = bandFor(settings, autohide.revealed);
+    this.claim(band === 0 && settings.visible && this.deps.pointerScreen ? EDGE_BAND : band);
     const spec = wantedView(settings, autohide.revealed);
     if (spec) {
       this.cancelHide?.();

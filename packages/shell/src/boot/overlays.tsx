@@ -8,6 +8,7 @@ import type { CaptureKind } from "../actions/index.ts";
 import { appFor, displayName, registerShellApp, SCREENSHOT_APP_ID } from "../apps.ts";
 import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor, Frame } from "../compositor/index.ts";
+import { screensOf } from "../displays.ts";
 import { withSwitcher } from "../keymap/keymap.ts";
 import { currentKeymap, idleKeymap } from "../keymap/keymap-state.ts";
 import type { RankingMemory } from "../launcher/ranking/index.ts";
@@ -33,11 +34,26 @@ export type OverlayKind = "launcher" | "sheet" | "switcher";
 /** How long a screenshot from the launcher waits once its window is hidden: the host takes it down, then the compositor draws without it. */
 const LAUNCHER_GONE_MS = 150;
 
-/** The screen holding `window` (else the primary), for the capture toolbar and the selection overlay. */
-export async function screenOf(compositor: Pick<Compositor, "outputs" | "windows"> | null, window: number | null) {
+/**
+ * The screen the capture toolbar and the selection overlay open on: the
+ * pointer's (where the person is, D556), else the one holding `window`, else
+ * the main display.
+ */
+export async function screenOf(compositor: Pick<Compositor, "outputs" | "windows" | "session"> | null, window: number | null) {
   if (!compositor) return { origin: { x: 0, y: 0 } };
-  const [outputs, windows] = await Promise.all([compositor.outputs(), compositor.windows().catch(() => [])]);
-  return captureScreenNear(outputs, windows.find((each) => each.id === window)?.frame ?? null);
+  const [outputs, windows, session] = await Promise.all([compositor.outputs(), compositor.windows().catch(() => []), compositor.session().catch(() => null)]);
+  const pointer = session?.pointer ?? null;
+  const near = pointer ? { x: pointer.x, y: pointer.y, width: 0, height: 0 } : (windows.find((each) => each.id === window)?.frame ?? null);
+  return captureScreenNear(outputs, near);
+}
+
+/** The screens to picture for ⇧❖3, the main display first; one `undefined` (the compositor's choice) when it cannot say. */
+async function screenNames(compositor: Pick<Compositor, "outputs">): Promise<Array<string | undefined>> {
+  const outputs = await compositor.outputs().catch(() => []);
+  const names = screensOf(outputs).map((screen) => screen.name);
+  const main = outputs.find((each) => each.primary)?.name;
+  const ordered = [...names.filter((name) => name === main), ...names.filter((name) => name !== main)];
+  return ordered.length > 0 ? ordered : [undefined];
 }
 
 /** Screenshots and the screen recorder (recorder/, screenshot-area.tsx, screenshots.ts). */
@@ -105,7 +121,8 @@ export class Screenshots {
     const front = window ?? (await compositor.windows().catch(() => [])).find((each) => each.focused)?.id ?? null;
     switch (what) {
       case "screen":
-        await takeScreenshot(compositor);
+        // Every screen, a picture each (D556), the main display's first.
+        for (const output of await screenNames(compositor)) await takeScreenshot(compositor, output === undefined ? {} : { output });
         return;
       case "area":
         return this.selectArea(front);

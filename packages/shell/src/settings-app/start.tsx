@@ -12,7 +12,6 @@ import type { AgentStore, AnswerStatus, Grants, Passwords } from "../agents/inde
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor/index.ts";
-import type { ScreenScales } from "../display-config/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { PrivacyStore } from "../privacy/index.ts";
 import type { RegionStore } from "../region/index.ts";
@@ -50,8 +49,6 @@ export interface SettingsAppOptions {
   compositor: Compositor | null;
   /** The arrangement service (display-config/); null without a compositor. */
   displays?: Arranger | null;
-  /** The scale chosen for each monitor (display-config/scale.ts); without it a scale lasts the session only. */
-  scales?: Pick<ScreenScales, "remember">;
   settings: SettingsStore;
   /** The system time zone, clock sync, and language. */
   region: RegionStore;
@@ -226,7 +223,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       void raise();
       return;
     }
-    const screens = new ScreensStore(compositor, options.settings, options.displays ?? null, options.scales ?? null);
+    const screens = new ScreensStore(compositor, options.settings, options.displays ?? null);
     const clipboard = options.clipboard?.() ?? null;
     const ctx = paneContext(options, screens, clipboard, open);
     const stopScreens = screens.start();

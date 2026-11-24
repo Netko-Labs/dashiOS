@@ -53,7 +53,7 @@ function harness(names: string[], pointer: { x: number; y: number } | null) {
     session: async () => ({ waylandDisplay: "wayland-1", display: null, xwayland: "off", pointer, locked: false }),
     outputs: async () => outputsOf({ outputs }),
     windows: async () => [],
-    capture: async () => ({}),
+    capture: async () => ({ width: 1, height: 1, scale: 1 }),
     on: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);

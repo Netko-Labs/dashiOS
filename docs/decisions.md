@@ -6673,3 +6673,40 @@ short words, as the rulebook is written.
   unlock would keep the session locked: the lock screen comes back (safe).
 - **Cost:** a Metal host per screen while locked.
 - **Undo:** `planLock` returning no covers.
+
+### D555. The Dock follows the person to the screen they push against
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** the Dock lived on the main display only. With the laptop as
+  the main display and the work on the TV, the Dock was on the screen the
+  person was not looking at, and nothing brought it over.
+- **Decision:** as on a Mac: the pointer resting 250 ms (`FOLLOW_MS`)
+  against another screen's bottom edge moves the Dock there, shown or
+  autohidden (`dock/presenter.ts`). While the Dock is not out, the one-pixel
+  band is claimed along every screen's bottom edge (IPC `edges` without an
+  `output`), and the pointer's screen is asked when it arrives. The Dock
+  goes back to the main display when that changes or its screen goes; a
+  change of screens that leaves its screen there (a scale) leaves it where
+  it is. The notification area's room and the minimize animation follow
+  the Dock's real screen (`dockSign`), not the main display's.
+- **Cost:** a Dock that stays shown has its exclusive zone on the screen it
+  followed to, so windows there are squeezed and the other screen's grow.
+- **Undo:** leave `pointerScreen` out of `startDock`'s options.
+
+### D556. Captures and the lock's press go where the person is; ⇧❖3 takes every screen
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** ⇧❖4's selection and ⇧❖5's toolbar opened on the screen of the
+  focused window, else the first screen (not the main display); ⇧❖3 took
+  only the screen under the pointer; a card pressed on the lock screen
+  opened the notification area on the first bar.
+- **Decision:** ⇧❖4, ⇧❖5 and the recorder's "screen" open on the pointer's
+  screen, else the focused window's, else the main display
+  (`boot/overlays.tsx` `screenOf`); ⇧❖3 saves a picture of every screen, the
+  main display's first ("… (2).png" for the next), as a Mac does; the lock's
+  press opens the area on the person's screen (`boot/inks.ts`). Every
+  screen's bar keeps the front app's menus (Dashi has no inactive bar: one
+  row, nothing dimmed), and the same wallpaper fills every screen (one
+  choice; a wallpaper per screen needs the compositor to take one each).
+- **Cost:** ⇧❖3 with two screens makes two files.
+- **Undo:** `screenNames` back to one `undefined`.

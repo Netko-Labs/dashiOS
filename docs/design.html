@@ -677,6 +677,18 @@
       <li id="wi-8"><b class="rid">WI-8</b><div>A window's controls never go missing. A unified window keeps them in full screen, and every picture of a window, small or moving, shows its controls or title bar shrunk with it.</div></li>
     </ol>
 
+    <h3 id="screens">More than one screen</h3>
+    <p>A laptop with a monitor or a TV beside it is one desk. Each screen comes up at the size it reads well at, and Dashi's own things go where the person is (<code>shell/src/display-config/</code>, <code>lock/</code>, <code>dock/presenter.ts</code>; decisions.md D550–D556).</p>
+    <ol class="rules">
+      <li id="ms-1"><b class="rid">MS-1</b><div>Size: a screen nobody chose a scale for gets the one its density and distance want (<code>@dashi/ui</code> <code>defaultScale</code>): 125 pixels per inch at 1 for a built-in panel, 105 for a monitor up to a 27-inch one's height (336 mm), and fewer, in step with its height, for a taller one, seen from farther (a 40-inch 4K TV at 1.5, at 1080p at 1). A scale chosen belongs to the monitor (make, model, serial), wherever it is plugged in.</div></li>
+      <li id="ms-2"><b class="rid">MS-2</b><div>Mode: a monitor nobody chose for runs its native size at its fastest rate there (a TV that prefers 4K at 30 runs 4K at 60), else the mode it last ran; a mode the cable cannot carry is dropped quietly.</div></li>
+      <li id="ms-3"><b class="rid">MS-3</b><div>Screens always touch and never overlap: when one changes size the others move along, the main display stays put. The arrangement and the main display are kept for each set of screens.</div></li>
+      <li id="ms-4"><b class="rid">MS-4</b><div>Every screen has its own menu bar, each with the front app's menus; a menu, Control Center and the notification area open under the bar that was clicked. The launcher, banners, sheets, the switcher, ⇧❖4 and ⇧❖5 open on the screen the pointer is on; ⇧❖3 takes every screen, a picture each, the main display's first.</div></li>
+      <li id="ms-5"><b class="rid">MS-5</b><div>The Dock lives on the main display and follows the person: the pointer resting 250 ms against another screen's bottom edge brings it there. It goes home when the main display changes or its screen goes.</div></li>
+      <li id="ms-6"><b class="rid">MS-6</b><div>The lock screen covers every screen: the whole of it (widgets, power buttons) where the person was, and on each other screen the time, who is signing in and the field, so typing works wherever the pointer is. A screen plugged in while locked is covered at once.</div></li>
+      <li id="ms-7"><b class="rid">MS-7</b><div>Unplugged, a screen takes nothing with it: its bar goes, the Dock and the lock come to a screen that is left, and nothing shows twice when it comes back.</div></li>
+    </ol>
+
     <h2>Motion</h2>
     <p>Short, decelerating, and purposeful. The compositor's curve is ease-out cubic, <code>1 − (1 − t)³</code>; the shell's Dock slide is ease-in-out quad. Play one:</p>
     <div class="controls-row">

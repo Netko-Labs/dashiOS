@@ -234,7 +234,7 @@ const registryNeeds = { compositor, apps, stores, desktops, arranging, system, g
 const { actions } = startRegistry({ ...registryNeeds, menus, screenshots, launcher, services, late });
 late.set("askAgents", startAskAgents({ compositor, settingsStore, basics, agents, actions, registryStores, services, late }));
 startCapsule({ compositor, talking, look, services, late });
-startInks({ notifications, system: system.system, handoff, services, late });
+startInks({ notifications, system: system.system, handoff, services, late, screens });
 followCircumstances({ compositor, sharing: guards.screenCapture, recorder: screenshots.tools?.recorder ?? null, services, late });
 startKeys({
   compositor,

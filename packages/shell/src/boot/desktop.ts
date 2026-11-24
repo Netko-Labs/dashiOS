@@ -71,6 +71,7 @@ export async function startDesktops({ compositor, settingsStore, screens, servic
     ? new DisplayManager({
         compositor,
         store: displayStore,
+        scales,
         scaleFor: scaleForMonitor(scales.of),
         lid: displayLid,
         ask: keepSheet(openOverlay, () => late.get("menuBars").primaryName ?? undefined),

@@ -219,7 +219,6 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
           wifi: system.wifiStore,
           forceQuit: settings.forceQuit,
           tell: basics.teller,
-          rememberScale: (monitor, scale) => desktops.scales.remember(monitor, scale),
           ...(desktops.displays ? { displays: desktops.displays } : {}),
           ...(desktops.spaces ? { spaces: desktops.spaces.controller } : {}),
           // The registry's rows agents may change go through settings.json, as the panes' do (settings-app/registry/).

@@ -11,11 +11,13 @@
 
 import type { Compositor } from "../compositor/index.ts";
 import { leavesRoom } from "../displays.ts";
+import { firstTaken, nonEmpty } from "./lib/restore.ts";
 import { type AskToKeep, askToKeep, later } from "./lib/trial.ts";
 import type { LidSource } from "./lid.ts";
 import { identityOf, type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";
 import { type ConfigRequest, configOf, layoutOf, planRestore, type ScaleFor, settled, toWire } from "./plan.ts";
 import type { DisplayStore } from "./saved.ts";
+import type { ScreenScales } from "./scale.ts";
 
 export interface ApplyResult {
   /** The change stands. False: it was refused, or the person did not keep it. */
@@ -31,6 +33,8 @@ export interface DisplayManagerOptions {
   store: DisplayStore;
   scaleFor: ScaleFor;
   lid?: LidSource | null;
+  /** Where a scale chosen through `setScale` is kept, by monitor (scale.ts); without it, for the session only. */
+  scales?: Pick<ScreenScales, "remember">;
   /** Without it changes are kept without asking (headless runs). */
   ask?: AskToKeep;
   now?: () => number;
@@ -122,7 +126,10 @@ export class DisplayManager {
       };
       const plans = [planRestore(monitors, saved, options), planRestore(monitors, saved, { ...options, defaultModes: false })];
       // Even with nothing to restore, screens that overlap or stand apart are put right.
-      const plan = await this.firstTaken(plans.map((each) => nonEmpty(settled(each ?? { outputs: [] }, monitors))));
+      const plan = await firstTaken(
+        this.options.compositor,
+        plans.map((each) => nonEmpty(settled(each ?? { outputs: [] }, monitors))),
+      );
       if (!plan) return;
       const names = plan.outputs.filter((output) => output.mode !== undefined || output.enabled === true).map((output) => output.name);
       if (names.length > 0) this.tellMode({ cause: "restore", names });
@@ -196,7 +203,9 @@ export class DisplayManager {
     if (!monitor.enabled || !monitor.mode) return refused(`${monitor.name} is off`);
     const upright = monitor.rotation === 90 || monitor.rotation === 270 ? { width: monitor.mode.height, height: monitor.mode.width } : monitor.mode;
     if (!leavesRoom(upright, scale)) return refused(`scale ${scale} leaves ${monitor.name} too little room`);
-    return this.apply({ outputs: [{ name: monitor.name, scale }] }, `Scale of ${monitor.name}`, { confirm: false });
+    const result = await this.apply({ outputs: [{ name: monitor.name, scale }] }, `Scale of ${monitor.name}`, { confirm: false });
+    if (result.kept) this.options.scales?.remember(monitor, scale);
+    return result;
   }
 
   /** Turn a screen (0, 90, 180, 270 degrees counter-clockwise); the scale is kept if the turned screen still has room at it. */
@@ -236,25 +245,6 @@ export class DisplayManager {
   }
 
   // Internals.
-
-  /**
-   * Asks for the first plan the screens take: a default mode (D552) a cable
-   * cannot carry is refused, and the plan without it is asked for next.
-   */
-  private async firstTaken(plans: ReadonlyArray<ConfigRequest | null>): Promise<ConfigRequest | null> {
-    let last: unknown = null;
-    for (const [index, plan] of plans.entries()) {
-      if (!plan || plans.slice(0, index).some((tried) => JSON.stringify(tried) === JSON.stringify(plan))) continue;
-      try {
-        await this.options.compositor.outputsConfig(toWire(plan));
-        return plan;
-      } catch (error) {
-        last = error;
-      }
-    }
-    if (last !== null) console.error("dashi-shell: could not restore the display arrangement:", last instanceof Error ? last.message : last);
-    return null;
-  }
 
   private async find(name: string): Promise<Monitor | string> {
     const monitor = (await this.monitors()).find((candidate) => candidate.name === name);
@@ -298,5 +288,3 @@ export class DisplayManager {
 }
 
 const refused = (error: string): ApplyResult => ({ kept: false, reverted: false, error });
-
-const nonEmpty = (request: ConfigRequest): ConfigRequest | null => (request.outputs.length > 0 || request.primary !== undefined ? request : null);

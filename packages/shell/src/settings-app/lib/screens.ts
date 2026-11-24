@@ -1,8 +1,9 @@
 /**
  * The screens Settings lists, and the scale choice for each. The compositor
  * knows the screens (IPC `outputs`) and changes a scale at once (IPC `output`);
- * the choice is also kept by monitor in displays.json so the next session, or
- * the monitor plugged in again, starts with it (display-config/scale.ts).
+ * the arrangement keeps the choice by monitor in displays.json so the next
+ * session, or the monitor plugged in again, starts with it
+ * (display-config/manager.ts `setScale`, scale.ts).
  */
 
 import { SCALES } from "@dashi/ui";
@@ -11,7 +12,6 @@ import type { ApplyResult, DisplayManager } from "../../display-config/manager.t
 import { mirrorRequests } from "../../display-config/mirror.ts";
 import { type Mode, type Monitor, monitorsOf, type Rotation, type VrrMode } from "../../display-config/monitors.ts";
 import { toWire } from "../../display-config/plan.ts";
-import type { ScreenScales } from "../../display-config/scale.ts";
 import { type ScreenInfo, screensOf } from "../../displays.ts";
 import type { SettingsStore } from "../store.ts";
 
@@ -64,8 +64,6 @@ export class ScreensStore {
     private readonly settings: Pick<SettingsStore, "setDisplayVrr" | "setDisplayRefresh">,
     /** Null without the arrangement service: the pane shows the screens and their scales only. */
     private readonly displays: Arranger | null = null,
-    /** Where a chosen scale is kept, by monitor; null keeps it for the session only. */
-    private readonly scales: Pick<ScreenScales, "remember"> | null = null,
   ) {}
 
   subscribe = (listener: () => void): (() => void) => {
@@ -109,8 +107,6 @@ export class ScreensStore {
       this.set({ ...this.snapshot, error: message(error) });
       return;
     }
-    const screen = this.snapshot.screens.find((candidate) => candidate.name === name);
-    if (screen) this.scales?.remember(screen, scale);
     this.set({ ...this.snapshot, error: null });
     await this.refresh();
   }
