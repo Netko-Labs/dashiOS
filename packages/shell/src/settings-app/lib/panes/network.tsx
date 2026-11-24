@@ -17,6 +17,7 @@ import { useDevices } from "../../../control-center/index.ts";
 import { wifiGlyph } from "../../../glyphs.ts";
 import { type EthernetInfo, useNetInfo, type VpnConnection } from "../../../network/index.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
+import { paneTitle } from "../../../shared/settings/index.ts";
 import { chooseNetwork } from "../../../wifi/flow.ts";
 import { joinMessage } from "../../../wifi/networks.ts";
 import { useWifi, type WifiState } from "../../../wifi/store.ts";
@@ -240,7 +241,7 @@ export function NetworkPane({ services }: { services: PaneServices }) {
   const hasWifi = radios.wifi !== null;
   if (loaded && !hasWifi && info.available === false) {
     return (
-      <Page title="Wi-Fi">
+      <Page title={paneTitle("network")}>
         <Group>
           <Note testID="net-unavailable">Network settings aren't available on this computer.</Note>
         </Group>
@@ -248,7 +249,7 @@ export function NetworkPane({ services }: { services: PaneServices }) {
     );
   }
   return (
-    <Page title="Wi-Fi">
+    <Page title={paneTitle("network")}>
       {hasWifi && <WifiSection services={services} on={radios.wifi === true} onRadio={(on) => void devices.setWifi(on)} />}
       <EthernetSection devices={info.ethernet} />
       {info.available !== false && <VpnSection vpns={info.vpns} busy={info.busy} failed={info.failed} onSet={(vpn, up) => void netinfo.setVpn(vpn.uuid, up)} />}

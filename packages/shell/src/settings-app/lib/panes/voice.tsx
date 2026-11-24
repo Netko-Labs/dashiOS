@@ -197,6 +197,21 @@ interface VoicePaneProps {
   byPerson?: ByPerson;
 }
 
+/** The pane while Voice's service is still being looked for, or isn't running. */
+function VoiceMissing({ looking }: { looking: boolean }) {
+  return (
+    <Page title="Voice">
+      <Group testID="voice-missing">
+        {looking ? (
+          <Loading testID="voice-looking" label="Looking for Voice…" />
+        ) : (
+          <Note>Voice isn't running in this session. Log out and in again to start it.</Note>
+        )}
+      </Group>
+    </Page>
+  );
+}
+
 export function VoicePane({ settings, voice, dictation, byPerson }: VoicePaneProps) {
   const view = useSyncExternalStore(voice.models.subscribe, voice.models.getSnapshot);
   // Asked for (settings.json); it is on once its models are here too.
@@ -209,19 +224,7 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
     void voice.models.refresh();
     return voice.models.watch();
   }, [voice]);
-  if (view.service !== "ready") {
-    return (
-      <Page title="Voice">
-        <Group testID="voice-missing">
-          {view.service === "looking" ? (
-            <Loading testID="voice-looking" label="Looking for Voice…" />
-          ) : (
-            <Note>Voice isn't running in this session. Log out and in again to start it.</Note>
-          )}
-        </Group>
-      </Page>
-    );
-  }
+  if (view.service !== "ready") return <VoiceMissing looking={view.service === "looking"} />;
   const basics = basicSets(view.sets);
   const more = view.sets.filter((set) => !set.basic && set.id !== REWRITE_SET && set.id !== REWRITE_GEMMA_SET);
   const whisperHere = view.sets.some((set) => set.id === "whisper" && set.installed);

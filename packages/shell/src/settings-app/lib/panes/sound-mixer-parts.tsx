@@ -7,11 +7,10 @@
  * volume", "Mute Helium", "Play Helium on").
  */
 
-import { InkSlider, MoreButton, ON_TINT, PopUpButton, type PopUpOption, pill, SPACE, TYPE, tintFor, useControlColors, WEIGHT } from "@dashi/ui";
+import { InkSlider, MoreButton, PopUpButton, type PopUpOption, pill, SPACE, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { AppIcon } from "../../../shared/apps/index.ts";
-import { type MixerOutput, MuteKnob, type StreamMeters, type StreamSound, useMeterLevel } from "../../../sound/index.ts";
+import { type MixerOutput, Mute, type StreamMeters, type StreamSound, useMeterLevel } from "../../../sound/index.ts";
 import { PAGE } from "../row.tsx";
 
 /**
@@ -69,34 +68,6 @@ export function streamSpacing(wrapped: boolean): { paddingTop: number; rowGap: n
 }
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
-
-/**
- * The app's icon on the row's 40 knob; an app without one shows its name's
- * first letter on its tint (a blank square read as an unticked box: SE-A43).
- */
-export function AppDisc({ icon, name }: { icon: string | undefined; name: string }) {
-  const colors = useControlColors();
-  const letter = icon === undefined;
-  return (
-    <View
-      style={{
-        width: PAGE.knob,
-        height: PAGE.knob,
-        flexShrink: 0,
-        borderRadius: pill(PAGE.knob),
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: letter ? tintFor(name) : colors.knobRest,
-      }}
-    >
-      {letter ? (
-        <Text style={{ fontSize: TYPE.panel.name.size, fontWeight: WEIGHT.semibold, color: ON_TINT }}>{(name.trim()[0] ?? "?").toUpperCase()}</Text>
-      ) : (
-        <AppIcon source={icon} style={{ width: APPS_CARD.icon, height: APPS_CARD.icon }} />
-      )}
-    </View>
-  );
-}
 
 /** A level as a bar: ink on the line colour, never green (it is a reading, not a switch that is on). */
 export function MeterBar({
@@ -207,7 +178,7 @@ export function Fader({
           onChange={onLevel}
         />
       </View>
-      <MuteKnob
+      <Mute
         testID={`${testID}-mute`}
         focusable
         label={`Mute ${what}`}

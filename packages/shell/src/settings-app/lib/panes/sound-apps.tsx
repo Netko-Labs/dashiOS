@@ -21,7 +21,8 @@ import { type AppMixer, type AppSound, type MixerOutput, type StreamMeters, useM
 import { Spot } from "../../spot.tsx";
 import { appSpot } from "../find.ts";
 import { PAGE, useCardRow } from "../row.tsx";
-import { APP_NAME, AppDisc, Controls, DevicePopUp, Fader, MIXER_ROW, StatusLine, StreamRow } from "./sound-mixer-parts.tsx";
+import { AppDisc } from "./app-disc.tsx";
+import { APP_NAME, Controls, DevicePopUp, Fader, MIXER_ROW, StatusLine, StreamRow } from "./sound-mixer-parts.tsx";
 
 function AppRow({
   app,

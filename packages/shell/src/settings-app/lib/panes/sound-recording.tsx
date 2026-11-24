@@ -16,7 +16,8 @@ import { Group } from "../../../shared/cards/index.ts";
 import { type AppMixer, type AppRecording, type MixerOutput, type StreamMeters, useMixer } from "../../../sound/index.ts";
 import { Spot } from "../../spot.tsx";
 import { PAGE, useCardRow } from "../row.tsx";
-import { APP_NAME, AppDisc, Controls, DevicePopUp, Fader, MIXER_ROW, StatusLine } from "./sound-mixer-parts.tsx";
+import { AppDisc } from "./app-disc.tsx";
+import { APP_NAME, Controls, DevicePopUp, Fader, MIXER_ROW, StatusLine } from "./sound-mixer-parts.tsx";
 
 /** What a recorder of a sink's monitor records, short enough for the pop-up: this computer's own sound. */
 export const OWN_SOUND = "System sound";

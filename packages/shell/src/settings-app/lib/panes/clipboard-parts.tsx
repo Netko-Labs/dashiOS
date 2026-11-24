@@ -14,8 +14,8 @@ import { Caption, Group } from "../../../shared/cards/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
 import { Setting } from "../setting.tsx";
+import { AppDisc } from "./app-disc.tsx";
 import { ConfirmDelete, ListRow, MiniButton } from "./parts.tsx";
-import { AppDisc } from "./sound-mixer-parts.tsx";
 
 /** What Settings reaches of the history: how much it holds, and clearing it. */
 export type HistoryControl = Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear">;

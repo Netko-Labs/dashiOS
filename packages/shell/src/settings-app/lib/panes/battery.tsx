@@ -23,6 +23,7 @@ import type { Laptop } from "../../../laptop/start.ts";
 import { useLaptop } from "../../../laptop/store.ts";
 import { describeAction } from "../../../power/policy.ts";
 import { Caption, Group } from "../../../shared/cards/index.ts";
+import { paneTitle } from "../../../shared/settings/index.ts";
 import { useEnergy } from "../../../system/energy.ts";
 import { isProfileId, PROFILE_LABEL } from "../../../system/profiles.ts";
 import { useSettings } from "../../hooks.ts";
@@ -161,7 +162,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
   // The monitor's reading carries the watts and the history; the energy store's, the health.
   const reading = monitor?.battery ?? battery;
   return (
-    <Page title="Battery & Power">
+    <Page title={paneTitle("battery")}>
       {reading && (
         // The hero is the "Battery" row: it says the charge and what the battery does, so search lands here.
         <Spot id="battery/battery" cards>

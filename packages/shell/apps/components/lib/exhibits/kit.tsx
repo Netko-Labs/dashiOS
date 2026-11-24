@@ -80,6 +80,38 @@ export function ChecksPage() {
   );
 }
 
+/** Control Center's tiles, on the panel page's own state. */
+function TilesExhibit({ on, setOn, level, setLevel }: { on: boolean; setOn: (on: boolean) => void; level: number; setLevel: (level: number) => void }) {
+  return (
+    <Exhibit
+      title="Control Center's tiles"
+      note="A wide tile's knob toggles and its label opens; a round one toggles; on is the one on. The battery is a reading, its bar ink (CC-1)."
+    >
+      <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
+        <WideTile look={{ testID: "tile:wide", title: "Wi-Fi", detail: "Home", glyph: glyphs.SEARCH, on }} onToggle={() => setOn(!on)} onOpen={noop} />
+        <RoundTile look={{ testID: "tile:round", title: "Focus", detail: null, glyph: glyphs.LOCK, on: !on }} onToggle={() => setOn(!on)} />
+        <RoundTile look={{ testID: "tile:dim", title: "Applet", detail: null, glyph: glyphs.INFO, on: false, dim: true }} onToggle={noop} />
+      </View>
+      <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
+        <SliderTile
+          look={{ testID: "tile:slider", title: "Display", glyph: glyphs.SEARCH, level, value: `${Math.round(level * 100)}%`, width: 344, height: 56 }}
+          standing={false}
+          onLevel={setLevel}
+        />
+      </View>
+      <View style={{ flexDirection: "row", height: 56, width: 344 }}>
+        <BatteryTile look={{ percent: 64, charging: false, limit: 80, time: "5 h 10 min", glyph: glyphs.INFO }} onOpen={noop} />
+      </View>
+      <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+        <KnobButton testID="knob:back" glyph={glyphs.CHEVRON_LEFT} label="Back" onPress={noop} />
+        <KnobButton testID="knob:mute" glyph={glyphs.STOP} label="Mute" checked={!on} onPress={() => setOn(!on)} />
+        <KnobButton testID="knob:add" glyph={glyphs.CLOSE} label="Add" inked size={22} glyphSize={12} onPress={noop} />
+        <Switch testID="pswitch:lit" look="panel" lit label="Wi-Fi" on={on} onChange={setOn} />
+      </View>
+    </Exhibit>
+  );
+}
+
 export function PanelPage() {
   const [on, setOn] = useState(true);
   const [size, setSize] = useState("m");
@@ -132,32 +164,7 @@ export function PanelPage() {
         </View>
         <TextLink testID="link:panel" look="panel" label="Other…" onPress={noop} />
       </Exhibit>
-      <Exhibit
-        title="Control Center's tiles"
-        note="A wide tile's knob toggles and its label opens; a round one toggles; on is the one on. The battery is a reading, its bar ink (CC-1)."
-      >
-        <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
-          <WideTile look={{ testID: "tile:wide", title: "Wi-Fi", detail: "Home", glyph: glyphs.SEARCH, on }} onToggle={() => setOn(!on)} onOpen={noop} />
-          <RoundTile look={{ testID: "tile:round", title: "Focus", detail: null, glyph: glyphs.LOCK, on: !on }} onToggle={() => setOn(!on)} />
-          <RoundTile look={{ testID: "tile:dim", title: "Applet", detail: null, glyph: glyphs.INFO, on: false, dim: true }} onToggle={noop} />
-        </View>
-        <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
-          <SliderTile
-            look={{ testID: "tile:slider", title: "Display", glyph: glyphs.SEARCH, level, value: `${Math.round(level * 100)}%`, width: 344, height: 56 }}
-            standing={false}
-            onLevel={setLevel}
-          />
-        </View>
-        <View style={{ flexDirection: "row", height: 56, width: 344 }}>
-          <BatteryTile look={{ percent: 64, charging: false, limit: 80, time: "5 h 10 min", glyph: glyphs.INFO }} onOpen={noop} />
-        </View>
-        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-          <KnobButton testID="knob:back" glyph={glyphs.CHEVRON_LEFT} label="Back" onPress={noop} />
-          <KnobButton testID="knob:mute" glyph={glyphs.STOP} label="Mute" checked={!on} onPress={() => setOn(!on)} />
-          <KnobButton testID="knob:add" glyph={glyphs.CLOSE} label="Add" inked size={22} glyphSize={12} onPress={noop} />
-          <Switch testID="pswitch:lit" look="panel" lit label="Wi-Fi" on={on} onChange={setOn} />
-        </View>
-      </Exhibit>
+      <TilesExhibit on={on} setOn={setOn} level={level} setLevel={setLevel} />
     </PageBody>
   );
 }
