@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { OnPanelCard } from "../src/panel/index.ts";
 import { SearchField } from "../src/search-field.tsx";
+import { boxOf } from "../src/search-rest.tsx";
 import { DARK_CONTROLS, LIGHT_CONTROLS } from "../src/theme/index.ts";
 import { fakeHost } from "./host.ts";
 import { settle } from "./support/time.ts";
@@ -83,4 +84,9 @@ test("the panel look's field sinks to the window's colour on a card, so it never
   expect(card.last().toLowerCase()).toContain(`"background":"${LIGHT_CONTROLS.window.toLowerCase()}"`);
   expect(card.last().toLowerCase()).not.toContain(`"background":"${LIGHT_CONTROLS.off.toLowerCase()}"`);
   root.unmount();
+});
+
+test("a field that fills is one row tall in a column too: flex widens it, never heightens it", () => {
+  // A picker's search sits in a column over its list; `flex: 1` there would grow its height and push the list away.
+  expect(boxOf("fill", undefined, 28)).toMatchObject({ flex: 1, alignSelf: "stretch", height: 28, minHeight: 28, maxHeight: 28 });
 });

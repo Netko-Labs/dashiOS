@@ -8306,6 +8306,10 @@ short words, as the rulebook is written.
   (`panelFieldGround`), the "field" Settings already sinks its lists into (SE-8's compact list).
   Off a card (Settings' sidebar search, design.html's "a pill … the off color") it keeps the off
   colour. The pickers take a `look`: Settings passes the panel look, Setup keeps the window's.
+  In the VM the pickers' field then showed alone, the list under it gone: a `width="fill"`
+  field was `flex: 1`, which widens it in a row but, in the pickers' column, grew its height
+  and pushed the rest off the card. A fill field now holds its height (`minHeight` and
+  `maxHeight`, `boxOf`), so `flex` only ever widens it.
 - **Why:** a card knows what it is; every field on one gets it right without a prop at each
   use. The window's colour differs from the card's in both modes (Light lilac `#F7F4FA` on
   `#E4DDEE`, Dark black on the second lift), and the search and the list under it now match.
