@@ -149,6 +149,7 @@ export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindow
     controlCenter: () => late.peek("controlCenterEditor") ?? null,
     compositor,
     displays: desktops.displays,
+    scales: desktops.scales,
     settings: settingsStore,
     pointers: needs.system.system.pointers,
     region: stores.region.store,

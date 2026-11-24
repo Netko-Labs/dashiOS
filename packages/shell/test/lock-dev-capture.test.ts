@@ -29,14 +29,14 @@ describe("the folder", () => {
 
 describe("a look", () => {
   const deps = (locked: boolean, asked: boolean) => {
-    const shots: string[] = [];
+    const shots: Array<[string, string | undefined]> = [];
     const removed: string[] = [];
     return {
       shots,
       removed,
       deps: {
         locked: () => locked,
-        capture: async (path: string) => shots.push(path),
+        capture: async (path: string, output?: string) => shots.push([path, output]),
         now: () => 7,
         exists: () => asked,
         remove: (path: string) => removed.push(path),
@@ -47,8 +47,24 @@ describe("a look", () => {
   test("while locked, an ask becomes one picture and the ask goes", async () => {
     const run = deps(true, true);
     expect(await lookForAsk("/d", run.deps)).toBe("/d/lock-7.png");
-    expect(run.shots).toEqual(["/d/lock-7.png"]);
+    expect(run.shots).toEqual([["/d/lock-7.png", undefined]]);
     expect(run.removed).toEqual(["/d/ask"]);
+  });
+
+  test("`ask-<screen>` pictures that screen", async () => {
+    const shots: Array<[string, string | undefined]> = [];
+    const removed: string[] = [];
+    const path = await lookForAsk("/d", {
+      locked: () => true,
+      capture: async (file, output) => shots.push([file, output]),
+      screens: async () => ["eDP-1", "HDMI-A-1"],
+      now: () => 7,
+      exists: (file) => file === "/d/ask-HDMI-A-1",
+      remove: (file) => removed.push(file),
+    });
+    expect(path).toBe("/d/lock-7-HDMI-A-1.png");
+    expect(shots).toEqual([["/d/lock-7-HDMI-A-1.png", "HDMI-A-1"]]);
+    expect(removed).toEqual(["/d/ask-HDMI-A-1"]);
   });
 
   test("unlocked, nothing is taken, the ask stays", async () => {

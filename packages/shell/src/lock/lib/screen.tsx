@@ -6,6 +6,10 @@
  * Now Bar. A press on a widget asks for the password first and says what it
  * will open ("Unlock to open Notes"), then does exactly that. Untouched for
  * a while it rests into Glance; any key or press wakes it.
+ *
+ * The cover (`cover`, on every other screen: D554) is quieter: the day and
+ * the time, who is signing in and the field, as the login screen's; no
+ * widgets, no power buttons, no Glance.
  */
 
 import { LoginScreen, type PowerAction } from "@dashi/ui";
@@ -49,11 +53,13 @@ export interface LockScreenProps {
   waitMs: () => number;
   /** Sleep, restart, or shut down; without it there are no power buttons. */
   onPower?: (what: LockPower) => void;
+  /** Another screen's: the field without the widgets (D554). */
+  cover?: boolean;
 }
 
 const HINTS = { idle: "Enter your password", checking: "Checking…", wrong: "Wrong password. Try again.", waiting: "Wait a moment…" } as const;
 
-export function LockScreen({ name, picture, onSubmit, waitMs, onPower }: LockScreenProps): ReactNode {
+export function LockScreen({ name, picture, onSubmit, waitMs, onPower, cover = false }: LockScreenProps): ReactNode {
   const now = useNow();
   const clock = useClockPrefs();
   const [password, setPassword] = useState("");
@@ -115,11 +121,11 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower }: LockScr
           hint={status === "idle" ? unlockHint(pending, HINTS.idle) : HINTS[status]}
           error={status === "wrong"}
           {...(onPower ? { onPower } : {})}
-          head={<LockHead onPress={(kind) => press({ kind })} />}
-          around={<LockSide placements={placements} onPress={press} />}
-          above={<NowBar />}
+          {...(cover
+            ? {}
+            : { head: <LockHead onPress={(kind) => press({ kind })} />, around: <LockSide placements={placements} onPress={press} />, above: <NowBar /> })}
         />
-        {resting ? (
+        {resting && !cover ? (
           <Glance
             onWake={() => {
               setTouched((n) => n + 1);

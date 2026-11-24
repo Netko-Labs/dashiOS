@@ -9,6 +9,7 @@ import type { LateParts } from "../src/boot/parts.ts";
 import { Late, Services } from "../src/boot/services.ts";
 import { onScreen, Screens } from "../src/boot/session.ts";
 import type { Compositor } from "../src/compositor/client.ts";
+import { ScreenScales } from "../src/display-config/index.ts";
 import { filesLaunch } from "../src/file-manager.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import { SettingsStore } from "../src/settings-app/index.ts";
@@ -26,7 +27,7 @@ test("without a compositor the desktop's pieces start empty, in order, and say h
   const services = new Services();
   const late = new Late<LateParts>();
   const { desktops, arranging, overview } = await desktopWithoutCompositor(services, late);
-  expect(desktops).toEqual({ spaces: null, fullscreenDesktops: null, displays: null });
+  expect(desktops).toEqual({ spaces: null, fullscreenDesktops: null, displays: null, scales: expect.any(ScreenScales) });
   expect(arranging.arranger).toBeNull();
   expect(overview).toBeNull();
   // What later pieces reach through callbacks is there as soon as it is made.

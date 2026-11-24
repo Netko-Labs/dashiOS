@@ -8,7 +8,8 @@
 
 import type { Params } from "../compositor/index.ts";
 import { choosePrimary } from "../menubar/menubars.ts";
-import { identityOf, type Mode, type Monitor, modeFor, type Rotation, type VrrMode } from "./monitors.ts";
+import { type Box, settle } from "./layout.ts";
+import { defaultMode, identityOf, type Mode, type Monitor, modeFor, type Rotation, type VrrMode } from "./monitors.ts";
 import type { SavedLayout, SavedMonitor } from "./saved.ts";
 
 /** What one monitor should be; a field left out is left alone. Names are the compositor's connectors. */
@@ -37,6 +38,10 @@ export interface RestoreOptions {
   /** The lid is shut: the built-in panel goes dark when another monitor is there to use. */
   lidClosed: boolean;
   scaleFor: ScaleFor;
+  /** The mode the monitor last ran in any saved arrangement: what it runs in a set that has none for it. */
+  lastMode?: (monitor: Monitor) => Mode | undefined;
+  /** A monitor nobody chose a mode for runs `defaultMode` (default true; false after the screens refused it). */
+  defaultModes?: boolean;
 }
 
 const sameMode = (a: Mode | undefined, b: Mode | undefined): boolean =>
@@ -67,8 +72,8 @@ export function planRestore(all: readonly Monitor[], saved: SavedLayout | undefi
     if (enable) {
       const rotation = entry?.rotation ?? monitor.rotation;
       const flipped = entry?.flipped ?? monitor.flipped;
-      const mode = (entry?.mode && modeFor(monitor.modes, entry.mode, entry.mode.refreshMhz)) || monitor.mode;
-      if (entry?.mode && mode && !sameMode(mode, monitor.mode)) config.mode = { width: mode.width, height: mode.height, refreshMhz: mode.refreshMhz };
+      const mode = wantedMode(monitor, entry, options);
+      if (mode && !sameMode(mode, monitor.mode)) config.mode = { width: mode.width, height: mode.height, refreshMhz: mode.refreshMhz };
       if (rotation !== monitor.rotation || flipped !== monitor.flipped) {
         config.rotation = rotation;
         config.flipped = flipped;
@@ -87,6 +92,14 @@ export function planRestore(all: readonly Monitor[], saved: SavedLayout | undefi
   const current = monitors.find((monitor) => monitor.primary)?.name;
   const request: ConfigRequest = { outputs, ...(primary !== undefined && primary !== current ? { primary } : {}) };
   return request.outputs.length === 0 && request.primary === undefined ? null : request;
+}
+
+/** The mode a monitor should run: the set's saved one, else the one it last ran anywhere, else its default (D552), else what it runs. */
+function wantedMode(monitor: Monitor, entry: SavedMonitor | undefined, options: RestoreOptions): Mode | undefined {
+  const asked = entry?.mode ?? options.lastMode?.(monitor);
+  const offered = asked && modeFor(monitor.modes, asked, asked.refreshMhz);
+  if (offered) return offered;
+  return (options.defaultModes !== false && !entry?.mode ? defaultMode(monitor.modes) : undefined) ?? monitor.mode;
 }
 
 /** The request that puts every monitor back exactly as it is now. */
@@ -145,6 +158,40 @@ export function layoutOf(monitors: readonly Monitor[], previous: SavedLayout | u
   const before = previous?.primary && previous.primary in kept ? previous.primary : null;
   const primary = lidDark && before ? before : main ? identityOf(main) : before;
   return { primary, monitors: kept };
+}
+
+/** Where a monitor sits and how big it is in points once `config` is made, or null when it will show no desktop of its own. */
+function boxAfter(monitor: Monitor, config: MonitorConfig | undefined): Box | null {
+  const mode = config?.mode ?? monitor.mode;
+  if (!(config?.enabled ?? monitor.enabled) || monitor.mirrorOf !== undefined || !mode) return null;
+  const rotation = config?.rotation ?? monitor.rotation;
+  const scale = config?.scale ?? monitor.scale;
+  const [width, height] = rotation === 90 || rotation === 270 ? [mode.height, mode.width] : [mode.width, mode.height];
+  // The compositor rounds a screen's size in points up (smithay's `output_geometry`).
+  const at = config?.position ?? (monitor.frame ? { x: monitor.frame.x, y: monitor.frame.y } : { x: Number.MAX_SAFE_INTEGER / 4, y: 0 });
+  return { name: monitor.name, x: at.x, y: at.y, width: Math.ceil(width / scale - 1e-6), height: Math.ceil(height / scale - 1e-6) };
+}
+
+/**
+ * `request` with the positions that keep the screens apart and touching
+ * once it is made (layout.ts `settle`, D553): a screen that grows pushes its
+ * neighbour along, one that shrinks pulls it in. The main display stays put.
+ */
+export function settled(request: ConfigRequest, monitors: readonly Monitor[]): ConfigRequest {
+  const configs = new Map(request.outputs.map((config) => [config.name, config]));
+  const boxes = monitors.flatMap((monitor) => boxAfter(monitor, configs.get(monitor.name)) ?? []);
+  const anchor = request.primary ?? monitors.find((monitor) => monitor.primary)?.name;
+  const outputs = [...request.outputs];
+  for (const box of settle(boxes, anchor)) {
+    const monitor = monitors.find((each) => each.name === box.name);
+    const config = configs.get(box.name);
+    const now = config?.position ?? (monitor?.frame ? { x: monitor.frame.x, y: monitor.frame.y } : null);
+    if (now && now.x === box.x && now.y === box.y) continue;
+    const position = { x: box.x, y: box.y };
+    if (config) outputs[outputs.indexOf(config)] = { ...config, position };
+    else outputs.push({ name: box.name, position });
+  }
+  return { ...request, outputs };
 }
 
 /** The wire form of a request: what `outputs-config` takes. */

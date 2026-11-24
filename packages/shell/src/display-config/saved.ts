@@ -1,8 +1,10 @@
 /**
  * Saved arrangements: `$XDG_CONFIG_HOME/dashi/displays.json`, one layout per
  * set of connected monitors (`setKey`), so plugging the same monitors back in
- * restores where each sat, what it ran, and which was the main one. Written
- * when a person (or an agent) changes the arrangement; a person may edit it.
+ * restores where each sat, what it ran, and which was the main one; and the
+ * scale chosen for each monitor, by its identity, whatever it is plugged in
+ * with or to (`scales`, decisions.md D551). Written when a person (or an
+ * agent) changes the arrangement or a scale; a person may edit it.
  * The file is untrusted input: every field is checked.
  */
 
@@ -38,6 +40,12 @@ export interface SavedLayout {
 
 export type SavedLayouts = Readonly<Record<string, SavedLayout>>;
 
+/** The scale chosen for each monitor, by `identityOf`. */
+export type SavedScales = Readonly<Record<string, number>>;
+
+/** The scales a saved file may hold (settings.json's own bounds). */
+const isSavedScale = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0.5 && value <= 4;
+
 export function displaysPath(env: Record<string, string | undefined> = process.env): string {
   const config = env.XDG_CONFIG_HOME || join(env.HOME || homedir(), ".config");
   return join(config, "dashi", "displays.json");
@@ -64,15 +72,29 @@ function parseMonitor(value: unknown): SavedMonitor | null {
   return { enabled: entry.enabled !== false, x, y, rotation, flipped: entry.flipped === true, ...(mode ? { mode } : {}) };
 }
 
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+/** The scales in a saved file; a value that is no scale is left out. */
+export function parseScales(text: string): SavedScales {
+  const scales = record(record(parseJson(text))?.scales);
+  if (!scales) return {};
+  const entries = Object.entries(scales).slice(0, MAX_LAYOUTS);
+  return Object.fromEntries(
+    entries.flatMap(
+      ([identity, scale]): Array<[string, number]> => (identity.length > 0 && identity.length <= MAX_KEY && isSavedScale(scale) ? [[identity, scale]] : []),
+    ),
+  );
+}
+
 /** The layouts in a saved file; what is not a layout is left out, and a file that is not ours has none. */
 export function parseLayouts(text: string): SavedLayouts {
-  let root: unknown;
-  try {
-    root = JSON.parse(text);
-  } catch {
-    return {};
-  }
-  const layouts = record(record(root)?.layouts);
+  const layouts = record(record(parseJson(text))?.layouts);
   if (!layouts) return {};
   const out: Record<string, SavedLayout> = {};
   for (const [key, value] of Object.entries(layouts).slice(0, MAX_LAYOUTS)) {
@@ -90,7 +112,8 @@ export function parseLayouts(text: string): SavedLayouts {
   return out;
 }
 
-export const serializeLayouts = (layouts: SavedLayouts): string => `${JSON.stringify({ version: 1, layouts }, null, 2)}\n`;
+export const serializeLayouts = (layouts: SavedLayouts, scales: SavedScales = {}): string =>
+  `${JSON.stringify({ version: 1, layouts, ...(Object.keys(scales).length > 0 ? { scales } : {}) }, null, 2)}\n`;
 
 export interface DisplayStoreOptions {
   /** The file; null keeps the layouts in memory only (tests). */
@@ -99,13 +122,16 @@ export interface DisplayStoreOptions {
 
 export class DisplayStore {
   private layouts: SavedLayouts = {};
+  private scales: SavedScales = {};
   private readonly path: string | null;
 
   constructor({ path = displaysPath() }: DisplayStoreOptions = {}) {
     this.path = path;
     if (!path) return;
     try {
-      this.layouts = parseLayouts(readFileSync(path, "utf8"));
+      const text = readFileSync(path, "utf8");
+      this.layouts = parseLayouts(text);
+      this.scales = parseScales(text);
     } catch {
       // First run, or unreadable: nothing saved.
     }
@@ -127,12 +153,34 @@ export class DisplayStore {
     return this.layouts;
   }
 
+  /** The mode the monitor with this identity ran in the arrangement saved last that has one for it. */
+  lastMode(identity: string): Mode | undefined {
+    for (const layout of Object.values(this.layouts).reverse()) {
+      const mode = layout.monitors[identity]?.mode;
+      if (mode) return mode;
+    }
+    return undefined;
+  }
+
+  /** The scale chosen for the monitor with this identity, if one was. */
+  scale(identity: string): number | undefined {
+    return this.scales[identity];
+  }
+
+  /** Remember the scale chosen for a monitor (`undefined` forgets it). */
+  setScale(identity: string, scale: number | undefined): void {
+    if (scale !== undefined && !isSavedScale(scale)) throw new TypeError(`bad scale: ${JSON.stringify(scale)}`);
+    const { [identity]: _old, ...rest } = this.scales;
+    this.scales = scale === undefined ? rest : { ...Object.fromEntries(Object.entries(rest).slice(-(MAX_LAYOUTS - 1))), [identity]: scale };
+    this.write();
+  }
+
   private write(): void {
     if (!this.path) return;
     try {
       mkdirSync(dirname(this.path), { recursive: true });
       const temporary = `${this.path}.${process.pid}.tmp`;
-      writeFileSync(temporary, serializeLayouts(this.layouts), { mode: 0o600 });
+      writeFileSync(temporary, serializeLayouts(this.layouts, this.scales), { mode: 0o600 });
       renameSync(temporary, this.path);
     } catch (error) {
       console.error("dashi-shell: could not save the display arrangement:", error instanceof Error ? error.message : error);

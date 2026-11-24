@@ -6,7 +6,7 @@
 
 import { Arranger } from "../arrange/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor/index.ts";
-import { DisplayManager, DisplayStore, keepSheet, scaleForMonitor, watchLid } from "../display-config/index.ts";
+import { DisplayManager, DisplayStore, keepSheet, ScreenScales, scaleForMonitor, watchLid } from "../display-config/index.ts";
 import { startDisplays } from "../displays.ts";
 import { FullscreenBars } from "../fullscreen.ts";
 import { startGestures } from "../gestures.ts";
@@ -32,6 +32,8 @@ export interface Desktops {
   spaces: SpacesRuntime | null;
   fullscreenDesktops: FullscreenDesktops | null;
   displays: DisplayManager | null;
+  /** The scale chosen for each monitor, by its identity (display-config/scale.ts). */
+  scales: ScreenScales;
 }
 
 /** Spaces, a Desktop for each full-screen window, and the screens' scale and arrangement. */
@@ -54,13 +56,11 @@ export async function startDesktops({ compositor, settingsStore, screens, servic
   const fullscreenDesktops =
     compositor && spaces ? new FullscreenDesktops({ compositor, desktops: spaces.controller, changed: () => void late.get("fullscreenBars")?.sync() }) : null;
   services.add("full-screen desktops", fullscreenDesktops?.start() ?? (() => {}));
-  const stopDisplays = compositor
-    ? startDisplays(
-        compositor,
-        (name) => settingsStore.displayScale(name),
-        (name) => settingsStore.displayVrr(name),
-      )
-    : () => {};
+  // displays.json: the arrangement per set of monitors and the scale per monitor (display-config/saved.ts).
+  // Without a compositor (a test, a run outside a session) nothing is read or written.
+  const displayStore = new DisplayStore(compositor ? {} : { path: null });
+  const scales = new ScreenScales(displayStore, settingsStore);
+  const stopDisplays = compositor ? startDisplays(compositor, (name) => settingsStore.displayVrr(name)) : () => {};
   services.add("displays", stopDisplays);
   // Where each screen sits, what it runs, and which is the main display: saved per set of connected
   // monitors and restored when they are plugged in; the lid shut with a monitor attached turns the
@@ -70,8 +70,8 @@ export async function startDesktops({ compositor, settingsStore, screens, servic
   const displays = compositor
     ? new DisplayManager({
         compositor,
-        store: new DisplayStore(),
-        scaleFor: scaleForMonitor((name) => settingsStore.displayScale(name)),
+        store: displayStore,
+        scaleFor: scaleForMonitor(scales.of),
         lid: displayLid,
         ask: keepSheet(openOverlay, () => late.get("menuBars").primaryName ?? undefined),
       })
@@ -81,7 +81,7 @@ export async function startDesktops({ compositor, settingsStore, screens, servic
     stopArrangements();
     displayLid?.close();
   });
-  return { spaces, fullscreenDesktops, displays };
+  return { spaces, fullscreenDesktops, displays, scales };
 }
 
 export interface Arranging {

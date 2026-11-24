@@ -211,3 +211,16 @@ export function modeFor(modes: readonly OfferedMode[], size: { width: number; he
   }
   return same.find((mode) => mode.preferred) ?? [...same].sort((a, b) => b.refreshMhz - a.refreshMhz)[0];
 }
+
+/**
+ * The mode a monitor runs when nobody chose one: its native size at the
+ * fastest rate it offers there (a TV that prefers 4K at 30 Hz but takes 60
+ * runs at 60; decisions.md D552). None when it has no native size to name:
+ * it keeps what it came up with.
+ */
+export function defaultMode(modes: readonly OfferedMode[]): OfferedMode | undefined {
+  const native = nativeSize(modes);
+  if (!native) return undefined;
+  const same = modes.filter((mode) => mode.width === native.width && mode.height === native.height);
+  return [...same].sort((a, b) => b.refreshMhz - a.refreshMhz || Number(b.preferred) - Number(a.preferred))[0];
+}
