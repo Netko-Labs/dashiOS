@@ -1,4 +1,4 @@
-import { Group, Row, useColors } from "@dashi/ui";
+import { Group, Row, SPACE, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { AppearancePreviews, CornerChoices } from "../../../settings-app/appearance.tsx";
 import type { SetupContext } from "../context.ts";
@@ -9,7 +9,7 @@ export function AppearancePage({ ctx }: { ctx: SetupContext }) {
   return (
     <>
       <Group>
-        <View style={{ flexDirection: "row", height: 140, padding: 12 }}>
+        <View style={{ flexDirection: "row", height: 140, padding: SPACE.inset }}>
           <AppearancePreviews flags={ctx.flags} settings={ctx.settings} />
         </View>
       </Group>
@@ -19,7 +19,7 @@ export function AppearancePage({ ctx }: { ctx: SetupContext }) {
         </Row>
       </Group>
       <View style={{ flexShrink: 0 }}>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>
+        <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
           Auto turns Dark Mode on at 7 PM and off at 7 AM. Accent color is Kombu, a green from Japanese cooking.
         </Text>
       </View>

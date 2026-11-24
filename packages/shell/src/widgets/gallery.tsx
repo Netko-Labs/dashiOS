@@ -9,7 +9,7 @@
  * choose in the list, ← → pick a size (ringed) and Return adds it.
  */
 
-import { useColors } from "@dashi/ui";
+import { CLEAR, pill, RADIUS, SPACE, Switch, TYPE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { glyph } from "../shared/inks/index.ts";
 import { printsIn } from "./catalog.ts";
@@ -27,38 +27,46 @@ export function sizeRange(sizes: readonly WidgetSize[]): string {
   return `${sizeWord(sorted[0] ?? "small")} – ${sizeWord(sorted.at(-1) ?? "small")}`;
 }
 
+/** A list row's measures: 32 tall, its ink dot 7 across. */
+const ROW = { height: 32, dot: 7, dotEdge: 1.2 } as const;
+/** A chosen row or size (CO-9, D588): an ink wash under a 2 px ink edge, its words still ink; never solid ink, never purple. */
+const CHOSEN_EDGE = 2;
+
 function ListRow({ info, chosen, onPress }: { info: WidgetInfo; chosen: boolean; onPress: () => void }) {
   const { inks } = useWidgetEnv();
-  const ink = chosen ? inks.paper : inks.text.ink;
   return (
     <View
       testID={`gallery:${info.kind}`}
       onPress={onPress}
+      accessibilityRole="option"
+      accessibilityLabel={info.name}
+      accessibilityState={{ selected: chosen }}
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        height: 32,
-        paddingLeft: 12,
-        paddingRight: 12,
-        borderRadius: 8,
-        backgroundColor: chosen ? inks.text.ink : "#00000000",
+        gap: SPACE.gap,
+        height: ROW.height,
+        paddingLeft: SPACE.inset,
+        paddingRight: SPACE.inset,
+        borderRadius: RADIUS.control,
+        backgroundColor: chosen ? inks.text.hairline : CLEAR,
+        ...(chosen ? { borderWidth: CHOSEN_EDGE, borderColor: inks.text.ink } : {}),
       }}
     >
       <View
         style={{
-          width: 7,
-          height: 7,
-          borderRadius: 3.5,
-          ...(info.ink ? { backgroundColor: inks.ink[info.ink] } : { borderWidth: 1.2, borderColor: chosen ? inks.paper : inks.text.tertiary }),
+          width: ROW.dot,
+          height: ROW.dot,
+          borderRadius: pill(ROW.dot),
+          ...(info.ink ? { backgroundColor: inks.ink[info.ink] } : { borderWidth: ROW.dotEdge, borderColor: inks.text.tertiary }),
         }}
       />
       <View style={{ flex: 1 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: inks.text.ink }}>
           {info.name}
         </Text>
       </View>
-      <Text style={{ fontSize: 11.5, color: chosen ? inks.paper : inks.text.tertiary }}>{sizeRange(info.sizes)}</Text>
+      <Text style={{ fontSize: TYPE.panel.detail.size, color: inks.text.tertiary }}>{sizeRange(info.sizes)}</Text>
     </View>
   );
 }
@@ -85,8 +93,8 @@ export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir }: 
   const { inks } = useWidgetEnv();
   const info = infos.find((each) => each.kind === chosen) ?? null;
   const section = (title: string) => (
-    <View style={{ marginTop: 10, marginBottom: 4, marginLeft: 4 }}>
-      <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: inks.text.secondary }}>{title}</Text>
+    <View style={{ marginTop: SPACE.gap, marginBottom: SPACE.xs, marginLeft: SPACE.xs }}>
+      <Text style={{ fontSize: TYPE.inks.small.size, fontWeight: WEIGHT.semibold, color: inks.text.secondary }}>{title}</Text>
     </View>
   );
   const rows = (list: readonly WidgetInfo[]) =>
@@ -98,9 +106,9 @@ export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir }: 
       style={{
         width: GALLERY.width,
         flexDirection: "row",
-        padding: 18,
-        gap: 18,
-        borderRadius: 18,
+        padding: SPACE.page,
+        gap: SPACE.page,
+        borderRadius: RADIUS.sheet,
         backgroundColor: inks.paper,
         borderWidth: 1,
         borderColor: inks.text.hairline,
@@ -131,71 +139,57 @@ function Detail({
   mayGoOnAir?: GalleryProps["mayGoOnAir"];
 }) {
   const { inks } = useWidgetEnv();
-  const colors = useColors();
   const previews = previewSizes(info);
   return (
-    <View style={{ flex: 1, flexDirection: "column", gap: 10 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={{ flex: 1, flexDirection: "column", gap: SPACE.gap }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
         <Svg markup={glyph(info.glyph)} size={14} color={info.ink ? inks.ink[info.ink] : inks.text.ink} />
-        <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: inks.text.ink }}>{info.name.toUpperCase()}</Text>
+        <Text style={{ fontSize: TYPE.inks.small.size, fontWeight: WEIGHT.semibold, color: inks.text.ink }}>{info.name.toUpperCase()}</Text>
         <View style={{ flex: 1 }} />
-        <Text style={{ fontSize: 11.5, color: inks.text.tertiary }}>{printsIn(info)}</Text>
-        {info.ink ? <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: inks.ink[info.ink] }} /> : null}
+        <Text style={{ fontSize: TYPE.panel.detail.size, color: inks.text.tertiary }}>{printsIn(info)}</Text>
+        {info.ink ? <View style={{ width: ROW.dot, height: ROW.dot, borderRadius: pill(ROW.dot), backgroundColor: inks.ink[info.ink] }} /> : null}
       </View>
-      <Text style={{ fontSize: 13, lineHeight: 18, color: inks.text.ink }}>{`${info.blurb}. Press a size to add it.`}</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
+      <Text style={{ fontSize: TYPE.body.size, lineHeight: TYPE.panel.name.line, color: inks.text.ink }}>{`${info.blurb}. Press a size to add it.`}</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.button }}>
         {previews.map((size, at) => (
-          <View key={size} testID={`add:${info.kind}:${size}`} onPress={() => onAdd(info, size)} style={{ flexDirection: "column", gap: 6 }}>
+          <View key={size} testID={`add:${info.kind}:${size}`} onPress={() => onAdd(info, size)} style={{ flexDirection: "column", gap: SPACE.s }}>
             {at === Math.min(sizeAt, previews.length - 1) ? (
               <View
                 testID={`picked:${info.kind}:${size}`}
                 style={{
                   position: "absolute",
-                  left: -4,
-                  top: -4,
-                  width: span(SPANS[size].cols) + 8,
-                  height: span(SPANS[size].rows) + 8,
-                  borderRadius: 17,
-                  borderWidth: 2,
-                  borderColor: colors.focusRing,
+                  left: -SPACE.xs,
+                  top: -SPACE.xs,
+                  width: span(SPANS[size].cols) + SPACE.m,
+                  height: span(SPANS[size].rows) + SPACE.m,
+                  borderRadius: RADIUS.inkCard + SPACE.xs,
+                  borderWidth: CHOSEN_EDGE,
+                  borderColor: inks.text.ink,
                 }}
               />
             ) : null}
             <WidgetTile kind={info.kind} size={size} width={span(SPANS[size].cols)} height={span(SPANS[size].rows)} air={false} />
-            <Text style={{ fontSize: 11.5, color: inks.text.secondary }}>{sizeWord(size)}</Text>
+            <Text style={{ fontSize: TYPE.panel.detail.size, color: inks.text.secondary }}>{sizeWord(size)}</Text>
           </View>
         ))}
       </View>
-      {info.kind === "weather" && mayGoOnAir ? <OnAirSwitch on={mayGoOnAir.on} set={mayGoOnAir.set} /> : null}
+      {info.kind === "weather" && mayGoOnAir ? <OnAirRow on={mayGoOnAir.on} set={mayGoOnAir.set} /> : null}
     </View>
   );
 }
 
-/** Weather's "May go on air", off by default. */
-function OnAirSwitch({ on, set }: { on: boolean; set(on: boolean): void }) {
+/** Weather's "May go on air", off by default: the kit's Switch in the inks look (the accent never paints here). */
+function OnAirRow({ on, set }: { on: boolean; set(on: boolean): void }) {
   const { inks } = useWidgetEnv();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingTop: 10, borderTopWidth: 1, borderColor: inks.text.hairline }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, paddingTop: SPACE.gap, borderTopWidth: 1, borderColor: inks.text.hairline }}>
       <View style={{ flex: 1, flexDirection: "column" }}>
-        <Text style={{ fontSize: 13, fontWeight: "semibold", color: inks.text.ink }}>May go on air</Text>
-        <Text style={{ fontSize: 12, color: inks.text.secondary }}>
+        <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: inks.text.ink }}>May go on air</Text>
+        <Text style={{ fontSize: TYPE.secondary.size, color: inks.text.secondary }}>
           When rain starts within 15 minutes, Weather may take the tally for up to 2 minutes. Off unless you turn it on.
         </Text>
       </View>
-      <View
-        testID="may-go-on-air"
-        onPress={() => set(!on)}
-        style={{
-          width: 36,
-          height: 20,
-          borderRadius: 10,
-          padding: 2,
-          backgroundColor: on ? inks.text.ink : inks.text.hairline,
-          alignItems: on ? "flex-end" : "flex-start",
-        }}
-      >
-        <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: inks.paper }} />
-      </View>
+      <Switch testID="may-go-on-air" look="inks" on={on} label="May go on air" onChange={set} />
     </View>
   );
 }

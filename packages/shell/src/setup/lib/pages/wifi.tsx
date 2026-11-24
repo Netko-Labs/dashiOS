@@ -1,4 +1,4 @@
-import { CHECK, Group, Note, useColors } from "@dashi/ui";
+import { CHECK, Group, Note, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { LOCK } from "../../../control-center/glyphs.ts";
@@ -12,18 +12,18 @@ function NetworkRow({ network, current, joining, onChoose }: { network: WifiNetw
     <View
       testID={`setup-wifi:${network.ssid}`}
       onPress={current || joining ? undefined : onChoose}
-      style={{ height: 36, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, hoverBackgroundColor: colors.button }}
+      style={{ height: 36, flexDirection: "row", alignItems: "center", gap: SPACE.m, paddingHorizontal: SPACE.inset, hoverBackgroundColor: colors.button }}
     >
       <View style={{ width: 16, alignItems: "center" }}>{current && <Svg markup={CHECK} size={13} color={colors.text} />}</View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: current ? "semibold" : "normal", color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: current ? WEIGHT.semibold : WEIGHT.regular, color: colors.text }}>
           {network.ssid}
         </Text>
       </View>
       {joining ? (
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>Joining…</Text>
+        <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>Joining…</Text>
       ) : (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
           {network.secured && <Svg markup={LOCK} size={11} color={colors.textMuted} />}
           <Svg markup={wifiGlyph(network.bars)} size={15} color={colors.text} />
         </View>
@@ -73,7 +73,7 @@ export function WifiPage({ ctx }: { ctx: SetupContext }) {
       </Group>
       {failure && (
         <View testID="setup-wifi-failure" style={{ flexShrink: 0 }}>
-          <Text style={{ fontSize: 11, color: colors.critical }}>{failure}</Text>
+          <Text style={{ fontSize: TYPE.caption.size, color: colors.critical }}>{failure}</Text>
         </View>
       )}
     </>

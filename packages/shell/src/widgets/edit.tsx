@@ -7,7 +7,7 @@
  * column (gallery.tsx).
  */
 
-import { useColors } from "@dashi/ui";
+import { RADIUS, SPACE } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef, useState } from "react";
 import { textWidth } from "../shared/file-browser/tile-name.ts";
@@ -64,8 +64,17 @@ interface DecorationProps {
   onDrag: (phase: "down" | "move" | "up", y: number) => void;
 }
 
+/** The chosen widget's ring (CO-9, D588): 2 of ink, 4 out, the card's corner plus that. Purple is the keyboard's (KB-2). */
+const CHOSEN_RING = {
+  left: -SPACE.xs,
+  top: -SPACE.xs,
+  right: -SPACE.xs,
+  bottom: -SPACE.xs,
+  borderRadius: RADIUS.inkCard + SPACE.xs,
+  borderWidth: 2,
+} as const;
+
 function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResize, onDrag }: DecorationProps) {
-  const colors = useColors();
   const { inks } = useWidgetEnv();
   const [hover, setHover] = useState(false);
   const { width, height } = placed;
@@ -77,7 +86,7 @@ function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResi
       onPress={onChoose}
     >
       {chosen ? (
-        <View style={{ position: "absolute", left: -4, top: -4, right: -4, bottom: -4, borderRadius: 17, borderWidth: 2, borderColor: colors.focusRing }} />
+        <View style={{ position: "absolute", ...CHOSEN_RING, borderColor: inks.text.ink }} />
       ) : null}
       {hover || chosen ? (
         <View style={{ position: "absolute", top: 8, left: width / 2 - 14, width: 28, height: 4, borderRadius: 2, backgroundColor: inks.text.tertiary }} />
