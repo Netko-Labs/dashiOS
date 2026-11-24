@@ -9,6 +9,7 @@
  * sheet.
  */
 
+import { Loading, TYPE } from "@dashi/ui";
 import { Svg, Text } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { LOCK } from "../../../control-center/glyphs.ts";
@@ -37,7 +38,7 @@ function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork;
       {network.secured && <Svg markup={LOCK} size={11} color={colors.textMuted} />}
       {!current &&
         (thisOne ? (
-          <Text style={{ fontSize: 12, color: colors.textMuted }}>Joining…</Text>
+          <Text style={{ fontSize: TYPE.panel.detail.size, color: colors.textMuted }}>Joining…</Text>
         ) : (
           <MiniButton testID={`net-join:${network.ssid}`} label="Join" disabled={joining} onPress={() => onJoin(network)} />
         ))}
@@ -49,7 +50,7 @@ function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork;
 function KnownNetworks({ state, onForget }: { state: ReturnType<typeof useWifi>; onForget: (saved: SavedNetwork) => void }) {
   return (
     <>
-      <Caption above>Known Networks</Caption>
+      <Caption above>Known networks</Caption>
       <Group testID="net-known">
         {state.saved.map((saved) => (
           <ListRow
@@ -91,7 +92,7 @@ function WifiSection({ services, on, onRadio }: { services: PaneServices; on: bo
       <Group testID="net-wifi-switch">
         <Setting
           id="network/wi-fi"
-          detail={!on ? "Off" : state.current ? `Connected to ${state.current.ssid}` : state.scanning ? "Searching…" : "Not connected"}
+          detail={!on ? "Off" : state.current ? `Connected to ${state.current.ssid}` : state.scanning ? "Looking for networks…" : "Not connected"}
         >
           <Switch testID="net-wifi-radio" on={on} onChange={onRadio} />
         </Setting>
@@ -111,9 +112,13 @@ function WifiSection({ services, on, onRadio }: { services: PaneServices; on: bo
             {others.map((network) => (
               <NetworkRow key={network.key} network={network} current={false} state={state} onJoin={join} />
             ))}
-            {state.current === null && state.networks.length === 0 && (
-              <Note testID="net-wifi-none">{state.scanning || state.available === null ? "Searching…" : "No networks found."}</Note>
-            )}
+            {state.current === null &&
+              state.networks.length === 0 &&
+              (state.scanning || state.available === null ? (
+                <Loading testID="net-wifi-none" label="Looking for networks…" />
+              ) : (
+                <Note testID="net-wifi-none">No networks found. Move closer to one, or check that its router is on.</Note>
+              ))}
           </Group>
           {failure && <Failure testID="net-wifi-failure">{failure}</Failure>}
           {state.saved.length > 0 && <KnownNetworks state={state} onForget={(saved) => void wifi.forget(saved)} />}
@@ -182,7 +187,7 @@ function VpnSection({
       <Caption above>VPN</Caption>
       <Group testID="net-vpn">
         {vpns.length === 0 ? (
-          <Note testID="net-vpn-none">No VPN connections are set up. Add one with NetworkManager (nm-connection-editor or nmcli) and it appears here.</Note>
+          <Note testID="net-vpn-none">No VPNs yet. One you set up with your VPN provider’s app appears here.</Note>
         ) : (
           vpns.map((vpn) => {
             const working = busy[vpn.uuid];

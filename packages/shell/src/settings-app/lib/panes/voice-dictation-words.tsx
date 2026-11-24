@@ -6,16 +6,17 @@
  * a button opens; what is changed here is written there.
  */
 
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { MoreButton, SPACE, TextField, TYPE } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import type { Profile } from "../../../dictation/index.ts";
-import { Caption, Group, useSurface } from "../../../shared/cards/index.ts";
+import { Caption, Group } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneContext } from "../../context.ts";
 import type { PersonOnly } from "../person-only.ts";
 import { PAGE } from "../row.tsx";
 import { Setting } from "../setting.tsx";
-import { ListRow, MiniButton } from "./parts.tsx";
+import { ListRow, MiniButton, Value } from "./parts.tsx";
 
 type Source = NonNullable<PaneContext["dictation"]>;
 
@@ -31,6 +32,7 @@ export function profileWords(profile: Profile): string {
   return where === "" ? "Chosen from the capsule." : where;
 }
 
+/** A field of the add row: the kit's, in the panel look (SE-A11). */
 function Field({
   value,
   onChange,
@@ -44,21 +46,11 @@ function Field({
   placeholder: string;
   testID: string;
 }) {
-  const colors = useColors();
-  const surface = useSurface();
-  return (
-    <View style={{ flex: 1, height: 28, justifyContent: "center", paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
-      <TextInput
-        testID={testID}
-        value={value}
-        placeholder={placeholder}
-        onChangeText={onChange}
-        onSubmitEditing={onSubmit}
-        style={{ flex: 1, fontSize: 12, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
-      />
-    </View>
-  );
+  return <TextField look="panel" testID={testID} value={value} placeholder={placeholder} onChangeText={onChange} onSubmit={onSubmit} />;
 }
+
+/** The compact list sunk under the add row (SE-8's one other row): 28 tall, 12.5. */
+const ITEM = { height: 28, gap: SPACE.m, between: SPACE.xxs } as const;
 
 interface ItemsProps {
   kind: "word" | "replacement";
@@ -72,17 +64,21 @@ function Items({ kind, items, onRemove }: ItemsProps) {
   const [all, setAll] = useState(false);
   const shown = all ? items : items.slice(0, FIRST);
   return (
-    <View style={{ flexDirection: "column", gap: 2 }}>
+    <View style={{ flexDirection: "column", gap: ITEM.between }}>
       {shown.map((item) => (
-        <View key={item.key} testID={`dictation-${kind}:${item.key}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 28 }}>
+        <View
+          key={item.key}
+          testID={`dictation-${kind}:${item.key}`}
+          style={{ flexDirection: "row", alignItems: "center", gap: ITEM.gap, minHeight: ITEM.height }}
+        >
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.text }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.panel.body.size, color: colors.text }}>
               {item.text}
             </Text>
           </View>
           {item.detail !== undefined && (
             <View style={{ flexShrink: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={{ fontSize: 11.5, color: colors.textMuted }}>
+              <Text numberOfLines={1} style={{ fontSize: TYPE.panel.detail.size, color: colors.textMuted }}>
                 {item.detail}
               </Text>
             </View>
@@ -91,9 +87,7 @@ function Items({ kind, items, onRemove }: ItemsProps) {
         </View>
       ))}
       {items.length > FIRST && (
-        <View style={{ flexDirection: "row" }}>
-          <MiniButton testID={`dictation-${kind}-all`} label={all ? "Show fewer" : `Show all ${items.length}`} onPress={() => setAll(!all)} />
-        </View>
+        <MoreButton testID={`dictation-${kind}-all`} open={all} more={`Show all ${items.length}`} less="Show fewer" onPress={() => setAll(!all)} />
       )}
     </View>
   );
@@ -118,8 +112,8 @@ function Words({ source, guard }: { source: Source; guard: PersonOnly }) {
   }));
   return (
     <Setting id="voice/dictation-words" testID="voice-dictation-words" stack>
-      <View style={{ alignSelf: "stretch", flexDirection: "column", gap: 6 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.s }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
           <Field testID="dictation-word-add" value={word} onChange={setWord} onSubmit={add} placeholder="A name or term, as you write it" />
           <Field testID="dictation-word-heard" value={heard} onChange={setHeard} onSubmit={add} placeholder="Heard as (optional)" />
           <MiniButton testID="dictation-word-add-button" label="Add" tone="primary" disabled={word.trim() === ""} onPress={add} />
@@ -146,8 +140,8 @@ function Replacements({ source, guard }: { source: Source; guard: PersonOnly }) 
   const items = [...replacements].reverse().map((pair) => ({ key: pair.from, text: `${pair.from} → ${pair.to}` }));
   return (
     <Setting id="voice/dictation-replacements" testID="voice-dictation-replacements" stack>
-      <View style={{ alignSelf: "stretch", flexDirection: "column", gap: 6 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.s }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
           <Field testID="dictation-replacement-from" value={from} onChange={setFrom} onSubmit={add} placeholder="What is heard" />
           <Field testID="dictation-replacement-to" value={to} onChange={setTo} onSubmit={add} placeholder="What is typed" />
           <MiniButton testID="dictation-replacement-add-button" label="Add" tone="primary" disabled={!ready} onPress={add} />
@@ -170,10 +164,10 @@ export function DictationWordsRows({ source, guard }: { source: Source; guard: P
       <Group testID="voice-dictation-profiles">
         {profiles.map((profile) => (
           <ListRow key={profile.id} testID={`dictation-profile:${profile.id}`} name={profile.name} detail={profileWords(profile)}>
-            {profile.words.length > 0 && <Caption>{`${profile.words.length} words`}</Caption>}
+            {profile.words.length > 0 && <Value>{`${profile.words.length} words`}</Value>}
           </ListRow>
         ))}
-        <View style={{ flexDirection: "row", paddingLeft: PAGE.inset, paddingRight: PAGE.inset, paddingVertical: 8 }}>
+        <View style={{ flexDirection: "row", paddingLeft: PAGE.inset, paddingRight: PAGE.inset, paddingVertical: PAGE.pad }}>
           <MiniButton testID="dictation-open-folder" label="Open the folder" onPress={source.openFolder} />
         </View>
       </Group>

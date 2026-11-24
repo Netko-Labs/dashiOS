@@ -4,22 +4,21 @@
  * agent run through dashi-agent holds a placeholder (`dashi:github`); the
  * shell's token proxy puts the token in only on the way to those hosts. A
  * token typed here goes to dashi-secretd and is never shown again; deleting
- * one asks first, on a confirm sheet.
+ * one confirms in place.
  */
 
-import type { Confirm } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { Loading, SPACE, TextField } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState } from "react";
 import type { TokenSummary } from "../../../agents/secrets/types.ts";
 import type { VaultTokens } from "../../../agents/secrets/vault.ts";
 import { MODEL_KEYS, modelKey } from "../../../agents/tokens/model-keys.ts";
 import { DEFAULT_HEADER, placeholder } from "../../../agents/tokens/swap.ts";
-import { Button, Caption, Group, Note, useSurface } from "../../../shared/cards/index.ts";
-import { useColors } from "../../colors.ts";
+import { Button, Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { Spot } from "../../spot.tsx";
 import { Choices } from "../../ui.tsx";
 import { Row as FormRow, Row as Item } from "../row.tsx";
-import { Failure, MiniButton, VAULT_TROUBLE } from "./parts.tsx";
+import { ConfirmDelete, Failure, MiniButton, VAULT_TROUBLE } from "./parts.tsx";
 
 export type TokenStore = Pick<VaultTokens, "list" | "save" | "update" | "remove">;
 
@@ -77,6 +76,10 @@ export function formFor(kind: Kind, current: Form): Form {
   return key ? { ...current, kind, name: key.name, hosts: key.hosts.join(", "), headers: headersText(key.headers) } : { ...EMPTY, kind, token: current.token };
 }
 
+/** A form's fields are this wide, in the vault's forms (Passwords, Tokens). */
+export const FORM_FIELD = 240;
+
+/** A form's field: the kit's, in the panel look (SE-A11). */
 function Field({
   testID,
   value,
@@ -90,19 +93,22 @@ function Field({
   secure?: boolean;
   onChange: (text: string) => void;
 }) {
-  const colors = useColors();
-  const surface = useSurface();
+  return <TextField look="panel" testID={testID} value={value} placeholder={hint} width={FORM_FIELD} {...(secure ? { secure } : {})} onChangeText={onChange} />;
+}
+
+/** A token's row: Edit… and Delete…, which confirms in place and says what goes (SE-12). */
+function TokenRow({ token, onEdit, onDelete }: { token: TokenSummary; onEdit: () => void; onDelete: () => void }) {
+  const [asking, setAsking] = useState(false);
+  const detail = asking
+    ? `Agents holding ${placeholder(token.name)} can't reach ${token.hosts.join(", ")} with it any more. You can't undo this.`
+    : tokenDetail(token);
   return (
-    <View style={{ width: 240 }}>
-      <TextInput
-        testID={testID}
-        value={value}
-        placeholder={hint}
-        secureTextEntry={secure === true}
-        onChangeText={onChange}
-        style={{ width: "100%", fontSize: 13, padding: 7, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
-      />
-    </View>
+    <Item label={modelKey(token.name)?.label ?? token.name} detail={detail} testID={`token:${token.id}`}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
+        {!asking && <MiniButton testID={`token-edit:${token.id}`} label="Edit…" onPress={onEdit} />}
+        <ConfirmDelete testID={`token-delete:${token.id}`} onDelete={onDelete} onAsking={setAsking} />
+      </View>
+    </Item>
   );
 }
 
@@ -160,11 +166,11 @@ function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: T
           <Field testID={`${id}-token`} value={form.token} placeholder={editing ? "New token" : "Token"} secure onChange={set("token")} />
         </FormRow>
         <FormRow label="">
-          <View style={{ flexDirection: "row", gap: 8 }}>
+          <View style={{ flexDirection: "row", gap: SPACE.m }}>
             {editing && <Button testID={`${id}-cancel`} label="Cancel" onPress={onDone} />}
             <Button
               testID={`${id}-save`}
-              label={editing ? "Save Changes" : "Save Token"}
+              label={editing ? "Save changes" : "Save token"}
               primary
               disabled={hosts.length === 0 || headers.length === 0 || (!editing && (!form.name.trim() || !token))}
               onPress={save}
@@ -176,8 +182,7 @@ function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: T
   );
 }
 
-export function Tokens({ tokens, confirm }: { tokens: TokenStore; confirm: Confirm }) {
-  const colors = useColors();
+export function Tokens({ tokens }: { tokens: TokenStore }) {
   // Null until the vault answers; a failed read says so instead of claiming there are none.
   const [list, setList] = useState<TokenSummary[] | null>(null);
   const [editing, setEditing] = useState<TokenSummary | null>(null);
@@ -192,45 +197,32 @@ export function Tokens({ tokens, confirm }: { tokens: TokenStore; confirm: Confi
       });
   }, [tokens]);
   useEffect(() => refresh(), [refresh]);
-  const remove = (token: TokenSummary): void =>
-    confirm.ask({
-      title: `Delete the token “${token.name}”?`,
-      message: `Agents holding ${placeholder(token.name)} can't reach ${token.hosts.join(", ")} with it any more. You can't undo this.`,
-      confirmLabel: "Delete",
-      danger: true,
-      testID: "tokens-delete-sheet",
-      onConfirm: () => {
-        setFailure(null);
-        if (editing?.id === token.id) setEditing(null);
-        void tokens
-          .remove(token.id)
-          .catch((error: unknown) => {
-            console.error("dashi-shell: Tokens:", error instanceof Error ? error.message : error);
-            setFailure(`“${token.name}” wasn't deleted. ${VAULT_TROUBLE}`);
-          })
-          .finally(refresh);
-      },
-    });
+  const remove = (token: TokenSummary): void => {
+    setFailure(null);
+    if (editing?.id === token.id) setEditing(null);
+    void tokens
+      .remove(token.id)
+      .catch((error: unknown) => {
+        console.error("dashi-shell: Tokens:", error instanceof Error ? error.message : error);
+        setFailure(`“${token.name}” wasn't deleted. ${VAULT_TROUBLE}`);
+      })
+      .finally(refresh);
+  };
   return (
     <>
       <Spot id="passwords/tokens" cards>
-        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Tokens</Text>
-        <Group testID="tokens-list">
-          {list === null ? (
-            <Note testID="tokens-loading">{failure ? "Tokens can't be shown right now." : "Looking…"}</Note>
-          ) : list.length === 0 ? (
-            <Note testID="tokens-none">No tokens. Add an API token or a model key below: agents get a placeholder, never the token.</Note>
-          ) : (
-            list.map((token) => (
-              <Item key={token.id} label={modelKey(token.name)?.label ?? token.name} detail={tokenDetail(token)} testID={`token:${token.id}`}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <MiniButton testID={`token-edit:${token.id}`} label="Edit…" onPress={() => setEditing(token)} />
-                  <MiniButton testID={`token-delete:${token.id}`} label="Delete…" tone="critical" onPress={() => remove(token)} />
-                </View>
-              </Item>
-            ))
-          )}
-        </Group>
+        <Caption above>Tokens</Caption>
+        {list === null && failure ? null : (
+          <Group testID="tokens-list">
+            {list === null ? (
+              <Loading testID="tokens-loading" label="Looking for your tokens…" />
+            ) : list.length === 0 ? (
+              <Note testID="tokens-none">No tokens yet. Add an API token or a model key below: agents get a placeholder, never the token.</Note>
+            ) : (
+              list.map((token) => <TokenRow key={token.id} token={token} onEdit={() => setEditing(token)} onDelete={() => remove(token)} />)
+            )}
+          </Group>
+        )}
       </Spot>
       {failure && <Failure testID="tokens-failure">{failure}</Failure>}
       <TokenForm

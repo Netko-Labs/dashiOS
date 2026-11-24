@@ -7,7 +7,7 @@
  * press changes them.
  */
 
-import { FoldedChoices } from "@dashi/ui";
+import { FoldedChoices, SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { type ModelsView, type SpokenTongue, spokenTongues, type TongueCode, type VoiceParts, withTongue } from "../../../voice/index.ts";
 import { useSettings } from "../../hooks.ts";
@@ -67,7 +67,7 @@ export function VoiceLanguages({
       {each &&
         spoken.map((tongue) => (
           <Setting key={tongue.code} id={ROWS[tongue.code]} testID={`voice-in-${tongue.code}`} {...refused(ROWS[tongue.code])} stack>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, flexWrap: "wrap" }}>
               <FoldedChoices
                 testID={`voice-in-${tongue.code}-choice`}
                 value={tongue.voice ?? OFF}

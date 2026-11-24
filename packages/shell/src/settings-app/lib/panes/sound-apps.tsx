@@ -21,7 +21,7 @@ import { type AppMixer, type AppSound, type MixerOutput, type StreamMeters, useM
 import { Spot } from "../../spot.tsx";
 import { appSpot } from "../find.ts";
 import { PAGE, useCardRow } from "../row.tsx";
-import { Controls, DevicePopUp, Fader, IconKnob, StatusLine, StreamRow } from "./sound-mixer-parts.tsx";
+import { APP_NAME, AppDisc, Controls, DevicePopUp, Fader, MIXER_ROW, StatusLine, StreamRow } from "./sound-mixer-parts.tsx";
 
 function AppRow({
   app,
@@ -49,12 +49,10 @@ function AppRow({
       accessibilityLabel={`${app.name}, ${app.playing ? "playing" : "paused"}`}
       style={{ flexDirection: "column" }}
     >
-      <View
-        style={{ minHeight: PAGE.row, flexDirection: "row", flexWrap: "wrap", alignItems: "center", rowGap: 8, columnGap: 12, padding: 8, paddingRight: 16 }}
-      >
-        <IconKnob icon={app.icon} />
+      <View style={MIXER_ROW}>
+        <AppDisc icon={app.icon} name={app.name} />
         <View style={{ flex: 1, flexDirection: "column", minWidth: PAGE.words }}>
-          <Text numberOfLines={1} style={{ fontSize: 13.5, fontWeight: "semibold", color: colors.offInk }}>
+          <Text numberOfLines={1} style={{ ...APP_NAME, color: colors.offInk }}>
             {app.name}
           </Text>
           <StatusLine

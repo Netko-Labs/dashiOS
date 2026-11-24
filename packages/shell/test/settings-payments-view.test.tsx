@@ -23,7 +23,7 @@ test("limits that can't be read say so instead of leaving the section out", asyn
     const root = mount({ cards: async () => [], spending: () => Promise.reject(new Error("vault locked")) });
     await settle();
     expect(root.nodeId("payments-limits-unread")).toBeDefined();
-    expect(root.lastTree()).toContain("The limits can't be shown right now.");
+    expect(root.lastTree()).toContain("The limits couldn't be read.");
     root.unmount();
   } finally {
     console.error = error;

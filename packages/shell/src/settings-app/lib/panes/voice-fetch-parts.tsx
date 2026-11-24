@@ -1,41 +1,28 @@
-/** Settings › Voice's pieces of a fetch (voice.tsx): the progress bar, and "Remove…" that asks first. */
+/** Settings › Voice's pieces of a fetch (voice.tsx): its progress, and "Remove…" that confirms in place. */
 
+import { PROGRESS_BAR, ProgressBar, SPACE, TYPE } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useState } from "react";
 import { sizeWords } from "../../../voice/index.ts";
 import { useColors } from "../../colors.ts";
-import { MiniButton } from "./parts.tsx";
+import { ConfirmDelete } from "./parts.tsx";
 
-/** A fetch's progress: a bar, and "412 MB of 1.01 GB". */
+/** A fetch's progress: the kit's bar, in ink (Q3), and "412 MB of 1.01 GB". */
 export function Progress({ received, bytes, testID }: { received: number; bytes: number; testID: string }) {
   const colors = useColors();
-  const part = bytes > 0 ? Math.min(1, received / bytes) : 0;
+  const part = bytes > 0 ? Math.min(1, received / bytes) : null;
   return (
-    <View testID={testID} accessibilityLabel={`${Math.round(part * 100)}% fetched`} style={{ alignSelf: "stretch", flexDirection: "column", gap: 5 }}>
-      <View style={{ alignSelf: "stretch", height: 6, borderRadius: 3, backgroundColor: colors.button, overflow: "hidden" }}>
-        <View style={{ width: `${Math.round(part * 100)}%`, height: 6, borderRadius: 3, backgroundColor: colors.text }} />
+    <View testID={testID} style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.xs }}>
+      <View style={{ alignSelf: "stretch", height: PROGRESS_BAR.regular, flexDirection: "row" }}>
+        <ProgressBar testID={`${testID}:bar`} value={part} size="regular" label="Fetching" />
       </View>
-      <Text style={{ fontSize: 11.5, color: colors.textMuted }}>{bytes > 0 ? `${sizeWords(received)} of ${sizeWords(bytes)}` : "Starting…"}</Text>
+      <Text style={{ fontSize: TYPE.panel.detail.size, color: colors.textMuted }}>
+        {bytes > 0 ? `${sizeWords(received)} of ${sizeWords(bytes)}` : "Starting…"}
+      </Text>
     </View>
   );
 }
 
-/** "Remove…" that asks first, in place. */
+/** "Remove…", confirmed in place (SE-12). */
 export function Remove({ testID, onRemove }: { testID: string; onRemove: () => void }) {
-  const [asking, setAsking] = useState(false);
-  if (!asking) return <MiniButton testID={testID} label="Remove…" tone="critical" onPress={() => setAsking(true)} />;
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      <MiniButton testID={`${testID}:cancel`} label="Cancel" onPress={() => setAsking(false)} />
-      <MiniButton
-        testID={`${testID}:confirm`}
-        label="Remove"
-        tone="critical"
-        onPress={() => {
-          setAsking(false);
-          onRemove();
-        }}
-      />
-    </View>
-  );
+  return <ConfirmDelete testID={testID} verb="Remove" onDelete={onRemove} />;
 }

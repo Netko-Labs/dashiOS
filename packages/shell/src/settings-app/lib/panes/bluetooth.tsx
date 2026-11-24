@@ -6,6 +6,7 @@
  * while it is open and stops when it closes.
  */
 
+import { Loading, TYPE } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { failureLine } from "../../../bluetooth/failures.ts";
@@ -29,7 +30,7 @@ function Battery({ percent, name }: { percent: number; name: string }) {
     <>
       <Svg markup={batteryGlyph(percent, false)} width={18} height={9} color={colors.textMuted} />
       <View testID={`bt-battery:${name}`}>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${percent}%`}</Text>
+        <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{`${percent}%`}</Text>
       </View>
     </>
   );
@@ -72,7 +73,7 @@ function Devices({ services }: { services: PaneServices }) {
     <>
       {state.mine.length > 0 && (
         <>
-          <Caption above>My Devices</Caption>
+          <Caption above>My devices</Caption>
           <Group testID="bt-mine">
             {state.mine.map((device) => (
               <MyDevice key={device.path} device={device} state={state} services={services} />
@@ -80,7 +81,7 @@ function Devices({ services }: { services: PaneServices }) {
           </Group>
         </>
       )}
-      <Caption above>{searching ? "Nearby Devices — Searching…" : "Nearby Devices"}</Caption>
+      <Caption above>Nearby devices</Caption>
       <Group testID="bt-nearby">
         {state.nearby.map((device) => (
           <ListRow
@@ -99,7 +100,12 @@ function Devices({ services }: { services: PaneServices }) {
             />
           </ListRow>
         ))}
-        {state.nearby.length === 0 && <Note testID="bt-none">{searching ? "Looking for devices…" : "No devices found."}</Note>}
+        {state.nearby.length === 0 &&
+          (searching ? (
+            <Loading testID="bt-none" label="Looking for devices…" />
+          ) : (
+            <Note testID="bt-none">No devices found. Put the device in pairing mode, then search again.</Note>
+          ))}
       </Group>
       {!searching && (
         <Group>

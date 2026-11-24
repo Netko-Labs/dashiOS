@@ -9,9 +9,9 @@
  * only ever means "on". Everything paints with the live Dark Mode.
  */
 
-import { FoldedChoices, InkSlider, Switch as KitSwitch, SPACE, TYPE, useColors, useControlColors, WEIGHT } from "@dashi/ui";
+import { FoldedChoices, InkSlider, Switch as KitSwitch, type Look, SPACE, TYPE, useColors, useControlColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
-import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
+import { type ComponentType, createContext, type ReactNode, useContext, useMemo, useRef } from "react";
 import { PAGE } from "./lib/row.tsx";
 import { PAGE_GAP, PageContext } from "./spot.tsx";
 
@@ -60,25 +60,18 @@ export function Choices<T extends string | number>(props: {
   return <FoldedChoices {...props} />;
 }
 
-/** A setting's slider: Control Center's flat ink slider, its glyph on a chip and its value at the right. */
-export function Slider(props: {
-  value: number;
-  range?: { min: number; max: number; step: number };
-  width?: number;
-  testID: string;
-  onChange?: (value: number) => void;
-  onCommit?: (value: number) => void;
-  glyph?: string;
-  format?: (value: number) => string;
-  disabled?: boolean;
-}) {
-  return <InkSlider {...props} />;
+/** A setting's slider: the kit's flat ink slider (the panel look), its glyph on a chip and its value at the right. */
+export const Slider = InkSlider;
+
+/** The kit's control in the panel look, every prop but the look its own. */
+function inPanelLook<P extends { look?: Look }>(Control: ComponentType<P>): ComponentType<Omit<P, "look">> {
+  return function InPanelLook(props: Omit<P, "look">) {
+    return <Control {...(props as P)} look="panel" />;
+  };
 }
 
-/** An on/off switch: its track shows when off, the one "on" when on. */
-export function Switch({ on, testID, onChange, disabled }: { on: boolean; testID: string; onChange?: (on: boolean) => void; disabled?: boolean }) {
-  return <KitSwitch look="panel" on={on} testID={testID} {...(onChange ? { onChange } : {})} {...(disabled ? { disabled } : {})} />;
-}
+/** An on/off switch: the kit's, in the panel look (its track shows when off, the one "on" when on). */
+export const Switch = inPanelLook(KitSwitch);
 
 /** The settings file couldn't be written just now (view.tsx provides it; the page says so at its top). */
 export const SaveError = createContext(false);

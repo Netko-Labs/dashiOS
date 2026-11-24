@@ -15,7 +15,7 @@
  * (person-only.ts): an agent's press changes nothing and the row says so.
  */
 
-import { FoldedChoices } from "@dashi/ui";
+import { FoldedChoices, Loading, SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { speedWord } from "../../../rewrite/speed-word.ts";
@@ -39,7 +39,7 @@ import type { SettingsStore } from "../../store.ts";
 import { Page, Switch } from "../../ui.tsx";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
-import { MiniButton } from "./parts.tsx";
+import { Failure, MiniButton } from "./parts.tsx";
 import { ModelChoiceRows } from "./voice-choice.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
 import { DictationHistoryRows } from "./voice-dictation-history.tsx";
@@ -104,7 +104,7 @@ function ModelsRow({
       ) : here ? (
         <Remove testID={`${id.replace("/", "-")}-remove`} onRemove={remove} />
       ) : (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
           {part && <Remove testID={`${id.replace("/", "-")}-remove`} onRemove={remove} />}
           <MiniButton
             testID={`${id.replace("/", "-")}-fetch`}
@@ -136,7 +136,7 @@ function KeyAndVoice({ settings, voice, view, guard }: { settings: SettingsStore
       </Setting>
       {choices.length > 0 && (
         <Setting id="voice/dashis-voice" testID="voice-voice" {...(guard.refused === "voice/dashis-voice" ? { detail: ONLY_YOU } : {})} stack>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, flexWrap: "wrap" }}>
             <FoldedChoices
               testID="voice-voice-choice"
               value={spoken}
@@ -213,7 +213,11 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
     return (
       <Page title="Voice">
         <Group testID="voice-missing">
-          <Note>{view.service === "looking" ? "Looking for Voice…" : "Voice isn't running in this session. Log out and in again to start it."}</Note>
+          {view.service === "looking" ? (
+            <Loading testID="voice-looking" label="Looking for Voice…" />
+          ) : (
+            <Note>Voice isn't running in this session. Log out and in again to start it.</Note>
+          )}
         </Group>
       </Page>
     );
@@ -250,7 +254,7 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
           <ModelsRow id="voice/models" sets={basics} view={view} voice={voice} offer={offer} onFetch={fetchBasics} guard={guard} />
         )}
       </Group>
-      {view.error !== null && <Note testID="voice-error">{view.error}</Note>}
+      {view.error !== null && <Failure testID="voice-error">{view.error}</Failure>}
       {on && <KeyAndVoice settings={settings} voice={voice} view={view} guard={guard} />}
       {on && <TalkRows settings={settings} guard={guard} />}
       {on && <DictationRows settings={settings} guard={guard} />}

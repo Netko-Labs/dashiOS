@@ -1,60 +1,16 @@
-/** Settings › Agents, Work alone's smaller parts (agents-alone.tsx): a ticked choice, the list of them, and the field that adds a site. */
+/** Settings › Agents, Work alone's smaller parts (agents-alone.tsx): several choices as the kit's checkboxes, and the field that adds a site. */
 
-import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { Checkbox, SPACE, TextField, TYPE } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { Button, useSurface } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import { siteToAdd } from "./agents-sites.tsx";
+import { MiniButton } from "./parts.tsx";
 
-const CHECK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" stroke="#000" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+/** A tick's measures: at least 210 wide so they stand in columns, 16 between columns (the box and its words are the kit's Checkbox). */
+export const TICK = { width: 210, columns: SPACE.page } as const;
 
-/** A tick's measures: a 16 box, its words, 26 tall, at least 210 wide so they stand in columns. */
-export const TICK = { box: 16, height: 26, width: 210, gap: 8 } as const;
-
-/** One choice of several: a box, green with a tick when chosen (it is on), and its words. */
-export function Tick({ label, on, testID, onChange }: { label: string; on: boolean; testID: string; onChange: (on: boolean) => void }) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      focusable
-      accessibilityRole="checkbox"
-      accessibilityLabel={label}
-      accessibilityState={{ checked: on }}
-      onPress={() => onChange(!on)}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: TICK.gap,
-        height: TICK.height,
-        minWidth: TICK.width,
-        borderRadius: 6,
-        focusRingColor: colors.focusRing,
-      }}
-    >
-      <View
-        style={{
-          width: TICK.box,
-          height: TICK.box,
-          flexShrink: 0,
-          borderRadius: 4,
-          borderWidth: on ? 0 : 1.5,
-          borderColor: colors.checkbox,
-          backgroundColor: on ? colors.selection : "#00000000",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {on && <Svg markup={CHECK} size={12} color={colors.onAccent} />}
-      </View>
-      <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.text }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-/** Ticks side by side, wrapping into columns. */
+/** Several of many (UI-10): the kit's checkboxes in the panel look, side by side, wrapping into columns. */
 export function Ticks<T extends string>({
   testID,
   options,
@@ -67,9 +23,11 @@ export function Ticks<T extends string>({
   onChange: (value: T, on: boolean) => void;
 }) {
   return (
-    <View testID={testID} style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 16, alignSelf: "stretch" }}>
+    <View testID={testID} style={{ flexDirection: "row", flexWrap: "wrap", columnGap: TICK.columns, alignSelf: "stretch" }}>
       {options.map(({ value, label }) => (
-        <Tick key={value} testID={`${testID}:${value}`} label={label} on={chosen.has(value)} onChange={(on) => onChange(value, on)} />
+        <View key={value} style={{ minWidth: TICK.width }}>
+          <Checkbox look="panel" testID={`${testID}:${value}`} label={label} checked={chosen.has(value)} onChange={(on) => onChange(value, on)} />
+        </View>
       ))}
     </View>
   );
@@ -78,12 +36,11 @@ export function Ticks<T extends string>({
 /** "Add…", then a field for an address or a host; a site already offered says so. */
 export function AddSite({ listed, onAdd }: { listed: readonly string[]; onAdd: (site: string) => void }) {
   const colors = useColors();
-  const surface = useSurface();
   const [adding, setAdding] = useState<string | null>(null);
   if (adding === null) {
     return (
       <View style={{ flexDirection: "row" }}>
-        <Button testID="alone-site-add" label="Add…" onPress={() => setAdding("")} />
+        <MiniButton testID="alone-site-add" label="Add…" onPress={() => setAdding("")} />
       </View>
     );
   }
@@ -94,23 +51,21 @@ export function AddSite({ listed, onAdd }: { listed: readonly string[]; onAdd: (
     setAdding(null);
   };
   return (
-    <View style={{ flexDirection: "column", gap: 4, alignSelf: "stretch" }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <View style={{ flex: 1, height: 28, justifyContent: "center", paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
-          <TextInput
-            testID="alone-site-field"
-            value={adding}
-            autoFocus
-            placeholder="A site, like bodytech.com.co"
-            onChangeText={setAdding}
-            onSubmitEditing={add}
-            style={{ flex: 1, fontSize: 12, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
-          />
-        </View>
-        <Button testID="alone-site-add-button" label="Add" primary disabled={!("site" in wanted)} onPress={add} />
-        <Button testID="alone-site-cancel" label="Cancel" onPress={() => setAdding(null)} />
+    <View style={{ flexDirection: "column", gap: SPACE.xs, alignSelf: "stretch" }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
+        <TextField
+          look="panel"
+          testID="alone-site-field"
+          value={adding}
+          autoFocus
+          placeholder="A site, like bodytech.com.co"
+          onChangeText={setAdding}
+          onSubmit={add}
+        />
+        <MiniButton testID="alone-site-add-button" label="Add" tone="primary" disabled={!("site" in wanted)} onPress={add} />
+        <MiniButton testID="alone-site-cancel" label="Cancel" onPress={() => setAdding(null)} />
       </View>
-      {"problem" in wanted && wanted.problem !== null && <Text style={{ fontSize: 11.5, color: colors.textMuted }}>{wanted.problem}</Text>}
+      {"problem" in wanted && wanted.problem !== null && <Text style={{ fontSize: TYPE.panel.detail.size, color: colors.textMuted }}>{wanted.problem}</Text>}
     </View>
   );
 }

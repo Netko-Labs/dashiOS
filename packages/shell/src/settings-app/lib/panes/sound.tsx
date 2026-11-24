@@ -195,7 +195,7 @@ export function SoundPane({ services }: { services: PaneServices }) {
       <Caption above>Input</Caption>
       <Input services={services} volume={volumes.input} />
       {services.mixer && <RecordingCard mixer={services.mixer} meters={services.meters} />}
-      <Caption above>Menu Bar</Caption>
+      <Caption above>Menu bar</Caption>
       <Group>
         <Setting id="sound/show-in-menu-bar" control="sound-menubar" />
       </Group>

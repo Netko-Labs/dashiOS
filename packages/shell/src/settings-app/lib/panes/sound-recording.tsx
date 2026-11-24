@@ -10,13 +10,13 @@
  * stays as it is. None while nobody records.
  */
 
-import { useControlColors, useColors as usePalette } from "@dashi/ui";
+import { pill, SPACE, useControlColors, useColors as usePalette } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Group } from "../../../shared/cards/index.ts";
 import { type AppMixer, type AppRecording, type MixerOutput, type StreamMeters, useMixer } from "../../../sound/index.ts";
 import { Spot } from "../../spot.tsx";
 import { PAGE, useCardRow } from "../row.tsx";
-import { Controls, DevicePopUp, Fader, IconKnob, StatusLine } from "./sound-mixer-parts.tsx";
+import { APP_NAME, AppDisc, Controls, DevicePopUp, Fader, MIXER_ROW, StatusLine } from "./sound-mixer-parts.tsx";
 
 /** What a recorder of a sink's monitor records, short enough for the pop-up: this computer's own sound. */
 export const OWN_SOUND = "System sound";
@@ -37,22 +37,20 @@ function RecordingRow({
   useCardRow(true);
   const from = app.monitor ? OWN_SOUND : app.input;
   return (
-    <View
-      testID={`sound-recording-row:${app.key}`}
-      accessibilityRole="group"
-      accessibilityLabel={`${app.name}, recording from ${from}`}
-      style={{ minHeight: PAGE.row, flexDirection: "row", flexWrap: "wrap", alignItems: "center", rowGap: 8, columnGap: 12, padding: 8, paddingRight: 16 }}
-    >
-      <IconKnob icon={app.icon} />
+    <View testID={`sound-recording-row:${app.key}`} accessibilityRole="group" accessibilityLabel={`${app.name}, recording from ${from}`} style={MIXER_ROW}>
+      <AppDisc icon={app.icon} name={app.name} />
       <View style={{ flex: 1, flexDirection: "column", minWidth: PAGE.words }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
           <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontWeight: "semibold", color: colors.offInk }}>
+            <Text numberOfLines={1} style={{ ...APP_NAME, color: colors.offInk }}>
               {app.name}
             </Text>
           </View>
           {!app.monitor && (
-            <View testID={`sound-recording-dot:${app.key}`} style={{ width: 8, height: 8, flexShrink: 0, borderRadius: 4, backgroundColor: microphone }} />
+            <View
+              testID={`sound-recording-dot:${app.key}`}
+              style={{ width: RECORDING_DOT, height: RECORDING_DOT, flexShrink: 0, borderRadius: pill(RECORDING_DOT), backgroundColor: microphone }}
+            />
           )}
         </View>
         <StatusLine testID={`sound-recording:${app.key}`} parts={app.parts} playing muted={app.muted} meters={meters} />
@@ -80,6 +78,9 @@ function RecordingRow({
 }
 
 /** The apps that record, as a card under the Input's; none while nobody records. */
+/** The recording dot beside the name: an indicator, the microphone's colour. */
+const RECORDING_DOT = SPACE.m;
+
 export function RecordingCard({ mixer, meters }: { mixer: AppMixer; meters?: StreamMeters }) {
   const state = useMixer(mixer);
   if (state.recording.length === 0) return null;

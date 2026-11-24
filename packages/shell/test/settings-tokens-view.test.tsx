@@ -1,5 +1,4 @@
 import { expect, test } from "bun:test";
-import { useConfirm } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { NewToken, TokenChange, TokenSummary } from "../src/agents/secrets/types.ts";
 import { parseHeaders, parseHosts, type TokenStore, Tokens, tokenDetail } from "../src/settings-app/lib/panes/tokens.tsx";
@@ -26,18 +25,16 @@ function fakeVault(items: TokenSummary[]) {
 }
 
 function Harness({ tokens }: { tokens: TokenStore }) {
-  const confirm = useConfirm();
   return (
     <View style={{ flex: 1 }}>
-      <Tokens tokens={tokens} confirm={confirm} />
-      {confirm.sheet}
+      <Tokens tokens={tokens} />
     </View>
   );
 }
 
 /**
  * The view, with every step waiting on the thing itself: a press or typing waits for its node to
- * show, and a test waits for the sheet or the vault's call it expects. A fixed number of turns of
+ * show, and a test waits for the confirm or the vault's call it expects. A fixed number of turns of
  * the loop was not always enough for the list to load and the view to draw again, under load.
  */
 async function mount(tokens: TokenStore) {
@@ -102,16 +99,16 @@ test("editing keeps the token unless a new one is typed", async () => {
   expect(calls.updated).toEqual([[1, { hosts: ["api.github.com", "uploads.github.com"], headers: ["Authorization: Bearer {}"] }]]);
 });
 
-test("deleting asks on a sheet first, and Cancel keeps it", async () => {
+test("deleting confirms in place first, and Cancel keeps it", async () => {
   const { store, calls } = fakeVault([GITHUB]);
   const view = await mount(store);
   await view.press("token-delete:1");
-  await view.shows("tokens-delete-sheet");
-  await view.press("tokens-delete-sheet:cancel");
-  await view.gone("tokens-delete-sheet");
+  await view.shows("token-delete:1:confirm");
+  await view.press("token-delete:1:cancel");
+  await view.gone("token-delete:1:confirm");
   expect(calls.removed).toEqual([]);
   await view.press("token-delete:1");
-  await view.press("tokens-delete-sheet:ok");
+  await view.press("token-delete:1:confirm");
   await until(() => calls.removed.length > 0, "the token to be removed");
   expect(calls.removed).toEqual([1]);
 });

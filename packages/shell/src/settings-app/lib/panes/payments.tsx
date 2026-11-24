@@ -5,23 +5,27 @@
  * the login password. Every payment still asks for the fingerprint or password.
  */
 
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { Loading, SPACE, TextField } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState } from "react";
 import { dollars, parseAmount } from "../../../agents/secrets/pay.ts";
 import type { CardSummary, Vault } from "../../../agents/secrets/vault.ts";
-import { Button, Caption, Group, Note, useSurface } from "../../../shared/cards/index.ts";
-import { useColors } from "../../colors.ts";
+import { Button, Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { Spot } from "../../spot.tsx";
 import { Switch } from "../../ui.tsx";
 import { Row as FormRow, Row as Item } from "../row.tsx";
 import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 
+/** The card form's fields: a limit 160 wide, a name or number 220, an expiry or code 80. */
+const FIELD = { width: 160, long: 220, short: 80 } as const;
+
+/** A form's field: the kit's, in the panel look (SE-A11). */
 function Field({
   testID,
   value,
   placeholder,
   secure,
-  width = 160,
+  width = FIELD.width,
   onChange,
 }: {
   testID: string;
@@ -31,19 +35,8 @@ function Field({
   width?: number;
   onChange: (text: string) => void;
 }) {
-  const colors = useColors();
-  const surface = useSurface();
   return (
-    <View style={{ width }}>
-      <TextInput
-        testID={testID}
-        value={value}
-        placeholder={placeholder}
-        secureTextEntry={secure === true}
-        onChangeText={onChange}
-        style={{ width: "100%", fontSize: 13, padding: 7, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
-      />
-    </View>
+    <TextField look="panel" testID={testID} value={value} placeholder={placeholder} width={width} {...(secure ? { secure } : {})} onChangeText={onChange} />
   );
 }
 
@@ -80,12 +73,7 @@ function Limits({ vault }: { vault: Vault }) {
       })
       .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
   };
-  if (!spending)
-    return unread ? (
-      <Group testID="payments-limits">
-        <Note testID="payments-limits-unread">The limits can't be shown right now.</Note>
-      </Group>
-    ) : null;
+  if (!spending) return unread ? <Failure testID="payments-limits-unread">{`The limits couldn't be read. ${VAULT_TROUBLE}`}</Failure> : null;
   return (
     <Spot id="passwords/payment-limits" cards>
       <Group testID="payments-limits">
@@ -96,7 +84,7 @@ function Limits({ vault }: { vault: Vault }) {
           <Field testID="payments-per-month" value={form.perMonth} placeholder="300" onChange={(perMonth) => setForm((f) => ({ ...f, perMonth }))} />
         </FormRow>
         <FormRow label="Your password" detail={problem ?? "Changing a limit needs it"}>
-          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <View style={{ flexDirection: "row", gap: SPACE.m, alignItems: "center" }}>
             <Field
               testID="payments-password"
               value={form.password}
@@ -134,7 +122,7 @@ function AddCard({ vault, onSaved }: { vault: Vault; onSaved: () => void }) {
             testID="payments-add-label"
             value={form.label}
             placeholder="Single-use from my bank"
-            width={220}
+            width={FIELD.long}
             onChange={(label) => setForm((f) => ({ ...f, label }))}
           />
         </FormRow>
@@ -144,21 +132,34 @@ function AddCard({ vault, onSaved }: { vault: Vault; onSaved: () => void }) {
             value={form.number}
             placeholder="Card number"
             secure
-            width={220}
+            width={FIELD.long}
             onChange={(number) => setForm((f) => ({ ...f, number }))}
           />
         </FormRow>
         <FormRow label="Expiry and code" detail={problem ?? undefined}>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Field testID="payments-add-expiry" value={form.expiry} placeholder="MM/YY" width={80} onChange={(expiry) => setForm((f) => ({ ...f, expiry }))} />
-            <Field testID="payments-add-cvc" value={form.cvc} placeholder="Code" secure width={80} onChange={(cvc) => setForm((f) => ({ ...f, cvc }))} />
+          <View style={{ flexDirection: "row", gap: SPACE.m }}>
+            <Field
+              testID="payments-add-expiry"
+              value={form.expiry}
+              placeholder="MM/YY"
+              width={FIELD.short}
+              onChange={(expiry) => setForm((f) => ({ ...f, expiry }))}
+            />
+            <Field
+              testID="payments-add-cvc"
+              value={form.cvc}
+              placeholder="Code"
+              secure
+              width={FIELD.short}
+              onChange={(cvc) => setForm((f) => ({ ...f, cvc }))}
+            />
           </View>
         </FormRow>
         <FormRow label="Single use" detail="A virtual card from your bank's app, refused after one payment">
           <Switch testID="payments-add-single" on={form.singleUse} onChange={(singleUse) => setForm((f) => ({ ...f, singleUse }))} />
         </FormRow>
         <FormRow label="">
-          <Button testID="payments-add-save" label="Save Card" primary disabled={!form.number || !form.expiry || !form.cvc} onPress={save} />
+          <Button testID="payments-add-save" label="Save card" primary disabled={!form.number || !form.expiry || !form.cvc} onPress={save} />
         </FormRow>
       </Group>
     </Spot>
@@ -179,7 +180,6 @@ function CardRow({ card, onDelete }: { card: CardSummary; onDelete: () => void }
 }
 
 export function Payments({ vault }: { vault: Vault }) {
-  const colors = useColors();
   // Null until the vault answers; a failed read says so instead of claiming there are no cards.
   const [cards, setCards] = useState<CardSummary[] | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -206,16 +206,18 @@ export function Payments({ vault }: { vault: Vault }) {
   return (
     <>
       <Spot id="passwords/cards" cards>
-        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Payments</Text>
-        <Group testID="payments-cards">
-          {cards === null ? (
-            <Note testID="payments-loading">{failure ? "Cards can't be shown right now." : "Looking…"}</Note>
-          ) : cards.length === 0 ? (
-            <Note testID="payments-none">No cards. Agents can't pay until you add one; a single-use virtual card is safest.</Note>
-          ) : (
-            cards.map((card) => <CardRow key={card.id} card={card} onDelete={() => remove(card)} />)
-          )}
-        </Group>
+        <Caption above>Payments</Caption>
+        {cards === null && failure ? null : (
+          <Group testID="payments-cards">
+            {cards === null ? (
+              <Loading testID="payments-loading" label="Looking for your cards…" />
+            ) : cards.length === 0 ? (
+              <Note testID="payments-none">No cards yet. Agents can't pay until you add one; a single-use virtual card is safest.</Note>
+            ) : (
+              cards.map((card) => <CardRow key={card.id} card={card} onDelete={() => remove(card)} />)
+            )}
+          </Group>
+        )}
       </Spot>
       {failure && <Failure testID="payments-failure">{failure}</Failure>}
       <AddCard vault={vault} onSaved={refresh} />

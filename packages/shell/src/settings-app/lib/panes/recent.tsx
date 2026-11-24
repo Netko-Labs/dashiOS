@@ -53,9 +53,9 @@ export function RecentPane({ changes, settings, flags, show }: { changes: Change
   return (
     <Page title="Recently changed">
       <Spot id="recent/changes" cards>
-        <Group testID="recent-changes">
+        <Group testID="recent-changes" list="list">
           {entries.length === 0 ? (
-            <Note testID="recent-none">Nothing has changed yet. When you or an agent changes a setting, it's listed here, with Undo.</Note>
+            <Note testID="recent-none">No changes yet. When you or an agent changes a setting, it's listed here, with Undo.</Note>
           ) : (
             entries.map((entry) => (
               <ChangeRow

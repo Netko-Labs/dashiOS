@@ -4,21 +4,21 @@
  * what it may do, riskiest first, each in one line of what it means
  * (privacy-words.ts), and what it did lately (the settings it changed, with
  * Undo, and its last connection). Revoke takes back one permission, Revoke
- * All every one, at once and from a live connection too; then "Revoked" says
+ * all every one, at once and from a live connection too; then "Revoked" says
  * what happened, with Undo, until the person leaves the pane or changes
  * something else. Meanwhile what was taken back stays in place, marked
  * Revoked, and so does the agent's card: nothing moves under the pointer.
  */
 
-import { Text, View } from "@mirinjs/metal";
+import { Chip, SPACE } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ago, type HistoryEntry } from "../../../agents/ask/history.ts";
 import type { GrantEntry, Scope } from "../../../agents/consent.ts";
 import type { AgentInfo } from "../../../agents/presence.ts";
-import { Button, Caption, Group, Note } from "../../../shared/cards/index.ts";
+import { Caption, Group, Note, TUCK } from "../../../shared/cards/index.ts";
 import { isPaneId } from "../../../shared/settings/index.ts";
 import { useClockPrefs } from "../../../shared/time/index.ts";
-import { useColors } from "../../colors.ts";
 import type { PaneContext } from "../../context.ts";
 import { useGrantEntries, useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
@@ -27,6 +27,7 @@ import { type ByPerson, ONLY_YOU, usePersonOnly } from "../person-only.ts";
 import { type AgentCard, agentCards, CONSEQUENCES, sinceWords } from "../privacy-words.ts";
 import { Row as Item, PAGE } from "../row.tsx";
 import { ChangeRow } from "./change-row.tsx";
+import { ListRow, MiniButton } from "./parts.tsx";
 import { placeOf, useUndoEntry } from "./recent.tsx";
 
 /** How many of an agent's changes it lists. */
@@ -85,45 +86,25 @@ export function givenWords(since: number | null, now: Date, locale?: string): st
   return sinceWords(since, now, locale) ?? "Allowed earlier";
 }
 
-/** "Connected now" on shiso's wash, beside an agent's name. */
-function ConnectedChip() {
-  const colors = useColors();
-  return (
-    // Never squeezed: the name beside it gives way (and is cut) first.
-    <View
-      testID="agent-connected"
-      style={{ height: 18, flexShrink: 0, paddingHorizontal: 7, borderRadius: 9, justifyContent: "center", backgroundColor: colors.agentWash }}
-    >
-      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.agentInk }}>
-        Connected now
-      </Text>
-    </View>
-  );
-}
-
-/** The agent's name, where it runs, whether it is connected, and Revoke All (kept in place, off, once all are revoked). */
+/**
+ * The card's head (SE-8, a ListRow): the agent's name, where it runs,
+ * "Connected now" on shiso's wash (the kit's Chip) while it is, and
+ * Revoke all (kept in place, off, once all are revoked).
+ */
 function AgentHead({ agent, onRevokeAll }: { agent: ShownCard; onRevokeAll: (() => void) | null }) {
-  const colors = useColors();
   const asksFirst = agent.scopes.every((scope) => scope.revoked);
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingHorizontal: PAGE.inset, paddingVertical: 8 }}>
-      <View style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
-              {agent.title}
-            </Text>
-          </View>
-          {agent.connected && <ConnectedChip />}
+    <ListRow name={agent.title} detail={asksFirst ? `${agent.detail} · asks before anything` : agent.detail}>
+      {agent.connected && (
+        // A row of its own for the chip, so it centres on the row's line (a chip sits at its row's top).
+        <View style={{ flexShrink: 0 }}>
+          <Chip testID="agent-connected" tone="agent" label="Connected now" />
         </View>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-          {asksFirst ? `${agent.detail} · asks before anything` : agent.detail}
-        </Text>
-      </View>
-      {agent.scopes.length > 0 && (
-        <Button testID={`agent-revoke-all:${agent.key}`} label="Revoke all" disabled={onRevokeAll === null} onPress={onRevokeAll ?? (() => {})} />
       )}
-    </View>
+      {agent.scopes.length > 0 && (
+        <MiniButton testID={`agent-revoke-all:${agent.key}`} label="Revoke all" disabled={onRevokeAll === null} onPress={onRevokeAll ?? (() => {})} />
+      )}
+    </ListRow>
   );
 }
 
@@ -140,11 +121,11 @@ interface AgentGroupProps {
 function RevokedNote({ agent, revoked, byPerson }: { agent: string; revoked: Revoked; byPerson?: ByPerson }) {
   const guard = usePersonOnly(byPerson);
   return (
-    <View testID={`agent-revoked:${agent}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginTop: -8 }}>
+    <View testID={`agent-revoked:${agent}`} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, paddingRight: PAGE.inset, ...TUCK }}>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Caption>{guard.refused === agent ? ONLY_YOU : revoked.words}</Caption>
       </View>
-      <Button testID={`agent-revoked-undo:${agent}`} label="Undo" onPress={() => guard.mine(agent, revoked.undo)} />
+      <MiniButton testID={`agent-revoked-undo:${agent}`} label="Undo" onPress={() => guard.mine(agent, revoked.undo)} />
     </View>
   );
 }
@@ -186,9 +167,9 @@ function AgentGroup({ agent, ctx, changes, history, revoked, onRevoked }: AgentG
             detail={`${CONSEQUENCES[scope]} ${givenWords(since, now, prefs.locale)}`}
           >
             {gone ? (
-              <Button testID={`agent-revoke:${agent.key}:${scope}`} label="Revoked" disabled onPress={() => {}} />
+              <MiniButton testID={`agent-revoke:${agent.key}:${scope}`} label="Revoked" disabled onPress={() => {}} />
             ) : (
-              <Button testID={`agent-revoke:${agent.key}:${scope}`} label="Revoke" onPress={() => revokeOne(scope, label, since)} />
+              <MiniButton testID={`agent-revoke:${agent.key}:${scope}`} label="Revoke" onPress={() => revokeOne(scope, label, since)} />
             )}
           </Item>
         ))}
