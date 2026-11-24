@@ -33,7 +33,6 @@
 6	packages/shell/src/screenshots/screenshot-area.tsx
 1	packages/shell/src/shared/calendar/store.ts
 1	packages/shell/src/shared/pill/persona.ts
-4	packages/shell/src/spaces/lib/row-parts.tsx
 3	packages/shell/src/system/lib/osd-panel.tsx
 1	packages/shell/src/widgets/edit-bar.tsx
 1	packages/shell/src/widgets/edit.tsx

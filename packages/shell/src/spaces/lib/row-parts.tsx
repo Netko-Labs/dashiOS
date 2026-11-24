@@ -4,14 +4,14 @@
  * plain view of what row.tsx decides; none keeps state of its own.
  */
 
-import { useColors } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { ADD, CLOSE as CLOSE_GLYPH, GLYPH_BUTTON, GlyphButton, pill, RADIUS, SHADOW, SPACE, TextField, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useRef } from "react";
 import type { Rect } from "./row-layout.ts";
 import { lifted } from "./shelf.ts";
 
-/** The × on a name: its size, and how far it hangs over the name's corner. */
-export const CLOSE = 20;
+/** The × on a name: its size (the kit's small glyph button), and how far it hangs over the name's corner. */
+export const CLOSE = GLYPH_BUTTON.small.target;
 /** A second press on a name this soon is a double-click: rename instead of going there. */
 const DOUBLE_CLICK_MS = 350;
 /** The frame around a picture, outside it (the picture covers the inside). */
@@ -59,17 +59,17 @@ export function RowPictures(props: {
       <View
         key={`picture-${index}`}
         testID={`space-${index + 1}-picture`}
-        accessibilityRole="button"
+        accessibilityRole="option"
         accessibilityLabel={props.names[index] || `Desktop ${index + 1}`}
         accessibilityState={{ selected: index === props.current }}
         onPress={() => props.onSwitch(index)}
         onHoverChange={(over) => props.onOverSpace(index, over)}
         style={{
           ...at({ x: rect.x - RING, y: rect.y - RING, width: rect.width + 2 * RING, height: rect.height + 2 * RING }),
-          borderRadius: 8,
+          borderRadius: RADIUS.control,
           borderWidth: RING,
           borderColor: index === props.current || props.lifted === index ? colors.selection : colors.dockBorder,
-          shadow: props.lifted === index ? "xl" : "md",
+          shadow: props.lifted === index ? SHADOW.xl : SHADOW.sm,
         }}
       />
     );
@@ -97,94 +97,77 @@ export function RowName(props: {
         ...at(rect),
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: 10,
+        paddingHorizontal: SPACE.gap,
         // Room for the × at the left end while it shows, so it never covers the name.
-        paddingLeft: props.showsClose ? CLOSE : 10,
+        paddingLeft: props.showsClose ? CLOSE : SPACE.gap,
         borderRadius: rect.height / 2,
         backgroundColor: isCurrent ? colors.launcher : colors.dock,
         borderWidth: isCurrent ? 2 : 1,
         borderColor: isCurrent ? colors.selection : colors.dockBorder,
-        shadow: "md",
+        shadow: SHADOW.sm,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: isCurrent ? "semibold" : "normal", color: colors.text, textAlign: "center" }}>
+      <Text
+        numberOfLines={1}
+        style={{ fontSize: TYPE.body.size, fontWeight: isCurrent ? WEIGHT.semibold : WEIGHT.regular, color: colors.text, textAlign: "center" }}
+      >
         {props.label}
       </Text>
     </View>
   );
 }
 
-/** A name being edited in place: Return keeps it (onSubmit), Esc puts it back (onCancel). */
+/** A name being edited in place, in the kit's field (its edge the focus purple while it has the keyboard, SH-28): Return keeps it (onSubmit), Esc puts it back (onCancel). */
 export function RenameField(props: { index: number; rect: Rect; text: string; onChange(text: string): void; onSubmit(text: string): void; onCancel(): void }) {
-  const colors = useColors();
   const { rect } = props;
   return (
     <View style={{ ...at(rect), justifyContent: "center" }}>
-      <TextInput
+      <TextField
         testID={`space-${props.index + 1}-name`}
         value={props.text}
+        width={rect.width}
         autoFocus
         onChangeText={props.onChange}
-        onSubmitEditing={props.onSubmit}
+        onSubmit={props.onSubmit}
         onKeyPress={(key) => key === "Escape" && props.onCancel()}
-        style={{
-          width: rect.width,
-          height: rect.height,
-          fontSize: 13,
-          color: colors.text,
-          backgroundColor: colors.launcher,
-          borderRadius: rect.height / 2,
-          borderColor: colors.selection,
-          padding: 6,
-        }}
       />
     </View>
   );
 }
 
-/** The × on a name: removes that Desktop. */
+/** The × on a name: removes that Desktop. A glyph (IC-3), not the font's ×. */
 export function RowClose(props: { testID: string; rect: Rect; onPress(): void; onHoverChange(over: boolean): void }) {
-  const colors = useColors();
   const { rect } = props;
   return (
     <View
-      testID={props.testID}
       occlude
-      onPress={props.onPress}
       onHoverChange={props.onHoverChange}
-      style={{
-        ...at({ x: rect.x - CLOSE / 4, y: rect.y - CLOSE / 4, width: CLOSE, height: CLOSE }),
-        borderRadius: CLOSE / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.osdOn,
-      }}
+      style={{ ...at({ x: rect.x - CLOSE / 4, y: rect.y - CLOSE / 4, width: CLOSE, height: CLOSE }), alignItems: "center", justifyContent: "center" }}
     >
-      <Text style={{ fontSize: 12, fontWeight: "bold", color: colors.menu }}>×</Text>
+      <GlyphButton testID={props.testID} glyph={CLOSE_GLYPH} label="Remove Desktop" size="small" filled onPress={props.onPress} />
     </View>
   );
 }
 
-/** The + at the row's right end: a new Desktop. */
+/** The + at the row's right end: a new Desktop, its glyph on a disc of the Dock's glass so it reads on any wallpaper. */
 export function RowAdd(props: { rect: Rect; onPress(): void }) {
   const colors = useColors();
   const { rect } = props;
   return (
     <View
-      testID="space-add"
       onPress={props.onPress}
       style={{
         ...at(rect),
-        borderRadius: Math.min(rect.width, rect.height) / 2,
+        borderRadius: pill(Math.min(rect.width, rect.height)),
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: colors.dock,
         borderWidth: 1,
         borderColor: colors.dockBorder,
-        shadow: "md",
+        shadow: SHADOW.sm,
       }}
     >
-      <Text style={{ fontSize: 20, color: colors.text }}>+</Text>
+      <GlyphButton testID="space-add" glyph={ADD} label="New Desktop" onPress={props.onPress} />
     </View>
   );
 }
