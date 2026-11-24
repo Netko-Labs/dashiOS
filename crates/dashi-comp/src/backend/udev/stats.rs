@@ -83,6 +83,8 @@ pub(crate) struct FrameStats {
     /// started, whether on schedule, and when it was queued.
     frame: u64,
     started: Duration,
+    /// When the frame waiting for its fence started (an idle turn may start drawing meanwhile).
+    fenced_from: Duration,
     on_schedule: bool,
     queued: Option<Duration>,
     last_vblank: Option<Duration>,
@@ -131,6 +133,7 @@ impl FrameStats {
         self.counts.frames += 1;
         self.counts.commit.add(took);
         self.queued = Some(at);
+        self.fenced_from = self.started;
         self.frame += 1;
         self.frame
     }
@@ -138,7 +141,7 @@ impl FrameStats {
     /// Frame `frame`'s fence signalled at `now`.
     pub(super) fn gpu_done(&mut self, frame: u64, now: Duration) {
         if frame == self.frame {
-            self.counts.gpu.add(now.saturating_sub(self.started));
+            self.counts.gpu.add(now.saturating_sub(self.fenced_from));
         }
     }
 
@@ -257,8 +260,11 @@ mod tests {
         stats.drawing(ms(120), FRAME);
         stats.queued(ms(121), ms(0));
         stats.gpu_done(first, ms(125));
-        let gpu = stats.latest(ms(130)).counts.gpu;
-        assert_eq!((gpu.count, gpu.max), (1, ms(5)));
+        // An idle turn started drawing before the second frame's fence came.
+        stats.drawing(ms(130), FRAME);
+        stats.gpu_done(first + 1, ms(131));
+        let gpu = stats.latest(ms(140)).counts.gpu;
+        assert_eq!((gpu.count, gpu.max, gpu.total), (2, ms(11), ms(16)));
     }
 
     #[test]
