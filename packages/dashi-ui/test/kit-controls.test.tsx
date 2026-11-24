@@ -6,7 +6,8 @@ import { Button } from "../src/button.tsx";
 import { CHECKBOX, Checkbox } from "../src/checkbox.tsx";
 import { CHIP, Chip } from "../src/chip.tsx";
 import { ShowStates } from "../src/control-state.tsx";
-import { SEARCH } from "../src/glyphs.ts";
+import { GLYPH_BUTTON, GlyphButton } from "../src/glyph-button.tsx";
+import { CLOSE, SEARCH } from "../src/glyphs.ts";
 import { placeholderAt, SEARCH_FIELD, SearchField } from "../src/search-field.tsx";
 import { SEGMENTED, Segmented } from "../src/segmented.tsx";
 import { INKS_SWITCH, PANEL_SWITCH, Switch } from "../src/switch.tsx";
@@ -69,6 +70,26 @@ test("Switch: the inks look is the widget area's, 36 × 20 in the Inks' ink, nev
   expect(node("inks-off")?.props.background).toBe(INK_TEXT.light.hairline);
   expect(node("inks-on")?.props.background).not.toBe(lightColors.selection);
   expect(INK_PAPER.light).toBeDefined();
+  root.unmount();
+});
+
+test("GlyphButton: round, named for screen readers, a Tab stop; filled shows a disc; disabled is dimmed and takes no press", async () => {
+  let pressed = 0;
+  const { node, host, root } = await sent(
+    <View>
+      <GlyphButton testID="close" glyph={CLOSE} label="Remove" onPress={() => pressed++} />
+      <GlyphButton testID="filled" glyph={CLOSE} label="Remove" size="small" filled onPress={noop} />
+      <GlyphButton testID="off" glyph={CLOSE} label="Remove" disabled onPress={() => pressed++} />
+    </View>,
+  );
+  expect(node("close")?.props).toMatchObject({ width: GLYPH_BUTTON.regular.target, cornerRadius: GLYPH_BUTTON.regular.target / 2, focusable: true });
+  expect(node("close")?.props).toMatchObject({ access: { role: "button", label: "Remove" } });
+  expect(node("filled")?.props).toMatchObject({ width: GLYPH_BUTTON.small.target, background: lightColors.track });
+  expect(node("off")?.props).toMatchObject({ opacity: 0.4 });
+  expect(node("off")?.props.focusable).toBeUndefined();
+  host.emit({ type: "press", nodeId: root.nodeId("close") ?? "" });
+  host.emit({ type: "press", nodeId: root.nodeId("off") ?? "" });
+  expect(pressed).toBe(1);
   root.unmount();
 });
 

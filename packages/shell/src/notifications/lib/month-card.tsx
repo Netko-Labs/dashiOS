@@ -1,123 +1,46 @@
 /**
- * The calendar at the top of the notification center, as macOS shows one:
- * this month, today circled, the week starting on the person's first day
- * (Language & Region). The arrows page through months; the title brings
- * this month back.
+ * The calendar at the top of the notification center: the kit's one month
+ * grid (UI-14), this month, today an ink disc and a day with events an ink
+ * dot (NO-3, CO-2: nothing here is chosen, so no accent), the week starting
+ * on the person's first day (Language & Region). ‹ › page through months; a
+ * day opens in Calendar, once Calendar is there to show it.
  */
 
-import { useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { addMonths, type Day, dayKey, MonthGrid, RADIUS, SPACE, useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useState } from "react";
 import { calendarBridge, useBusyDays } from "../../calendar/bridge.ts";
-import { CHEVRON_LEFT, CHEVRON_RIGHT } from "../../control-center/index.ts";
 import { addDays, firstOfMonth, startOfWeek } from "../../shared/calendar/index.ts";
-import { firstDayIndex, useClockPrefs, weekdayNames } from "../../shared/time/index.ts";
-import { type MonthView, monthGrid, monthTitle, shiftMonth } from "./month.ts";
+import { firstDayIndex, useClockPrefs } from "../../shared/time/index.ts";
 
-const CELL = { height: 26, dot: 24 } as const;
-
-/**
- * `onOpenDay` is called with a day ("2026-11-05") when it is clicked, once Calendar is there to show it
- * (calendar/); days with events carry a dot.
- */
-type GridDay = ReturnType<typeof monthGrid>[number][number];
-
-/** One day of the month: today filled, a dot under a day with events; a press opens it in Calendar. */
-function MonthDay({ date, day, busy, onPress }: { date: string; day: GridDay; busy: boolean; onPress: (() => void) | undefined }) {
-  const colors = useColors();
-  return (
-    <View testID={`nc-day:${date}`} onPress={onPress} style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <View
-        style={{
-          width: CELL.dot,
-          height: CELL.dot,
-          borderRadius: CELL.dot / 2,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: day.today ? colors.selection : "#00000000",
-          hoverBackgroundColor: day.today || !onPress ? undefined : colors.button,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: day.today ? "bold" : "normal",
-            color: day.today ? colors.onAccent : day.inMonth ? colors.text : colors.textMuted,
-            opacity: day.inMonth || day.today ? 1 : 0.5,
-          }}
-        >
-          {String(day.day)}
-        </Text>
-        {busy && (
-          <View
-            testID={`nc-dot:${date}`}
-            style={{
-              position: "absolute",
-              bottom: 1,
-              width: 4,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: day.today ? colors.onAccent : colors.selection,
-              opacity: day.inMonth || day.today ? 1 : 0.5,
-            }}
-          />
-        )}
-      </View>
-    </View>
-  );
-}
+/** Six weeks, the most a month's grid shows. */
+const SHOWN_DAYS = 42;
 
 export function MonthCard({ now, onOpenDay }: { now: Date; onOpenDay?: (day: string) => void }) {
   const colors = useColors();
   const prefs = useClockPrefs();
-  const current: MonthView = { year: now.getFullYear(), month: now.getMonth() };
-  const [view, setView] = useState<MonthView>(current);
+  const today: Day = { year: now.getFullYear(), month: now.getMonth(), date: now.getDate() };
+  const [view, setView] = useState({ year: today.year, month: today.month });
   const firstDay = firstDayIndex(prefs.locale, prefs.firstWeekday);
-  const names = weekdayNames(prefs.locale, firstDay);
-  const weeks = monthGrid(view, firstDay, now);
   const start = startOfWeek(firstOfMonth(view.year, view.month), firstDay);
-  const busy = useBusyDays(start, addDays(start, weeks.length * 7));
+  const busy = useBusyDays(start, addDays(start, SHOWN_DAYS));
   const clickable = onOpenDay !== undefined && calendarBridge() !== null;
-  const isCurrent = view.year === current.year && view.month === current.month;
-
-  const arrow = (markup: string, offset: number, testID: string) => (
-    <View
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={offset < 0 ? "Previous month" : "Next month"}
-      onPress={() => setView((shown) => shiftMonth(shown, offset))}
-      style={{ width: 24, height: 24, borderRadius: 6, alignItems: "center", justifyContent: "center" }}
-    >
-      <Svg markup={markup} size={12} color={colors.textMuted} />
-    </View>
-  );
-
   return (
-    <View testID="nc-month" style={{ flexDirection: "column", gap: 4, padding: 10, borderRadius: 14, backgroundColor: colors.tile, flexShrink: 0 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 24, paddingLeft: 4 }}>
-        <View testID="nc-month-title" onPress={() => setView(current)}>
-          <Text style={{ fontSize: 13, fontWeight: "semibold", color: isCurrent ? colors.text : colors.selection }}>{monthTitle(view, prefs.locale)}</Text>
-        </View>
-        <View style={{ flexDirection: "row", gap: 2 }}>
-          {arrow(CHEVRON_LEFT, -1, "nc-month-previous")}
-          {arrow(CHEVRON_RIGHT, 1, "nc-month-next")}
-        </View>
-      </View>
-      <View style={{ flexDirection: "row" }}>
-        {names.map((name) => (
-          <View key={name} style={{ flex: 1, alignItems: "center" }}>
-            <Text style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{name.slice(0, 2)}</Text>
-          </View>
-        ))}
-      </View>
-      {weeks.map((week, row) => (
-        <View key={row} style={{ flexDirection: "row", height: CELL.height }}>
-          {week.map((day, column) => {
-            const key = addDays(start, row * 7 + column);
-            return <MonthDay key={column} date={key} day={day} busy={busy.has(key)} onPress={clickable ? () => onOpenDay?.(key) : undefined} />;
-          })}
-        </View>
-      ))}
+    <View
+      testID="nc-month-card"
+      style={{ alignItems: "center", padding: SPACE.inset, borderRadius: RADIUS.card, backgroundColor: colors.tile, flexShrink: 0 }}
+    >
+      <MonthGrid
+        testID="nc-month"
+        year={view.year}
+        month={view.month}
+        today={today}
+        firstWeekday={firstDay}
+        locale={prefs.locale}
+        marked={busy}
+        onMonth={(by) => setView((shown) => addMonths(shown.year, shown.month, by))}
+        {...(clickable ? { onChoose: (day: Day) => onOpenDay?.(dayKey(day)) } : {})}
+      />
     </View>
   );
 }

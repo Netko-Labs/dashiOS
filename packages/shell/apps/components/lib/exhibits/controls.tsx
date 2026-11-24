@@ -1,8 +1,11 @@
 /** The gallery's control pages: buttons, pickers, switches and sliders, and fields. */
 
 import {
+  ADD,
   Button,
   Choices,
+  CLOSE,
+  GlyphButton,
   glyphs,
   MoreButton,
   PopUpButton,
@@ -51,6 +54,16 @@ export function ButtonsPage() {
               <View style={{ width: 160, flexDirection: "row" }}>
                 <Button testID={`button:${state}:fill`} label="Continue" fill primary disabled={disabled} onPress={noop} />
               </View>
+            </>
+          )}
+        </States>
+      </Exhibit>
+      <Exhibit title="Glyph button" note="One glyph, round, named for screen readers: a notification's ✕ (filled, small), the overview's + and ×.">
+        <States>
+          {({ state, disabled }) => (
+            <>
+              <GlyphButton testID={`glyph-button:${state}:add`} glyph={ADD} label="New Desktop" disabled={disabled} onPress={noop} />
+              <GlyphButton testID={`glyph-button:${state}:close`} glyph={CLOSE} label="Remove" size="small" filled disabled={disabled} onPress={noop} />
             </>
           )}
         </States>

@@ -27,8 +27,10 @@ export { EMPTY_STATE, EmptyState, NoResults, noResultsMessage } from "./empty-st
 export { ERROR_STATE, ErrorState } from "./error-state.tsx";
 export { FoldedChoices, type FoldedChoicesProps } from "./folded.tsx";
 export { FormSheet, type FormSheetProps } from "./form-sheet.tsx";
+export { GLYPH_BUTTON, GlyphButton, type GlyphButtonProps } from "./glyph-button.tsx";
 export * as glyphs from "./glyphs.ts";
 export {
+  ADD,
   CHECK,
   CHEVRON_DOWN,
   CHEVRON_LEFT,
