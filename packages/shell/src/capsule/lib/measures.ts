@@ -26,8 +26,6 @@ export const CAPSULE = {
   dot: 4,
   dotGap: 4,
   dotsHeight: 19,
-  button: { height: 22, paddingX: 9, fontSize: TYPE.panel.detail.size, gap: SPACE.xs },
-  stop: 8,
   /** The amber ring of something that needs the person. */
   ring: 3,
 } as const;
@@ -58,7 +56,6 @@ export const CARD = {
   messageSize: TYPE.panel.body.size,
   hintSize: TYPE.panel.micro.size,
   disc: 20,
-  button: { height: 24, paddingX: 12, fontSize: TYPE.secondary.size },
   choice: 27,
   /** How far it stands over the Dock's top edge. */
   onDock: 8,
