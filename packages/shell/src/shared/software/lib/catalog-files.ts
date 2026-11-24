@@ -14,6 +14,9 @@ import { isRecord } from "@dashi/shape";
 import { type FetchLike, getBytes } from "../fetch.ts";
 import { type AppStreamApp, iconFile, originOf, parseAppStream } from "./appstream.ts";
 
+/** How long a catalog file download may take (ms). */
+const TIMERS = { download: 120_000 } as const;
+
 export const FLATHUB_APPSTREAM = "https://dl.flathub.org/repo/appstream/x86_64/appstream.xml.gz";
 const FLATHUB_HOSTS = ["dl.flathub.org"];
 const MAX_FLATHUB = 64 * 1024 * 1024;
@@ -129,7 +132,7 @@ export async function flathubFile(dir: string, options: { fetch?: FetchLike; now
     const bytes = await getBytes(FLATHUB_APPSTREAM, {
       hosts: FLATHUB_HOSTS,
       maxBytes: MAX_FLATHUB,
-      timeoutMs: 120_000,
+      timeoutMs: TIMERS.download,
       fetch: fetcher,
       ...(etag ? { init: { headers: { "if-none-match": etag } } } : {}),
     });

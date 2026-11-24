@@ -1,12 +1,12 @@
 /**
  * An account's row in an extension's Settings… (frame S5): who is connected,
  * where the key is, and Disconnect; or Connect… (Dashi signs in, in Helium,
- * with PKCE; the first time it asks once, in the row) and Paste a Token…
+ * with PKCE; the first time it asks once, in the row) and Paste a token…
  * (checked with the provider before it is kept). The token never shows.
  */
 
 import type { Manifest } from "@dashi/applet";
-import { Button, TextField, useColors } from "@dashi/ui";
+import { Button, SPACE, TextField, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type AccountRow, canSignIn, type ExtensionAccounts } from "../../../../src/shared/extension-settings/index.ts";
@@ -60,11 +60,11 @@ export function AccountSetting({
   };
   const words = wordsOf(row, step, manifest.name);
   return (
-    <View style={{ flexDirection: "column", gap: 6 }}>
-      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 2 }}>
-          <Text style={{ fontSize: 13, fontWeight: row.login ? "semibold" : "normal", color: colors.text }}>{words.title}</Text>
-          <Text style={{ fontSize: 11, color: step.kind === "failed" ? colors.critical : colors.textMuted }}>{words.detail}</Text>
+    <View style={{ flexDirection: "column", gap: SPACE.s }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: SPACE.gap }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.xxs }}>
+          <Text style={{ fontSize: TYPE.body.size, fontWeight: row.login ? "semibold" : "normal", color: colors.text }}>{words.title}</Text>
+          <Text style={{ fontSize: TYPE.caption.size, color: step.kind === "failed" ? colors.critical : colors.textMuted }}>{words.detail}</Text>
         </View>
         {row.login !== null ? (
           <Button
@@ -73,13 +73,13 @@ export function AccountSetting({
             onPress={() => void accounts.disconnect(manifest, row.id).then(changed)}
           />
         ) : step.kind === "ask" ? (
-          <View style={{ flexDirection: "row", gap: 6 }}>
+          <View style={{ flexDirection: "row", gap: SPACE.s }}>
             <Button label="Cancel" testID={`settings:account:${row.id}:cancel`} onPress={() => setStep({ kind: "idle" })} />
-            <Button label="Sign In" primary testID={`settings:account:${row.id}:sign-in`} onPress={signIn} />
+            <Button label="Sign in" primary testID={`settings:account:${row.id}:sign-in`} onPress={signIn} />
           </View>
         ) : step.kind === "waiting" ? null : (
-          <View style={{ flexDirection: "row", gap: 6 }}>
-            <Button label="Paste a Token…" testID={`settings:account:${row.id}:paste`} onPress={() => setStep({ kind: "paste", token: "" })} />
+          <View style={{ flexDirection: "row", gap: SPACE.s }}>
+            <Button label="Paste a token…" testID={`settings:account:${row.id}:paste`} onPress={() => setStep({ kind: "paste", token: "" })} />
             {canSignIn(provider) && (
               <Button label="Connect…" testID={`settings:account:${row.id}:connect`} onPress={() => (row.asked ? signIn() : setStep({ kind: "ask" }))} />
             )}

@@ -9,7 +9,7 @@
  * with `dnf copr enable` shows up here by itself.
  */
 
-import { Button, Sheet, Switch, useColors } from "@dashi/ui";
+import { FormSheet, RADIUS, SPACE, Switch, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { Source } from "../../../src/shared/software/index.ts";
@@ -18,6 +18,10 @@ import { SOURCES } from "./glyphs.ts";
 import { sourceJob } from "./package-actions.ts";
 import { useServices } from "./services.ts";
 
+/** A source's row: its height, its glyph's tile and the glyph; the list's most before it scrolls. */
+const SOURCE_ROW = { height: 50, tile: 30, glyph: 16 } as const;
+const LIST_MOST = 360;
+
 function SourceRow({ source, busy, onToggle }: { source: Source; busy: boolean; onToggle: (on: boolean) => void }) {
   const colors = useColors();
   const always = !source.switchable;
@@ -25,16 +29,33 @@ function SourceRow({ source, busy, onToggle }: { source: Source; busy: boolean; 
   return (
     <View
       testID={`source:${source.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 50, paddingHorizontal: 12, paddingVertical: 6 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.inset,
+        minHeight: SOURCE_ROW.height,
+        paddingHorizontal: SPACE.inset,
+        paddingVertical: SPACE.s,
+      }}
     >
-      <View style={{ width: 30, height: 30, borderRadius: 7, backgroundColor: colors.button, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Svg markup={SOURCES} size={16} color={colors.text} />
+      <View
+        style={{
+          width: SOURCE_ROW.tile,
+          height: SOURCE_ROW.tile,
+          borderRadius: RADIUS.control,
+          backgroundColor: colors.button,
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Svg markup={SOURCES} size={SOURCE_ROW.glyph} color={colors.text} />
       </View>
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
           {source.label}
         </Text>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
           {busy ? "Changing…" : note}
         </Text>
       </View>
@@ -51,24 +72,23 @@ export function SourcesSheet({ onClose }: { onClose: () => void }) {
   const sources = useCatalog()?.sources ?? [];
   const busy = (id: string): boolean => state.operations.some((operation) => operation.key === `source:${id}`);
   return (
-    <Sheet testID="sources-sheet" width={560} onCancel={onClose}>
-      <View style={{ flexDirection: "column", gap: 4 }}>
-        <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>Sources</Text>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>Where the Store looks, in the order it prefers them when two have the same app.</Text>
-      </View>
-      <ScrollView style={{ maxHeight: 360, flexDirection: "column", marginTop: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.separator }}>
+    <FormSheet
+      testID="sources-sheet"
+      width={560}
+      title="Sources"
+      buttons={[{ label: "Done", testID: "sources-sheet:done", kind: "primary", cancel: true, onPress: onClose }]}
+    >
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
+        Where the Store looks, in the order it prefers them when two have the same app.
+      </Text>
+      <ScrollView style={{ maxHeight: LIST_MOST, flexDirection: "column", borderRadius: RADIUS.card, borderWidth: 1, borderColor: colors.separator }}>
         {sources.map((source) => (
           <SourceRow key={source.id} source={source} busy={busy(source.id)} onToggle={(on) => store.enqueue(sourceJob(services, source, on))} />
         ))}
       </ScrollView>
-      <View style={{ marginTop: 8 }}>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>
-          Turning a source off keeps what you got from it; it just stops updating. A COPR you enable in Terminal shows up here by itself.
-        </Text>
-      </View>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 12 }}>
-        <Button label="Done" testID="sources-sheet:done" primary onPress={onClose} />
-      </View>
-    </Sheet>
+      <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
+        Turning a source off keeps what you got from it; it just stops updating. A COPR you enable in Terminal shows up here by itself.
+      </Text>
+    </FormSheet>
   );
 }

@@ -2,16 +2,16 @@
  * Discover: Dashi's recommended apps first (local, so they show at once and
  * offline), a few menu bar applets (the ones made for this computer first),
  * then Flathub's Trending, Popular, Recently updated and New, a few of each
- * with "See all". While Flathub's sections load, or when Flathub can't be
+ * with "See all" (a link, in ink). While Flathub's sections load, or when Flathub can't be
  * reached, one quiet line stands in their place.
  */
 
-import { Button, useColors } from "@dashi/ui";
+import { Button, SPACE, TextLink, TYPE, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { Answer, Collection, Flathub, Page } from "../../../src/shared/software/index.ts";
 import { AppletGroup, useAppletState } from "./applets/rows.tsx";
 import { CardGrid } from "./cards.tsx";
-import { HeadingLink, SectionHeader } from "./heading.tsx";
+import { SectionHeader } from "./heading.tsx";
 import { type Load, useLoad } from "./hooks.ts";
 import { RecommendedCards } from "./recommended.tsx";
 import { useServices } from "./services.ts";
@@ -49,9 +49,9 @@ function SectionsState({ state, onRetry }: { state: Exclude<Load<Loaded>, { stat
         ? "You’re offline. What’s trending, popular, and new comes back when you’re online."
         : "Flathub isn’t responding, so what’s trending, popular, and new can’t be shown. Try again in a minute.";
   return (
-    <View testID={`sections:${state.status}`} style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 28 }}>
+    <View testID={`sections:${state.status}`} style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset, minHeight: 28 }}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>{text}</Text>
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{text}</Text>
       </View>
       {state.status === "failed" && <Button label="Try again" testID="retry" onPress={onRetry} />}
     </View>
@@ -66,11 +66,11 @@ function AppletsTeaser({ onSeeAll }: { onSeeAll: () => void }) {
   const forHere = (entry: (typeof state.index.applets)[number]): number => (entry.manifest.when !== undefined && applets.fitsHere(entry) === true ? 0 : 1);
   const shown = [...state.index.applets].sort((a, b) => forHere(a) - forHere(b) || a.manifest.name.localeCompare(b.manifest.name)).slice(0, SHOWN_APPLETS);
   return (
-    <View testID="section:applets" style={{ flexShrink: 0, flexDirection: "column", gap: 10 }}>
+    <View testID="section:applets" style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.gap }}>
       <SectionHeader
         title="Menu bar applets"
         detail="Small tools that live in the menu bar"
-        action={<HeadingLink label="See all" testID="see-all:applets" onPress={onSeeAll} />}
+        action={<TextLink label="See all" testID="see-all:applets" onPress={onSeeAll} />}
       />
       <AppletGroup entries={shown} testID="applets-teaser" />
     </View>
@@ -81,8 +81,8 @@ export function Discover({ onSeeAll }: { onSeeAll: (place: Collection | "applets
   const { catalog } = useServices();
   const { state, reload } = useLoad<Loaded>("discover", () => loadSections(catalog));
   return (
-    <ScrollView testID="discover" style={{ flex: 1, flexDirection: "column", gap: 18, padding: 22 }}>
-      <View testID="section:recommended" style={{ flexShrink: 0, flexDirection: "column", gap: 10 }}>
+    <ScrollView testID="discover" style={{ flex: 1, flexDirection: "column", gap: SPACE.page, padding: SPACE.sheet }}>
+      <View testID="section:recommended" style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.gap }}>
         <SectionHeader title="Recommended for Dashi" detail="Apps that work well here, picked by Dashi" />
         <RecommendedCards />
       </View>
@@ -90,11 +90,11 @@ export function Discover({ onSeeAll }: { onSeeAll: (place: Collection | "applets
       {state.status === "ready" ? (
         state.value.map((entry) =>
           entry === null ? null : (
-            <View key={entry.section.kind} testID={`section:${entry.section.kind}`} style={{ flexShrink: 0, flexDirection: "column", gap: 10 }}>
+            <View key={entry.section.kind} testID={`section:${entry.section.kind}`} style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.gap }}>
               <SectionHeader
                 title={entry.section.title}
                 detail={entry.section.detail}
-                action={<HeadingLink label="See all" testID={`see-all:${entry.section.kind}`} onPress={() => onSeeAll(entry.section.kind)} />}
+                action={<TextLink label="See all" testID={`see-all:${entry.section.kind}`} onPress={() => onSeeAll(entry.section.kind)} />}
               />
               <CardGrid apps={entry.page.apps.slice(0, SHOWN)} />
             </View>

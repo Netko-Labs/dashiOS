@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
+import { SEARCH_FIELD, SIDEBAR_WIDTH } from "@dashi/ui";
 import { columnsFor } from "../apps/software/lib/cards.tsx";
 import { ROW } from "../apps/software/lib/parts.tsx";
-import { COMPACT_BELOW, isCompact, SEARCH_MIN_WIDTH, SEARCH_WIDTH } from "../apps/software/lib/toolbar-fit.ts";
+import { COMPACT_BELOW, isCompact, STORE_LEAST } from "../apps/software/lib/toolbar-fit.ts";
 
 // How Software fits a narrow window: cards keep their words, the toolbar keeps one row.
 
@@ -27,11 +28,12 @@ test("the toolbar is compact when the page has less than 600 points", () => {
   expect(isCompact(820)).toBe(false);
 });
 
-test("compact at 520 wide, the row holds the activity chip and a search field no smaller than its least width", () => {
-  // 320 for the page: 30 of padding, the spacer and two controls (20 of gaps), the short chip ("Installing 42%", about 90).
-  const room = 320 - 30 - 20 - 90;
-  expect(room).toBeGreaterThanOrEqual(SEARCH_MIN_WIDTH);
-  expect(SEARCH_MIN_WIDTH).toBeLessThan(SEARCH_WIDTH);
+test("at its least size the compact row holds both chips, a glyph button and the kit's search field at its least", () => {
+  // The page at the least width: 18 and 12 of insets, Back, five gaps, "Offline" (about 80), "Installing 42%" (about 90), a glyph button.
+  const room = STORE_LEAST.width - SIDEBAR_WIDTH - 30 - 32 - 50 - 80 - 90 - 32;
+  expect(room).toBeGreaterThanOrEqual(SEARCH_FIELD.least);
+  expect(isCompact(STORE_LEAST.width - SIDEBAR_WIDTH)).toBe(true);
+  expect(STORE_LEAST.height).toBeGreaterThanOrEqual(400);
 });
 
 test("every list row shares one geometry, and headings share its inset", () => {

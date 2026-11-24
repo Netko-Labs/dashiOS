@@ -7,42 +7,52 @@
  */
 
 import { describeWhen, type InstalledApplet, permissionName, type UnreadableApplet } from "@dashi/applet";
-import { Button, EmptyState, Group, glyphs, Switch, useColors } from "@dashi/ui";
+import { Button, EmptyState, Group, glyphs, SPACE, Switch, TextLink, TYPE, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { abilityLines, type StoreApplet } from "../../../../src/shared/applet-store/index.ts";
 import { formatBytes } from "../../../../src/shared/software/index.ts";
+import { FACT_ROW } from "../app-page.tsx";
 import { Gallery } from "../gallery.tsx";
 import { CHECK_MARK } from "../glyphs.ts";
 import { SectionHeader } from "../heading.tsx";
+import { HeaderLine, ITEM_PAGE, PAGE_ICON, PageHeader } from "../page-header.tsx";
 import { AppIcon, ROW, useActions } from "../parts.tsx";
 import { useServices } from "../services.ts";
 import { ReachLines, TrustCard } from "../trust.tsx";
 import { appletTrust } from "../trust-words.ts";
-import { AppletChip, useAppletState } from "./rows.tsx";
+import { AppletAction, useAppletState } from "./rows.tsx";
 import type { AppletOrigin } from "./store.ts";
+
+/** A fact's row: its words and value, or a link in ink (Q3). */
+const factRow = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: SPACE.page,
+  minHeight: FACT_ROW,
+  paddingHorizontal: SPACE.inset,
+} as const;
 
 function Fact({ label, value, onPress, testID }: { label: string; value: string; onPress?: () => void; testID?: string }) {
   const colors = useColors();
   return (
-    <View
-      style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 34, paddingHorizontal: 12, paddingVertical: 6 }}
-    >
-      <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
-      <View
-        {...(testID ? { testID } : {})}
-        {...(onPress ? { onPress, focusable: true, accessibilityRole: "link" as const } : {})}
-        style={{ flexShrink: 1, minWidth: 0 }}
-      >
-        <Text numberOfLines={1} style={{ fontSize: 13, color: onPress ? colors.accentInk : colors.textMuted }}>
-          {value}
-        </Text>
-      </View>
+    <View style={{ ...factRow, paddingVertical: SPACE.s }}>
+      <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>{label}</Text>
+      {onPress ? (
+        <TextLink testID={testID ?? `link:${label}`} label={value} onPress={onPress} />
+      ) : (
+        <View {...(testID ? { testID } : {})} style={{ flexShrink: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.textMuted }}>
+            {value}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
 
 /** The Manage group's rows: one padding for all, so no row sits deeper than another. */
-const MANAGE_ROW = { minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 } as const;
+const MANAGE_ROW = { minHeight: 44, paddingHorizontal: SPACE.inset, paddingVertical: SPACE.m } as const;
 
 /** On or off, what it was allowed (the trust card's list), Remove…. */
 function Manage({ applet }: { applet: InstalledApplet }) {
@@ -53,29 +63,29 @@ function Manage({ applet }: { applet: InstalledApplet }) {
   const allowed = applet.manifest.permissions.filter((permission) => applet.record.consent.includes(permissionName(permission)));
   const lines = abilityLines({ permissions: allowed });
   return (
-    <View testID="manage" style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
+    <View testID="manage" style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.m }}>
       <SectionHeader title="Manage" />
       <Group>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, ...MANAGE_ROW }}>
-          <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-            <Text style={{ fontSize: 13, color: colors.text }}>In the menu bar</Text>
-            <Text style={{ fontSize: 11, color: colors.textMuted }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, ...MANAGE_ROW }}>
+          <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+            <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>In the menu bar</Text>
+            <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
               {pulled ? "Turned off: it was pulled from the catalog" : "Off, it doesn’t run at all; it stays installed"}
             </Text>
           </View>
           <Switch testID="manage:on" on={applet.record.disabled === undefined} disabled={pulled} onChange={(on) => applets.setOn(applet, on)} />
         </View>
-        <View style={{ flexDirection: "column", justifyContent: "center", gap: 6, ...MANAGE_ROW }}>
-          <Text style={{ fontSize: 13, color: colors.text }}>Allowed</Text>
+        <View style={{ flexDirection: "column", justifyContent: "center", gap: SPACE.s, ...MANAGE_ROW }}>
+          <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>Allowed</Text>
           {lines.length === 0 ? (
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>Nothing beyond showing itself in the menu bar</Text>
+            <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>Nothing beyond showing itself in the menu bar</Text>
           ) : (
             <ReachLines lines={lines} />
           )}
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, ...MANAGE_ROW }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, ...MANAGE_ROW }}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>
+            <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
               {applet.record.firstParty === true ? "Part of Dashi: it comes and goes with Dashi." : "Removing it can also delete what it saved."}
             </Text>
           </View>
@@ -91,12 +101,12 @@ function Mend({ applet }: { applet: UnreadableApplet }) {
   const colors = useColors();
   const actions = useActions();
   return (
-    <View testID="mend" style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
+    <View testID="mend" style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.m }}>
       <SectionHeader title="Manage" />
       <Group>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, minHeight: 44, paddingHorizontal: SPACE.inset }}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>The copy you have needs an update, and doesn’t run until it has one.</Text>
+            <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>The copy you have needs an update, and doesn’t run until it has one.</Text>
           </View>
           <Button label="Remove…" testID="remove" onPress={() => actions.removeApplet(applet)} />
         </View>
@@ -119,46 +129,52 @@ function AppletPageBody({ entry }: { entry: StoreApplet }) {
     .filter((part): part is string => !!part)
     .join(" · ");
   return (
-    <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: 20, padding: 24 }}>
-      <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "flex-start", gap: 18 }}>
-        <AppIcon url={entry.icon ?? null} name={manifest.name} size={80} source="applets" />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 4 }}>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{manifest.name}</Text>
-          <Text style={{ fontSize: 12, color: colors.textMuted }}>{byline}</Text>
-          <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>{manifest.summary}</Text>
-          {status.kind === "pulled" && (
-            <Text style={{ fontSize: 12, color: colors.ume }}>
-              {`Version ${status.installed.record.version} was pulled and is turned off: ${status.reason}`}
-            </Text>
-          )}
-        </View>
-        <AppletChip entry={entry} testID="get" wide />
-      </View>
+    <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: ITEM_PAGE.gap, padding: ITEM_PAGE.padding }}>
+      <PageHeader
+        icon={<AppIcon url={entry.icon ?? null} name={manifest.name} size={PAGE_ICON} source="applets" />}
+        title={manifest.name}
+        byline={byline}
+        summary={manifest.summary}
+        actions={<AppletAction entry={entry} testID="get" wide />}
+      >
+        {status.kind === "pulled" && (
+          <HeaderLine warning>{`Version ${status.installed.record.version} was pulled and is turned off: ${status.reason}`}</HeaderLine>
+        )}
+      </PageHeader>
       <TrustCard facts={appletTrust(entry)} />
       {entry.screenshots.length > 0 && <Gallery shots={entry.screenshots.map((url) => ({ caption: null, thumb: url, large: url }))} source="applets" />}
       {manifest.description !== undefined && (
         <View testID="description" style={{ flexShrink: 0, paddingHorizontal: ROW.inset }}>
-          <Text style={{ fontSize: 13, lineHeight: 19, color: colors.text }}>{manifest.description}</Text>
+          <Text style={{ fontSize: TYPE.body.size, lineHeight: TYPE.body.line, color: colors.text }}>{manifest.description}</Text>
         </View>
       )}
       {installed && <Manage applet={installed} />}
       {status.kind === "unreadable" && <Mend applet={status.unreadable} />}
       <Group testID="facts">
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 34, paddingHorizontal: 12 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: SPACE.page,
+            minHeight: 34,
+            paddingHorizontal: SPACE.inset,
+          }}
+        >
           <View style={{ flexShrink: 0 }}>
-            <Text style={{ fontSize: 13, color: colors.text }}>Works on</Text>
+            <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>Works on</Text>
           </View>
           {/* One line: the machines it is for give way (cut short), never "this computer". */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, flexShrink: 1, minWidth: 0 }}>
             <View style={{ flexShrink: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
+              <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.textMuted }}>
                 {describeWhen(manifest.when)}
               </Text>
             </View>
             {here === true && <Svg markup={CHECK_MARK} size={11} color={colors.moss} />}
             {here !== null && (
               <View style={{ flexShrink: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 13, color: here ? colors.moss : colors.textMuted }}>
+                <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: here ? colors.moss : colors.textMuted }}>
                   {here ? "this computer" : "· not this computer"}
                 </Text>
               </View>
@@ -187,21 +203,16 @@ function originWords(origin: AppletOrigin): string {
 
 /** One added by hand, no longer in its catalog, or whose catalog was removed: what it is, and Manage. */
 function LocalAppletPage({ applet }: { applet: InstalledApplet }) {
-  const colors = useColors();
   const { applets } = useServices();
   const { manifest } = applet;
   return (
-    <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: 20, padding: 24 }}>
-      <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "flex-start", gap: 18 }}>
-        <AppIcon file={manifest.icon ? `${applet.dir}/${manifest.icon}` : null} name={manifest.name} size={80} />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 4 }}>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{manifest.name}</Text>
-          <Text
-            style={{ fontSize: 12, color: colors.textMuted }}
-          >{`${manifest.author.name} · ${manifest.version} · ${originWords(applets.originOf(applet))}`}</Text>
-          <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>{manifest.summary}</Text>
-        </View>
-      </View>
+    <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: ITEM_PAGE.gap, padding: ITEM_PAGE.padding }}>
+      <PageHeader
+        icon={<AppIcon file={manifest.icon ? `${applet.dir}/${manifest.icon}` : null} name={manifest.name} size={PAGE_ICON} />}
+        title={manifest.name}
+        byline={`${manifest.author.name} · ${manifest.version} · ${originWords(applets.originOf(applet))}`}
+        summary={manifest.summary}
+      />
       <Manage applet={applet} />
     </ScrollView>
   );
@@ -209,7 +220,6 @@ function LocalAppletPage({ applet }: { applet: InstalledApplet }) {
 
 /** One installed that no longer reads, which no catalog in the list has: its name, and Remove…. */
 function UnreadableAppletPage({ applet }: { applet: UnreadableApplet }) {
-  const colors = useColors();
   const { applets } = useServices();
   const state = useAppletState();
   const name = applet.name ?? applet.id;
@@ -219,14 +229,8 @@ function UnreadableAppletPage({ applet }: { applet: UnreadableApplet }) {
     (part): part is string => part !== undefined,
   );
   return (
-    <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: 20, padding: 24 }}>
-      <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "flex-start", gap: 18 }}>
-        <AppIcon url={null} name={name} size={80} />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 4 }}>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{name}</Text>
-          <Text style={{ fontSize: 12, color: colors.textMuted }}>{byline.join(" · ")}</Text>
-        </View>
-      </View>
+    <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: ITEM_PAGE.gap, padding: ITEM_PAGE.padding }}>
+      <PageHeader icon={<AppIcon url={null} name={name} size={PAGE_ICON} />} title={name} byline={byline.join(" · ")} />
       <Mend applet={applet} />
     </ScrollView>
   );
