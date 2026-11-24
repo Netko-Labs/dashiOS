@@ -47,3 +47,12 @@ test("a field with a least width gives way down to it; its status is muted words
   expect(again.nodeId("search:status")).toBeUndefined();
   again.unmount();
 });
+
+test("a picker's search takes its column's whole width", async () => {
+  const host = fakeHost();
+  const root = render(<SearchField testID="zones" value="" width="fill" onChangeText={() => {}} />, host.transport);
+  await settle();
+  expect(host.last()).not.toContain('"width":210');
+  expect(host.last()).toContain('"alignSelf":"stretch"');
+  root.unmount();
+});

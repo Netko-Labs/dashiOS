@@ -151,6 +151,24 @@ function OpenAlerts() {
           )
         }
       />
+      <Button
+        testID={`alert:open:screen:${id}`}
+        label="Ask from the shell"
+        onPress={() =>
+          wrap(
+            <AlertSheet
+              place="screen"
+              question="Log out now?"
+              message="Apps will be asked to close first. One with unsaved changes asks you."
+              glyph={glyphs.LOGO}
+              buttons={[
+                { label: "Cancel", testID: "alert:screen:cancel", onPress: close, cancel: true },
+                { label: "Log out", testID: "alert:screen:go", onPress: close, kind: "primary" },
+              ]}
+            />,
+          )
+        }
+      />
     </View>
   );
 }

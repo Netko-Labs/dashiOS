@@ -34,7 +34,8 @@ export interface SearchFieldProps {
   testID: string;
   /** "Search ‹what›". */
   placeholder?: string;
-  width?: number;
+  /** Points, or `fill`: the column's whole width (a picker's search over its list). */
+  width?: number | "fill";
   /** With it, the field shrinks toward this width when its toolbar row is short of room; without, it keeps `width`. */
   minWidth?: number;
   autoFocus?: boolean;
@@ -74,7 +75,7 @@ export function SearchField({
     <View
       onLayout={(bounds) => setLaid((was) => (Math.abs(was - bounds.width) < 0.5 ? was : bounds.width))}
       style={{
-        width,
+        ...(width === "fill" ? { alignSelf: "stretch" as const } : { width }),
         height: m.height,
         ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }),
         flexDirection: "row",

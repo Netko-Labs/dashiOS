@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { render } from "@mirinjs/metal";
+import { render, View } from "@mirinjs/metal";
 import { type AlertButton, AlertSheet, AlertWindow, alertKeyTarget } from "../src/alert.tsx";
 import { WARNING } from "../src/glyphs.ts";
 import { fakeHost } from "./host.ts";
@@ -71,5 +71,52 @@ test("an alert window draws the question as its first line, with no title row", 
   host.emit(windowKey(keys, "enter"));
   host.emit(windowKey(keys, "escape"));
   expect(pressed).toEqual(["deny"]);
+  root.unmount();
+});
+
+test("on a shell surface the sheet is centred with no scrim; its tile may be the asker's own picture", async () => {
+  const host = fakeHost();
+  const root = render(
+    <AlertSheet
+      testID="s"
+      place="screen"
+      question="Log out now?"
+      glyph={WARNING}
+      icon={<View testID="s:icon" />}
+      buttons={[{ label: "Log out", testID: "s:go", onPress: noop, kind: "primary" }]}
+    />,
+    host.transport,
+  );
+  await settle();
+  expect(root.nodeId("s:scrim")).toBeUndefined();
+  expect(root.nodeId("s:place")).toBeDefined();
+  expect(root.nodeId("s:icon")).toBeDefined();
+  expect(host.last()).not.toContain(WARNING);
+  expect(root.nodeId("s:keys")).toBeDefined();
+  root.unmount();
+});
+
+test("a sheet that never takes the keyboard by itself has no keys of its own; its buttons still answer", async () => {
+  const host = fakeHost();
+  const pressed: string[] = [];
+  const root = render(
+    <AlertSheet
+      testID="k"
+      place="screen"
+      keys={false}
+      question="Allow it?"
+      glyph={WARNING}
+      buttons={[
+        { label: "Don’t allow", testID: "k:no", onPress: () => pressed.push("no"), cancel: true },
+        { label: "Allow once", testID: "k:yes", onPress: () => pressed.push("yes"), kind: "primary" },
+      ]}
+    />,
+    host.transport,
+  );
+  await settle();
+  expect(root.nodeId("k:keys")).toBeUndefined();
+  host.emit({ type: "press", nodeId: root.nodeId("k:yes") as string });
+  await settle();
+  expect(pressed).toEqual(["yes"]);
   root.unmount();
 });
