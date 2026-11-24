@@ -118,7 +118,7 @@ export function RowName(props: {
 }
 
 /** A name being edited in place, in the kit's field (its edge the focus purple while it has the keyboard, SH-28): Return keeps it (onSubmit), Esc puts it back (onCancel). */
-export function RenameField(props: { index: number; rect: Rect; text: string; onChange(text: string): void; onSubmit(text: string): void; onCancel(): void }) {
+export function RowRename(props: { index: number; rect: Rect; text: string; onChange(text: string): void; onSubmit(text: string): void; onCancel(): void }) {
   const { rect } = props;
   return (
     <View style={{ ...at(rect), justifyContent: "center" }}>
