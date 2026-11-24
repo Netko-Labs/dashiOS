@@ -26,15 +26,18 @@ export interface FormSheetProps {
   keys?: boolean;
   /** `screen`: a shell sheet on a surface of its own, centred, with no window to hang from (sheet.tsx). */
   place?: SheetPlace;
+  /** The title strip it hangs under, drawn over a window from outside it (sheet.tsx). */
+  hang?: number;
 }
 
-export function FormSheet({ title, children, buttons, footer, testID = "form", width, keys = true, place }: FormSheetProps) {
+export function FormSheet({ title, children, buttons, footer, testID = "form", width, keys = true, place, hang }: FormSheetProps) {
   const colors = useColors();
   return (
     <Sheet
       testID={testID}
       width={width}
       place={place}
+      hang={hang}
       {...(keys ? { onCancel: () => pressForKey({ kind: "escape" }, buttons), onConfirm: () => pressForKey({ kind: "enter" }, buttons) } : {})}
     >
       <View testID={`${testID}:title`}>

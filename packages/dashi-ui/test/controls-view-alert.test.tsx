@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { render, View } from "@mirinjs/metal";
 import { type AlertButton, AlertSheet, AlertWindow, alertKeyTarget } from "../src/alert.tsx";
+import { FormSheet } from "../src/form-sheet.tsx";
 import { WARNING } from "../src/glyphs.ts";
 import { fakeHost } from "./host.ts";
 import { noop, windowKey } from "./support/controls-view.ts";
@@ -118,5 +119,17 @@ test("a sheet that never takes the keyboard by itself has no keys of its own; it
   host.emit({ type: "press", nodeId: root.nodeId("k:yes") as string });
   await settle();
   expect(pressed).toEqual(["yes"]);
+  root.unmount();
+});
+
+test("drawn over a window from outside it, a form sheet hangs under the strip it is given, over the scrim", async () => {
+  const host = fakeHost();
+  const root = render(
+    <FormSheet testID="f" title="Change password" hang={38} buttons={[{ label: "Cancel", testID: "f:cancel", onPress: noop, cancel: true }]} />,
+    host.transport,
+  );
+  await settle();
+  expect(root.nodeId("f:scrim")).toBeDefined();
+  expect(host.last()).toContain('"marginTop":46');
   root.unmount();
 });

@@ -25,6 +25,13 @@ export interface SheetProps {
    * sheets, an agent's question), centred on its own surface, no scrim (UI-5).
    */
   place?: SheetPlace;
+  /**
+   * The window's title strip the card hangs under, when the sheet is drawn
+   * over a window from a surface of its own (the shell's Change Password over
+   * Settings): the window's controls are not this surface's to report. By
+   * default the window's own (`useTitleBarInset`).
+   */
+  hang?: number;
 }
 
 export type SheetPlace = "window" | "screen";
@@ -112,7 +119,7 @@ export function Sheet(props: SheetProps) {
   return props.place === "screen" ? <ScreenSheet {...props} /> : <WindowSheet {...props} />;
 }
 
-function WindowSheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+function WindowSheet({ children, testID, width = 380, onCancel, onConfirm, hang }: SheetProps) {
   const colors = useColors();
   const dark = useDark();
   const inset = useTitleBarInset();
@@ -140,7 +147,7 @@ function WindowSheet({ children, testID, width = 380, onCancel, onConfirm }: She
       }}
     >
       <SheetKeys testID={testID} onCancel={onCancel} onConfirm={onConfirm} />
-      <SheetCard testID={testID} width={sheetWidth(width, room)} marginTop={Math.max(inset.top, 0) + 8}>
+      <SheetCard testID={testID} width={sheetWidth(width, room)} marginTop={Math.max(hang ?? inset.top, 0) + 8}>
         {children}
       </SheetCard>
     </View>
