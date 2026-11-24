@@ -15,6 +15,9 @@ import { handToEmpty, listenWhileEmpty } from "./lib/instance.ts";
 import { Viewer } from "./lib/viewer.ts";
 import { PREVIEW_MIN_SIZE, PREVIEW_SIZE, PreviewWindow } from "./lib/views/view.tsx";
 
+/** How long after the window is up the cache is pruned (ms): a timer, not motion. */
+const PRUNE_AFTER_MS = 3000;
+
 const args = parseArgs(Bun.argv.slice(2));
 const first = args.files[0];
 // An empty window waiting: it shows the file, and no second window comes up.
@@ -65,4 +68,4 @@ follow();
 process.on("exit", () => stopListening?.());
 
 // Keep the cache inside its bounds; after the window is up, so it never delays opening.
-setTimeout(() => pruneCache(cacheRoot()), 3000);
+setTimeout(() => pruneCache(cacheRoot()), PRUNE_AFTER_MS);

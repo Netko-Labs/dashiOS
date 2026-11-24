@@ -50,19 +50,20 @@ describe("the terminal palette", () => {
   });
 });
 
-test("the grid paints with the palette until a program sets its own ink and ground; the cursor is kombu", () => {
-  expect(lookFor(LIGHT_TERMINAL, false, "#3E8A72", undefined, undefined)).toEqual({
+test("the grid paints with the palette until a program sets its own ink and ground; the cursor is the ink, the selection the fields'", () => {
+  expect(lookFor(LIGHT_TERMINAL, "#3E8A7259", undefined, undefined)).toEqual({
     ground: LIGHT_TERMINAL.ground,
     ink: LIGHT_TERMINAL.ink,
-    selection: "#3E8A7240",
-    cursor: LIGHT_TERMINAL.cursor,
+    selection: "#3E8A7259",
+    cursor: LIGHT_TERMINAL.ink,
   });
-  expect(lookFor(DARK_TERMINAL, true, "#3E8A72", "#ffffff", "#102030")).toMatchObject({ ground: "#102030", ink: "#ffffff", cursor: DARK_TERMINAL.cursor });
+  expect(lookFor(DARK_TERMINAL, "#3E8A7266", "#ffffff", "#102030")).toMatchObject({ ground: "#102030", ink: "#ffffff", cursor: "#ffffff" });
 });
 
-test("the letter under a block cursor (the ground's color on the cursor) is AA in both modes, and the cursor stands 3:1 on the ground", () => {
+test("the letter under a block cursor (the ground's color on the ink) is AA in both modes", () => {
   for (const dark of [false, true]) {
     const palette = terminalPalette(dark);
+    expect(palette.cursor).toBe(palette.ink);
     expect(contrast(palette.ground, palette.cursor)).toBeGreaterThanOrEqual(AA);
   }
 });

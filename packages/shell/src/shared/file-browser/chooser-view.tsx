@@ -13,8 +13,8 @@
  */
 
 import { existsSync } from "node:fs";
-import { AppWindow, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { AppWindow, SHEET_MARGIN, Sheet, SPACE, useColors, useSurface } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useEffect, useMemo } from "react";
 import type { ChooserRequest } from "../files/index.ts";
 import { Listing } from "./browser.tsx";
@@ -29,9 +29,17 @@ export function ChooserView(props: ChooserViewProps & { title: string }) {
   const parts = useChooserParts(props);
   return (
     <Files.Provider value={parts.context}>
-      <AppWindow title={props.title} leading={parts.leading} toolbar={parts.tools} sidebar={parts.sidebar} sidebarWidth={180} overlay={parts.overlay}>
+      <AppWindow
+        title={props.title}
+        leading={parts.leading}
+        titleSlot={parts.omnibox}
+        toolbar={parts.tools}
+        sidebar={parts.sidebar}
+        sidebarWidth={CHOOSER_SHEET.sidebar}
+        overlay={parts.overlay}
+      >
         {parts.keys}
-        <View style={{ flex: 1, flexDirection: "column", gap: 10, padding: 14, paddingTop: 10, minHeight: 0 }}>
+        <View style={{ flex: 1, flexDirection: "column", gap: SPACE.gap, padding: SPACE.button, paddingTop: SPACE.gap, minHeight: 0 }}>
           {parts.nameRow}
           {parts.problem}
           <Listing />
@@ -43,11 +51,12 @@ export function ChooserView(props: ChooserViewProps & { title: string }) {
 }
 
 /**
- * The chooser as a sheet: at most this big, and always 16 inside its window at each side and the
- * foot. It hangs below the window's title bar (8 under its buttons, as `@dashi/ui`'s `Sheet` does),
- * so the window's own buttons never sit on the chooser's Back and Up.
+ * The chooser as a sheet: the kit's `Sheet`, at most this big, and always 16 inside its window at
+ * each side and the foot. It hangs below the window's title bar (8 under its buttons), so the
+ * window's own buttons never sit on the chooser's Back and Up. Its toolbar is a window's (38, the
+ * title 13 Bold), and both forms keep one sidebar width.
  */
-export const CHOOSER_SHEET = { width: 760, height: 470, inset: 16, below: 8 } as const;
+export const CHOOSER_SHEET = { width: 760, height: 470, inset: SHEET_MARGIN, below: SPACE.m, toolbar: 38, sidebar: 180 } as const;
 
 /**
  * An app's own Open or Save As: the chooser for `request` over the app's
@@ -67,76 +76,47 @@ export function AppChooser({ request, answer, env }: { request: ChooserRequest; 
   );
 }
 
-/** The chooser over an app's own window (pass it as `AppWindow`'s overlay): Text Editor's Open and Save As. */
+/** The chooser over an app's own window (pass it as `AppWindow`'s overlay): Text Editor's and Preview's Open, Save As and Export. */
 export function ChooserSheet(props: ChooserViewProps & { title: string }) {
   const colors = useColors();
   const surface = useSurface();
-  const inset = useTitleBarInset();
   const parts = useChooserParts(props);
+  const m = CHOOSER_SHEET;
   return (
     <Files.Provider value={parts.context}>
-      <View
-        occlude
-        testID="chooser:scrim"
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: Math.max(inset.top, 0) + CHOOSER_SHEET.below,
-          paddingHorizontal: CHOOSER_SHEET.inset,
-          paddingBottom: CHOOSER_SHEET.inset,
-          backgroundColor: "#00000026",
-        }}
-      >
+      <Sheet testID="chooser" width={m.width} height={m.height} bare label={props.title}>
+        {parts.keys}
+        {/* The window's own toolbar row, 38 tall (VS-1): Back and Up, Files' omnibox in the title's place, the view switch. */}
         <View
-          testID="chooser"
-          occlude
-          focusTrap
-          accessibilityRole="dialog"
-          accessibilityLabel={props.title}
           style={{
-            // As wide as it may be, never wider than the window leaves it; shorter when the window is.
-            width: "100%",
-            maxWidth: CHOOSER_SHEET.width,
-            height: CHOOSER_SHEET.height,
-            flexShrink: 1,
-            minHeight: 0,
-            flexDirection: "column",
-            borderRadius: 12,
-            backgroundColor: surface.window,
-            borderWidth: 1,
+            height: m.toolbar,
+            flexShrink: 0,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: SPACE.s,
+            paddingHorizontal: SPACE.gap,
+            borderBottomWidth: SPACE.px,
             borderColor: colors.separator,
-            shadow: "xl",
-            overflow: "hidden",
-            focusRingColor: colors.focusRing,
           }}
         >
-          {parts.keys}
-          <View style={{ height: 44, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10 }}>
-            {parts.leading}
-            <View style={{ flex: 1, minWidth: 0, paddingHorizontal: 6 }}>
-              <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
-                {props.title}
-              </Text>
-            </View>
-            {parts.tools}
-          </View>
-          <View style={{ flex: 1, flexDirection: "row", minHeight: 0 }}>
-            <View style={{ width: 170, flexShrink: 0, flexDirection: "column", paddingHorizontal: 8, backgroundColor: surface.sidebar }}>{parts.sidebar}</View>
-            <View style={{ flex: 1, flexDirection: "column", gap: 10, padding: 12, minWidth: 0, minHeight: 0 }}>
-              {parts.nameRow}
-              {parts.problem}
-              <Listing />
-              {parts.footer}
-            </View>
-          </View>
-          {parts.overlay}
+          {parts.leading}
+          {/* The title's place is the omnibox's (VS-8); the sheet is named by its title for screen readers. */}
+          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", paddingHorizontal: SPACE.s }}>{parts.omnibox}</View>
+          {parts.tools}
         </View>
-      </View>
+        <View style={{ flex: 1, flexDirection: "row", minHeight: 0 }}>
+          <View style={{ width: m.sidebar, flexShrink: 0, flexDirection: "column", paddingHorizontal: SPACE.m, backgroundColor: surface.sidebar }}>
+            {parts.sidebar}
+          </View>
+          <View style={{ flex: 1, flexDirection: "column", gap: SPACE.gap, padding: SPACE.inset, minWidth: 0, minHeight: 0 }}>
+            {parts.nameRow}
+            {parts.problem}
+            <Listing />
+            {parts.footer}
+          </View>
+        </View>
+        {parts.overlay}
+      </Sheet>
     </Files.Provider>
   );
 }

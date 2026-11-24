@@ -4,7 +4,7 @@
  * read, its extension as a label ("ERR", "DONE").
  */
 
-import { TINTS, useDark } from "@dashi/ui";
+import { ON_TINT, RADIUS, SPACE, TINTS, useDark, WEIGHT } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { type FileItem, splitName } from "../files/index.ts";
 import { iconKind } from "./lib/file-icons.ts";
@@ -16,6 +16,12 @@ export function extensionLabel(name: string): string | null {
   const label = ext.slice(1).toUpperCase();
   return label === "" || label.includes(".") ? null : label.slice(0, 5);
 }
+
+/**
+ * The extension's label is part of the icon's drawing (IC-2), scaled with it: a sixth of its side, at
+ * least 8, as the page's own lines are; not a size on the type scale.
+ */
+const ICON_LABEL = { share: 0.16, least: 8, paddingShare: 0.05, padding: SPACE.xxs } as const;
 
 export function FileIcon({ item, size, emblems }: { item: Pick<FileItem, "kind" | "mime" | "path" | "name">; size: number; emblems?: Emblems }) {
   const dark = useDark();
@@ -29,12 +35,12 @@ export function FileIcon({ item, size, emblems }: { item: Pick<FileItem, "kind" 
           style={{
             position: "absolute",
             bottom: Math.round(size * 0.2),
-            paddingHorizontal: Math.max(3, Math.round(size * 0.05)),
-            borderRadius: 3,
+            paddingHorizontal: Math.max(ICON_LABEL.padding, Math.round(size * ICON_LABEL.paddingShare)),
+            borderRadius: RADIUS.thumb,
             backgroundColor: TINTS.goma,
           }}
         >
-          <Text style={{ fontSize: Math.max(8, Math.round(size * 0.16)), fontWeight: "bold", color: "#ffffff" }}>{label}</Text>
+          <Text style={{ fontSize: Math.max(ICON_LABEL.least, Math.round(size * ICON_LABEL.share)), fontWeight: WEIGHT.bold, color: ON_TINT }}>{label}</Text>
         </View>
       )}
     </View>

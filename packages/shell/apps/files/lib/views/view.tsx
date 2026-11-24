@@ -14,13 +14,13 @@ import { useCallback, useState, useSyncExternalStore } from "react";
 import { BrowserKeys, Listing } from "../../../../src/shared/file-browser/browser.tsx";
 import { Files } from "../../../../src/shared/file-browser/context.ts";
 import { locationTitle } from "../../../../src/shared/file-browser/location.ts";
+import type { Suggestions } from "../../../../src/shared/file-browser/omnibox-props.ts";
+import { Omnibox } from "../../../../src/shared/file-browser/omnibox-view.tsx";
 import type { Operations } from "../../../../src/shared/file-browser/operations.ts";
 import { Sidebar } from "../../../../src/shared/file-browser/sidebar.tsx";
 import type { FilesStore } from "../../../../src/shared/file-browser/store.ts";
 import { Controls, Leading } from "../../../../src/shared/file-browser/toolbar.tsx";
-import { chromeFor, RAIL_WIDTH } from "../chrome.ts";
-import { Omnibox } from "../omnibox/omnibox.tsx";
-import type { Suggestions } from "../omnibox/omnibox-props.ts";
+import { chromeFor } from "../chrome.ts";
 import { useOverlays } from "../use-overlays.ts";
 import { useWindowActions } from "../use-window-actions.ts";
 import { runBrowserKey } from "../window-keys.ts";
@@ -28,6 +28,12 @@ import { Footer } from "./footer.tsx";
 import { filesOverlay } from "./overlay.tsx";
 
 export const FILES_SIZE = { width: 1000, height: 660 } as const;
+/**
+ * The least window (LA-3): its toolbar's one row still fits once New Folder has gone to "…" and the
+ * sidebar is a rail (chrome.ts): the window's buttons, Back and Forward, the omnibox at its least 96,
+ * the view switch and "…"; a listing a few rows tall under it.
+ */
+export const FILES_LEAST = { width: 420, height: 300 } as const;
 
 export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Operations; info?: string }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
@@ -47,7 +53,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   const actions = useWindowActions({ store, ops, state, overlays, setEditing, info });
   const overlay = filesOverlay({ store, ops, actions, state, overlays, suggestions });
 
-  const title = state.found !== null ? "Search Results" : locationTitle(state.location, store.env.home);
+  const title = state.found !== null ? "Search results" : locationTitle(state.location, store.env.home);
 
   return (
     <Files.Provider value={{ store, ops, actions }}>
@@ -82,7 +88,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
               />
             }
             sidebar={<Sidebar rail={chrome.rail} />}
-            {...(chrome.rail ? { sidebarWidth: RAIL_WIDTH } : {})}
+            rail={chrome.rail}
             notice={<Footer />}
             overlay={overlay}
           >

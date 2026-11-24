@@ -9,7 +9,7 @@ import { previewMenus } from "../apps/preview/lib/menus.ts";
 import { Viewer } from "../apps/preview/lib/viewer.ts";
 import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
 import { otherMime } from "../src/shared/files/kinds.ts";
-import { settle } from "./support/time.ts";
+import { settle, until } from "./support/time.ts";
 
 // Preview's empty window on a stand-in for the Metal host: what it offers, and a file dropped on it.
 let dir = "";
@@ -93,6 +93,17 @@ test("the empty window has no dead toolbar controls, an Open… button, and open
   // A file is open: the toolbar is back, and the zoom shows.
   expect(root.nodeId("zoom-in")).toBeDefined();
   expect(root.nodeId("more")).toBeDefined();
+  root.unmount();
+});
+
+test("Open… is Files' chooser as a sheet over the window, never a window of its own (R7)", async () => {
+  const { root, emit } = mount();
+  await settle();
+  const open = root.nodeId("open");
+  if (!open) throw new Error("no Open… button");
+  emit({ type: "press", nodeId: open });
+  // The chooser is the file browser, loaded the first time it is asked for.
+  await until(() => root.nodeId("chooser") !== undefined, "the chooser");
   root.unmount();
 });
 

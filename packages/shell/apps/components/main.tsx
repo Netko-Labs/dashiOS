@@ -7,4 +7,4 @@
 import { runApp } from "../kit/index.ts";
 import { GALLERY_SIZE, GalleryWindow } from "./lib/view.tsx";
 
-runApp({ id: "dev.dashi.components", title: "Components", size: GALLERY_SIZE }, <GalleryWindow />);
+runApp({ id: "dev.dashi.components", title: "Components", size: GALLERY_SIZE, minSize: { width: 640, height: 420 } }, <GalleryWindow />);

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { editText } from "../apps/files/lib/omnibox/omnibox.tsx";
 import { completions, displayPath, intentOf } from "../src/shared/file-browser/omnibox.ts";
+import { editText } from "../src/shared/file-browser/omnibox-view.tsx";
 
 const home = "/home/me";
 const tree: Record<string, string[]> = {

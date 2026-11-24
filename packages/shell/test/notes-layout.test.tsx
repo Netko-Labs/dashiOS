@@ -13,10 +13,10 @@ import { settle } from "./support/time.ts";
 // button, the error covered the list, and a new source kept the old one's scroll.
 
 test("the furniture gives way before the note: a rail below 800, a narrower list and glyph-only buttons below 640", () => {
-  expect(notesLayout(0)).toEqual({ rail: false, listWidth: LIST_WIDTH, compact: false });
-  expect(notesLayout(980)).toEqual({ rail: false, listWidth: LIST_WIDTH, compact: false });
-  expect(notesLayout(700)).toEqual({ rail: true, listWidth: LIST_WIDTH, compact: false });
-  expect(notesLayout(539)).toEqual({ rail: true, listWidth: LIST_NARROW, compact: true });
+  expect(notesLayout(0)).toEqual({ rail: false, listWidth: LIST_WIDTH });
+  expect(notesLayout(980)).toEqual({ rail: false, listWidth: LIST_WIDTH });
+  expect(notesLayout(700)).toEqual({ rail: true, listWidth: LIST_WIDTH });
+  expect(notesLayout(539)).toEqual({ rail: true, listWidth: LIST_NARROW });
   // At the least size the note still has a column to write in.
   const least = notesLayout(NOTES_MIN_SIZE.width);
   expect(NOTES_MIN_SIZE.width - RAIL_WIDTH - least.listWidth).toBeGreaterThanOrEqual(240);

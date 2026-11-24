@@ -10,6 +10,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { isRecord } from "@dashi/shape";
+import { TYPE } from "@dashi/ui";
 import { writeTextAtomic } from "../../../src/shared/fs/index.ts";
 
 export interface EditorPrefs {
@@ -26,7 +27,7 @@ export type TabWidth = (typeof TAB_WIDTHS)[number];
 export const isTabWidth = (value: unknown): value is TabWidth => (TAB_WIDTHS as readonly unknown[]).includes(value);
 
 export const FONT_SIZES = [10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32] as const;
-export const DEFAULT_PREFS: EditorPrefs = { monospace: false, fontSize: 13, lineNumbers: true, tabWidth: 4 };
+export const DEFAULT_PREFS: EditorPrefs = { monospace: false, fontSize: TYPE.body.size, lineNumbers: true, tabWidth: 4 };
 
 export const samePrefs = (a: EditorPrefs, b: EditorPrefs): boolean =>
   a.monospace === b.monospace && a.fontSize === b.fontSize && a.lineNumbers === b.lineNumbers && a.tabWidth === b.tabWidth;

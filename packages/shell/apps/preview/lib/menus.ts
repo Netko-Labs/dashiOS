@@ -5,15 +5,35 @@
  * the sidebar), Tools (rotate), and Go (the folder's pictures, or a PDF's
  * pages). The ❖ shortcuts are real: the shell matches a ❖ chord against the
  * focused app's enabled rows (app-menus/shortcut.ts), so a row that cannot
- * run now has no key either. Rows that show a bare key (⌫, ← →) say what
- * the window's own keys do (keys.ts). The menu bar has no submenus yet, so
- * Open Recent is a run of rows under Open….
- * Not on the Mac's keys: Move to Trash (❖⌫), whose chord the keymap keeps
- * for itself (app-menus/lib/reserved.ts); ⌫ asks instead.
+ * run now has no key either. Rows that show a bare key (← →) say what the
+ * window's own keys do (keys.ts). The menu bar has no submenus yet, so
+ * Open Recent is a run of rows under Open…. Move to Trash is ❖⌫, which the
+ * keymap offers to the app's row first (app-menus/lib/reserved.ts), and it
+ * acts at once with Undo (PA-1, PA-2).
  */
 
 import { basename, dirname } from "node:path";
 import { enabledIds, type MenuItemSpec, type MenuSpec } from "../../kit/index.ts";
+
+/** Each row's key, one table: the menu bar shows it and so do the "…" menu's rows (UI-17), so the two never differ. */
+export const KEYS = {
+  open: "❖O",
+  export: "⇧❖E",
+  print: "❖P",
+  info: "❖I",
+  trash: "❖⌫",
+  copy: "❖C",
+  "select-all": "❖A",
+  "copy-path": "⇧❖C",
+  actual: "❖0",
+  fit: "❖9",
+  "zoom-in": "❖=",
+  "zoom-out": "❖-",
+  "rotate-left": "❖L",
+  "rotate-right": "❖R",
+  previous: "←",
+  next: "→",
+} as const;
 
 export interface PreviewMenuContext {
   /** A file is open. */
@@ -89,7 +109,7 @@ function menuSpecs(context: PreviewMenuContext, recentRows: MenuItemSpec[]): Men
     {
       id: "file",
       items: [
-        { id: "open", label: "Open…", shortcut: "❖O", enabled: !blocked },
+        { id: "open", label: "Open…", shortcut: KEYS.open, enabled: !blocked },
         ...(recentRows.length > 0
           ? ([
               { type: "separator" },
@@ -101,21 +121,21 @@ function menuSpecs(context: PreviewMenuContext, recentRows: MenuItemSpec[]): Men
         { id: "open-with", label: "Open With…", enabled: open },
         { id: "show-in-files", label: "Show in Files", enabled: open },
         { type: "separator" },
-        { id: "export", label: "Export…", shortcut: "⇧❖E", enabled: context.canExport && seeing },
-        { id: "print", label: "Print…", shortcut: "❖P", enabled: context.canPrint && seeing },
+        { id: "export", label: "Export…", shortcut: KEYS.export, enabled: context.canExport && seeing },
+        { id: "print", label: "Print…", shortcut: KEYS.print, enabled: context.canPrint && seeing },
         { type: "separator" },
-        { id: "info", label: "Get Info", shortcut: "❖I", enabled: seeing },
+        { id: "info", label: "Get Info", shortcut: KEYS.info, enabled: seeing },
         { type: "separator" },
-        { id: "trash", label: "Move to Trash…", shortcut: "⌫", enabled: open },
+        { id: "trash", label: "Move to Trash", shortcut: KEYS.trash, enabled: open },
       ],
     },
     {
       id: "edit",
       items: [
-        { id: "copy", label: "Copy", shortcut: "❖C", enabled: seeing && context.canCopy },
-        { id: "select-all", label: "Select All", shortcut: "❖A", enabled: seeing && isPdf },
+        { id: "copy", label: "Copy", shortcut: KEYS.copy, enabled: seeing && context.canCopy },
+        { id: "select-all", label: "Select All", shortcut: KEYS["select-all"], enabled: seeing && isPdf },
         { type: "separator" },
-        { id: "copy-path", label: "Copy Path", shortcut: "⇧❖C", enabled: open && context.canCopy },
+        { id: "copy-path", label: "Copy Path", shortcut: KEYS["copy-path"], enabled: open && context.canCopy },
       ],
     },
     {
@@ -123,27 +143,27 @@ function menuSpecs(context: PreviewMenuContext, recentRows: MenuItemSpec[]): Men
       items: [
         { id: "sidebar", label: "Sidebar", checked: context.sidebar, enabled: open },
         { type: "separator" },
-        { id: "actual", label: "Actual Size", shortcut: "❖0", enabled: seeing },
-        { id: "fit", label: "Zoom to Fit", shortcut: "❖9", enabled: seeing },
+        { id: "actual", label: "Actual Size", shortcut: KEYS.actual, enabled: seeing },
+        { id: "fit", label: "Zoom to Fit", shortcut: KEYS.fit, enabled: seeing },
         ...(isPdf ? ([{ id: "fit-width", label: "Zoom to Width", enabled: seeing }] as MenuItemSpec[]) : []),
-        { id: "zoom-in", label: "Zoom In", shortcut: "❖=", enabled: seeing },
-        { id: "zoom-out", label: "Zoom Out", shortcut: "❖-", enabled: seeing },
+        { id: "zoom-in", label: "Zoom In", shortcut: KEYS["zoom-in"], enabled: seeing },
+        { id: "zoom-out", label: "Zoom Out", shortcut: KEYS["zoom-out"], enabled: seeing },
       ],
     },
     {
       id: "tools",
       title: "Tools",
       items: [
-        { id: "rotate-left", label: "Rotate Left", shortcut: "❖L", enabled: context.canTurn && seeing },
-        { id: "rotate-right", label: "Rotate Right", shortcut: "❖R", enabled: context.canTurn && seeing },
+        { id: "rotate-left", label: "Rotate Left", shortcut: KEYS["rotate-left"], enabled: context.canTurn && seeing },
+        { id: "rotate-right", label: "Rotate Right", shortcut: KEYS["rotate-right"], enabled: context.canTurn && seeing },
       ],
     },
     {
       id: "go",
       title: "Go",
       items: [
-        { id: "previous", label: `Previous ${unit}`, shortcut: "←", enabled: context.canPrevious && !blocked },
-        { id: "next", label: `Next ${unit}`, shortcut: "→", enabled: context.canNext && !blocked },
+        { id: "previous", label: `Previous ${unit}`, shortcut: KEYS.previous, enabled: context.canPrevious && !blocked },
+        { id: "next", label: `Next ${unit}`, shortcut: KEYS.next, enabled: context.canNext && !blocked },
       ],
     },
   ];

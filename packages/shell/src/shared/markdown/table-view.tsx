@@ -5,11 +5,12 @@
  * detail (a pull request's body).
  */
 
-import { useColors } from "@dashi/ui";
+import { CLEAR, RADIUS, SPACE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { type Column, columnsOf, type Table } from "./table.ts";
 
-const CLEAR = "#00000000";
+/** A cell's room: 5 over and under its words (a menu row's, MENU.padding), a row's inset either side. */
+const CELL = { vertical: 5, horizontal: SPACE.m } as const;
 /** The header's words are semibold, about this much wider than a row's: a column never breaks its header's longest word. */
 const BOLD = 1.12;
 
@@ -31,7 +32,7 @@ export interface TableViewProps {
 
 /** A column's least width: its longest word (no more than `wholeWord` letters) in the header's weight, and its padding. */
 const columnFloor = (column: Column | undefined, letter: number, wholeWord: number | undefined): number =>
-  Math.ceil(Math.min(column?.floor ?? 0, wholeWord ?? Number.POSITIVE_INFINITY) * letter * BOLD) + 16;
+  Math.ceil(Math.min(column?.floor ?? 0, wholeWord ?? Number.POSITIVE_INFINITY) * letter * BOLD) + 2 * CELL.horizontal;
 
 /** The least width `table` takes with its words wrapped (its borders too): wider than the room, a caller scrolls it sideways. */
 export function leastWidth(table: Table, letter: number, wholeWord?: number, words?: (cell: string) => string): number {
@@ -58,13 +59,13 @@ export function TableView({ table, cellText, size, letter, onLayout, testID, who
           style={{
             flex: columns[column]?.weight ?? 1,
             minWidth: columnFloor(columns[column], letter, wholeWord),
-            paddingTop: 5,
-            paddingBottom: 5,
-            paddingLeft: 8,
-            paddingRight: 8,
+            paddingTop: CELL.vertical,
+            paddingBottom: CELL.vertical,
+            paddingLeft: CELL.horizontal,
+            paddingRight: CELL.horizontal,
           }}
         >
-          <Text style={{ fontSize: size, fontWeight: header ? "semibold" : "normal", color: colors.text, textAlign: table.align[column] ?? "left" }}>
+          <Text style={{ fontSize: size, fontWeight: header ? WEIGHT.semibold : WEIGHT.regular, color: colors.text, textAlign: table.align[column] ?? "left" }}>
             {cellText(cell)}
           </Text>
         </View>
@@ -82,7 +83,7 @@ export function TableView({ table, cellText, size, letter, onLayout, testID, who
         flexDirection: "column",
         borderWidth: 1,
         borderColor: colors.separator,
-        borderRadius: 6,
+        borderRadius: RADIUS.row,
         overflow: "hidden",
         ...(width === undefined ? {} : { width }),
       }}

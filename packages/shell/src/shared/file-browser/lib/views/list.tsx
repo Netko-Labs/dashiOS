@@ -1,6 +1,6 @@
 /** The list view: the kit's Table with Name, Date Modified, Size, and Kind (Where while searching), sortable. */
 
-import { type Column, Table, useColors, useDark } from "@dashi/ui";
+import { type Column, OPACITY, SPACE, Table, TYPE, useColors, useDark } from "@dashi/ui";
 import { type DragFiles, type PointerInfo, Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
 import type { FileItem } from "../../../files/index.ts";
@@ -12,7 +12,7 @@ import { iconFor } from "../icons.ts";
 import type { Rect } from "../marquee/geometry.ts";
 import { marqueeOf } from "../marquee/of.ts";
 import { columnMode, fileColumns, fitColumns } from "../sort.ts";
-import { RenameField } from "./rename-field.tsx";
+import { RenameInPlace } from "./rename-field.tsx";
 
 const ROW = 26;
 /** The table's rows start this far in from its sides, and it keeps this much under the last (`@dashi/ui`'s `Table`). */
@@ -20,7 +20,7 @@ const ROW_INSET = 5;
 const LIST_END = 8;
 /** The Name cell's icon and the gap after it. */
 const ICON = 16;
-const ICON_GAP = 7;
+const ICON_GAP = SPACE.s;
 
 /** Where each of `count` rows is, in the pixels of what scrolls, in a list `width` wide. */
 export function rowRects(count: number, width: number): Rect[] {
@@ -52,12 +52,18 @@ interface NameCellProps {
  */
 function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip }: NameCellProps) {
   const colors = useColors();
-  const look = { flexDirection: "row", alignItems: "center", gap: ICON_GAP, minWidth: 0, opacity: faded ? 0.45 : item.hidden ? 0.65 : 1 } as const;
+  const look = {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: ICON_GAP,
+    minWidth: 0,
+    opacity: faded ? OPACITY.half : item.hidden ? OPACITY.faint : 1,
+  } as const;
   if (renaming) {
     return (
       <View style={{ ...look, flex: 1 }}>
         <FileIcon item={item} size={ICON} emblems={emblems} />
-        <RenameField item={item} />
+        <RenameInPlace item={item} />
       </View>
     );
   }
@@ -73,7 +79,7 @@ function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip }: Na
       >
         <FileIcon item={item} size={ICON} emblems={emblems} />
         <View style={{ width: nameWidth(item.name), flexShrink: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 12, color: selected ? colors.onSelection : colors.text }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: selected ? colors.onSelection : colors.text }}>
             {item.name}
           </Text>
         </View>

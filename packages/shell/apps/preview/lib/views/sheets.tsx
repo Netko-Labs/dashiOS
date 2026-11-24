@@ -1,23 +1,21 @@
-/** Preview's sheets: file info, the Open With list, Export, and a plain message. */
+/** Preview's sheet of its own, Export (a form sheet, UI-15), and the rows its Info shows (the sheet is shared: file-sheets.tsx). */
 
-import { AlertSheet, Button, Group, INFO, PopUpButton, Row, Sheet, Slider, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { FormSheet, Group, PopUpButton, Row, Slider } from "@dashi/ui";
 import { useState } from "react";
-import { AppIcon } from "../../../../src/shared/apps/index.ts";
+import type { InfoRow } from "../../../../src/shared/file-browser/file-sheets.tsx";
+import { formatDate, formatSize } from "../../../../src/shared/file-browser/format.ts";
+import { tilde } from "../../../../src/shared/files/index.ts";
 import { EXPORT_FORMATS, type ExportFormat } from "../convert.ts";
-import type { Handler } from "../handlers.ts";
-import { type FileFacts, formatBytes, formatCount, formatDate, formatDimensions, megapixels } from "../info.ts";
+import { type FileFacts, formatCount, formatDimensions, megapixels } from "../info.ts";
 
-export type InfoRow = readonly [label: string, value: string];
-
-/** The facts about the open file, as rows. */
-export function infoRows(facts: FileFacts, extra: readonly InfoRow[], locale?: string): InfoRow[] {
+/** The facts about the open file, as rows, written as Files writes them (one formatter, PA-14). */
+export function infoRows(facts: FileFacts, extra: readonly InfoRow[], home = process.env.HOME ?? "/", locale?: string): InfoRow[] {
   return [
     ["Kind", facts.type],
     ...extra,
-    ["Size", `${formatBytes(facts.size, locale)}${facts.size >= 1000 ? ` (${formatCount(facts.size, locale)} bytes)` : ""}`],
-    ["Modified", formatDate(facts.modifiedMs, locale)],
-    ["Where", facts.folder],
+    ["Size", `${formatSize(facts.size)}${facts.size >= 1000 ? ` (${formatCount(facts.size, locale)} bytes)` : ""}`],
+    ["Modified", formatDate(facts.modifiedMs, { locale })],
+    ["Where", tilde(facts.folder, home)],
   ];
 }
 
@@ -45,93 +43,8 @@ export function pdfRows(pages: number, title: string | null, page: { width: numb
   ];
 }
 
-/** Info: the file's name as the heading, its facts as a card of rows. */
-export function InfoSheet({ name, rows, onClose }: { name: string; rows: readonly InfoRow[]; onClose: () => void }) {
-  const colors = useColors();
-  return (
-    <Sheet testID="info-sheet" width={460} onCancel={onClose} onConfirm={onClose}>
-      <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-        {name}
-      </Text>
-      <Group testID="info-sheet:rows">
-        {rows.map(([label, value]) => (
-          <Row key={label} label={label} wraps>
-            {/* Two thirds of the row, from a zero basis: a long value wraps there, the row grows with it, and the label stays on its first line. */}
-            <View testID={`info-sheet:${label}`} style={{ flex: 2, minWidth: 0 }}>
-              <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "right" }}>{value}</Text>
-            </View>
-          </Row>
-        ))}
-      </Group>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 4 }}>
-        <Button label="Done" testID="info-sheet:done" primary onPress={onClose} />
-      </View>
-    </Sheet>
-  );
-}
-
-export function OpenWithSheet({
-  handlers,
-  loading,
-  onPick,
-  onClose,
-}: {
-  handlers: readonly Handler[];
-  loading: boolean;
-  onPick: (handler: Handler) => void;
-  onClose: () => void;
-}) {
-  const colors = useColors();
-  return (
-    <Sheet testID="open-with" width={380} onCancel={onClose}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Open With</Text>
-      {loading ? (
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>Looking for apps…</Text>
-      ) : handlers.length === 0 ? (
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>No other app opens this kind of file.</Text>
-      ) : (
-        // A card on the heading's edge, as Info's and Export's rows are. One Tab stop; ↑ and ↓ move between the
-        // apps, Return opens with the one that has the keyboard (KB-1).
-        <Group testID="open-with:card">
-          <View focusGroup style={{ flexDirection: "column", gap: 2, padding: 4, maxHeight: 280, overflow: "scroll" }} testID="open-with:list">
-            {handlers.map((handler) => (
-              <View
-                key={handler.id}
-                testID={`open-with:${handler.id}`}
-                focusable
-                accessibilityRole="button"
-                accessibilityLabel={handler.name}
-                onPress={() => onPick(handler)}
-                style={{
-                  height: 30,
-                  flexShrink: 0,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  paddingHorizontal: 8,
-                  borderRadius: 6,
-                  // A wash under the pointer, never kombu (CO-2).
-                  hoverBackgroundColor: colors.button,
-                }}
-              >
-                <AppIcon source={handler.icon} resizeMode="contain" style={{ width: 20, height: 20 }} />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
-                    {handler.name}
-                  </Text>
-                </View>
-                {handler.isDefault && <Text style={{ fontSize: 11, color: colors.textMuted }}>Default</Text>}
-              </View>
-            ))}
-          </View>
-        </Group>
-      )}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 6 }}>
-        <Button label="Cancel" testID="open-with:cancel" onPress={onClose} />
-      </View>
-    </Sheet>
-  );
-}
+/** Export's widths: the sheet, the format's pop-up, the quality's slider. */
+const EXPORT_SHEET = { width: 400, format: 120, quality: 160 } as const;
 
 export interface ExportChoice {
   format: ExportFormat;
@@ -140,8 +53,8 @@ export interface ExportChoice {
 }
 
 /**
- * Export: which format, and for JPEG how good, then Export… asks where (the
- * desktop's save dialog). A PDF exports whole as a PDF, or the page in view
+ * Export: which format, and for JPEG how good, then Export… asks where (Files'
+ * chooser, in this sheet's place). A PDF exports whole as a PDF, or the page in view
  * as a picture.
  */
 export function ExportSheet({
@@ -156,18 +69,25 @@ export function ExportSheet({
   onExport: (choice: ExportChoice) => void;
   onClose: () => void;
 }) {
-  const colors = useColors();
   const [format, setFormat] = useState<ExportFormat>(formats[0] ?? "png");
   const [quality, setQuality] = useState(0.9);
   const asPage = pageNote !== null && format !== "pdf";
+  const go = (): void => onExport({ format, quality: Math.round(quality * 100) });
   return (
-    <Sheet testID="export" width={400} onCancel={onClose} onConfirm={() => onExport({ format, quality: Math.round(quality * 100) })}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Export</Text>
+    <FormSheet
+      testID="export"
+      title="Export"
+      width={EXPORT_SHEET.width}
+      buttons={[
+        { label: "Cancel", testID: "export:cancel", cancel: true, onPress: onClose },
+        { label: "Export…", testID: "export:go", kind: "primary", onPress: go },
+      ]}
+    >
       <Group>
         <Row label="Format" detail={asPage ? pageNote : undefined}>
           <PopUpButton
             testID="export:format"
-            width={120}
+            width={EXPORT_SHEET.format}
             options={formats.map((each) => ({ value: each, label: EXPORT_FORMATS[each].label }))}
             value={format}
             onChange={setFormat}
@@ -175,28 +95,10 @@ export function ExportSheet({
         </Row>
         {format === "jpeg" && (
           <Row label="Quality" detail={`${Math.round(quality * 100)}%`}>
-            <Slider testID="export:quality" width={160} value={quality} onChange={setQuality} range={{ min: 0.4, max: 1, step: 0.05 }} />
+            <Slider testID="export:quality" width={EXPORT_SHEET.quality} value={quality} onChange={setQuality} range={{ min: 0.4, max: 1, step: 0.05 }} />
           </Row>
         )}
       </Group>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="export:cancel" onPress={onClose} />
-        <Button label="Export…" testID="export:go" primary onPress={() => onExport({ format, quality: Math.round(quality * 100) })} />
-      </View>
-    </Sheet>
-  );
-}
-
-export function MessageSheet({ title, message, onClose }: { title: string; message: string; onClose: () => void }) {
-  // It only informs: one button, which Esc and Enter press too (UI-5).
-  return (
-    <AlertSheet
-      testID="message"
-      width={400}
-      question={title}
-      message={message}
-      glyph={INFO}
-      buttons={[{ label: "OK", testID: "message:ok", onPress: onClose, kind: "primary" }]}
-    />
+    </FormSheet>
   );
 }

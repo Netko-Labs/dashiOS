@@ -16,10 +16,11 @@
  */
 
 import { hostname } from "node:os";
-import { AppWindow, EmptyState, ToolbarButton, useDark } from "@dashi/ui";
+import { AppWindow, ErrorState, SPACE, ToolbarButton, useDark } from "@dashi/ui";
 import type { KeyDownInfo } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Clipboard } from "../../../kit/index.ts";
+import type { Engine } from "../engine.ts";
 import { useClosing } from "../hooks/use-closing.ts";
 import { useGridSize } from "../hooks/use-grid-size.ts";
 import { useTabSessions } from "../hooks/use-tab-sessions.ts";
@@ -29,13 +30,16 @@ import { routeKey } from "../key-routing.ts";
 import { localFolder, tabName } from "../naming.ts";
 import { terminalPalette } from "../palette.ts";
 import { useScreenPart } from "../store.ts";
-import { activeTab, selectTab } from "../tabs.ts";
+import { activeTab, selectTab, type Tab } from "../tabs.ts";
+import { LostNotice } from "./grid-notes.tsx";
 import { FONT_SIZE } from "./line.tsx";
 import { TerminalBody } from "./terminal-body.tsx";
 import { type Point, terminalOverlay } from "./terminal-overlay.tsx";
 import { titleCenter } from "./title-center.tsx";
 
 export const TERMINAL_SIZE = { width: 760, height: 480 } as const;
+/** The least window (LA-3): the toolbar's row and a grid still worth typing in, about 40 columns by 10 rows. */
+export const TERMINAL_LEAST = { width: 360, height: 200 } as const;
 const PLUS = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9" stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`;
 
 export interface TerminalWindowProps {
@@ -58,7 +62,11 @@ export function TerminalWindow(props: TerminalWindowProps) {
   if (props.binary === null) {
     return (
       <AppWindow title="Terminal">
-        <EmptyState title="Terminal can't start" message="Its engine, dashi-term, isn't installed. Install the dashi-term package." />
+        <ErrorState
+          testID="terminal-missing"
+          title="Terminal can’t start."
+          message="Its engine, dashi-term, isn’t on this computer. Reinstall Terminal from the Store."
+        />
       </AppWindow>
     );
   }
@@ -82,6 +90,11 @@ function useMenusAt() {
     refocus();
   };
   return { menuAt, setMenuAt, tabsMenuAt, setTabsMenuAt, closeMenu, closeTabsMenu, gridFocus, refocus };
+}
+
+/** The grid's keys: to the front tab's engine, or Return restarting a lost tab; ⇧PgUp and ⇧PgDn page by the grid's rows. */
+function keyRouter(front: Tab | undefined, engine: () => Engine | undefined, restart: () => void, rows: () => number | undefined): (key: KeyDownInfo) => void {
+  return (key) => routeKey(key, { front, send: (input) => engine()?.send(input), restart, pageRows: Math.max(1, (rows() ?? 2) - 1) });
 }
 
 function Terminal({
@@ -112,13 +125,12 @@ function Terminal({
   useWindowLifecycle({ sessions, palette, tabs, onExit, title: windowTitle, setWindowTitle });
   const actions = useTerminalMenus({ clipboard, selected, tabs, names, front, fontSize, setFontSize, setTabs, engine, here, sessions, newWindow, closing });
 
-  const onKeyDown = (key: KeyDownInfo): void =>
-    routeKey(key, {
-      front,
-      send: (input) => engine()?.send(input),
-      restart: () => front && sessions.restart(front.id, here()),
-      pageRows: Math.max(1, (sessions.size.current?.rows ?? 2) - 1),
-    });
+  /** Return in a lost tab, or the notice's Restart: its shell again, where it was, and the grid takes the keyboard. */
+  const restart = (): void => {
+    if (front) sessions.restart(front.id, here());
+    refocus();
+  };
+  const onKeyDown = keyRouter(front, engine, restart, () => sessions.size.current?.rows);
   const selectTabId = (id: number): void => setTabs((current) => selectTab(current, id));
 
   return (
@@ -141,16 +153,16 @@ function Terminal({
         names,
         onSelect: selectTabId,
         onClose: closing.requestCloseTab,
-        onMore: (at) => setTabsMenuAt({ x: at.x, y: at.y + at.height + 4 }),
+        onMore: (at) => setTabsMenuAt({ x: at.x, y: at.y + at.height + SPACE.xs }),
       })}
       toolbar={<ToolbarButton testID="terminal-tab-new" glyph={PLUS} tooltip="New tab" onPress={() => sessions.open(here())} />}
+      notice={front?.lost ? <LostNotice onRestart={restart} /> : undefined}
     >
       <TerminalBody
         front={front}
         store={sessions.store}
         grid={grid}
         palette={palette}
-        dark={dark}
         bells={bells}
         gridFocus={gridFocus}
         fontSize={fontSize}

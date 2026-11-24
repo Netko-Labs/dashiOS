@@ -1,10 +1,20 @@
-/** The note list: a column of rows, pinned first, with a date and the first line under each title; a quiet line when it is empty. */
+/**
+ * The note list: a column of rows, pinned first, with a date and the first
+ * line under each title, in the one selection look (CO-9) at a row's radius.
+ * Empty, it says nothing of its own: the page beside it shows the empty
+ * state (PA-7, one at a time).
+ */
 
-import { rowLook, SelectionBar, useColors, useSurface } from "@dashi/ui";
+import { RADIUS, rowLook, SelectionBar, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { daysLeft, KEEP_DAYS, listDate, preview, untitled } from "../../../../src/shared/notes/index.ts";
 import { FOLDER, PIN_FILLED } from "../glyphs.ts";
 import type { Row } from "../list.ts";
+
+/** A caption's inset: a row's words' edge (its margin and padding). */
+const CAPTION_INSET = SPACE.m + SPACE.gap;
+/** The pin and folder marks: the caption's size. */
+const MARK = TYPE.caption.size;
 
 export interface NoteListProps {
   rows: readonly Row[];
@@ -16,8 +26,6 @@ export interface NoteListProps {
   /** Folder names for the default folder. */
   folderLabel: (folder: string) => string;
   now: number;
-  /** What an empty list says ("No notes yet"). */
-  emptyText: string;
   /** The list's width (layout.ts: narrower in a narrow window). */
   width: number;
 }
@@ -25,8 +33,8 @@ export interface NoteListProps {
 function Caption({ children }: { children: string }) {
   const colors = useColors();
   return (
-    <View style={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 4, flexShrink: 0 }}>
-      <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{children}</Text>
+    <View style={{ paddingHorizontal: CAPTION_INSET, paddingTop: SPACE.gap, paddingBottom: SPACE.xs, flexShrink: 0 }}>
+      <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{children}</Text>
     </View>
   );
 }
@@ -57,42 +65,42 @@ function NoteRow({
       onContextMenu={(event) => onMenu(event.x, event.y)}
       style={{
         flexShrink: 0,
-        marginLeft: 8,
-        marginRight: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 7,
-        gap: 2,
-        borderRadius: 8,
+        marginLeft: SPACE.m,
+        marginRight: SPACE.m,
+        paddingHorizontal: SPACE.gap,
+        paddingVertical: SPACE.s,
+        gap: SPACE.xxs,
+        borderRadius: RADIUS.control,
         backgroundColor: look.ground,
         hoverBackgroundColor: look.hover,
       }}
     >
       {chosen && <SelectionBar />}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: ink }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: ink }}>
             {untitled(row.title)}
           </Text>
         </View>
-        {row.pinned && <Svg markup={PIN_FILLED} size={11} color={quiet} />}
+        {row.pinned && <Svg markup={PIN_FILLED} size={MARK} color={quiet} />}
       </View>
-      <View style={{ flexDirection: "row", gap: 8 }}>
+      <View style={{ flexDirection: "row", gap: SPACE.m }}>
         <View style={{ flexShrink: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 12, color: ink }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: ink }}>
             {when}
           </Text>
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 12, color: quiet }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: quiet }}>
             {preview(row.body) || "No additional text"}
           </Text>
         </View>
       </View>
       {folder !== null && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-          <Svg markup={FOLDER} size={11} color={quiet} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
+          <Svg markup={FOLDER} size={MARK} color={quiet} />
           <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 11, color: quiet }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: quiet }}>
               {folder}
             </Text>
           </View>
@@ -102,7 +110,7 @@ function NoteRow({
   );
 }
 
-export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderLabel, now, emptyText, width }: NoteListProps) {
+export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderLabel, now, width }: NoteListProps) {
   const colors = useColors();
   const surface = useSurface();
   const pinned = rows.filter((row) => row.pinned);
@@ -125,18 +133,13 @@ export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderL
         width,
         flexShrink: 0,
         flexDirection: "column",
-        paddingVertical: 6,
-        gap: 1,
+        paddingVertical: SPACE.s,
+        gap: SPACE.px,
         backgroundColor: surface.window,
         borderRightWidth: 1,
         borderColor: colors.separator,
       }}
     >
-      {rows.length === 0 && (
-        <View testID="list-empty" style={{ paddingHorizontal: 18, paddingVertical: 12, flexShrink: 0 }}>
-          <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{emptyText}</Text>
-        </View>
-      )}
       {pinned.length > 0 && <Caption>Pinned</Caption>}
       {pinned.map(render)}
       {/* "Others", not "Notes": a folder may be called Notes. */}

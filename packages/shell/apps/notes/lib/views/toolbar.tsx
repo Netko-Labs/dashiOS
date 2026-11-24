@@ -1,17 +1,16 @@
 /**
  * Notes' toolbar: New, Delete, Pin, Move and Checklist beside the search
- * field; in Recently Deleted, Restore and Delete instead (and Delete All, in
- * a window wide enough for it).
+ * field (the kit's, 210 shrinking to 96, VS-7); in Recently Deleted, Restore,
+ * Delete and Delete all instead. Every button is a glyph named by its tooltip.
  */
 
-import { SearchField, ToolbarButton } from "@dashi/ui";
+import { SEARCH_FIELD, SearchField, SPACE, ToolbarButton } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { CHECKLIST, COMPOSE, FOLDER_MOVE, PIN, PIN_FILLED, RESTORE, TRASH } from "../glyphs.ts";
+import { CHECKLIST, COMPOSE, FOLDER_MOVE, PIN, PIN_FILLED, RESTORE, TRASH, TRASH_ALL } from "../glyphs.ts";
 import type { Focus } from "../hooks/use-focus.ts";
 import type { NoteActions } from "../hooks/use-note-actions.ts";
 import type { NotesData } from "../hooks/use-notes-data.ts";
 import type { Overlays } from "../hooks/use-overlays.ts";
-import { SEARCH_MIN } from "../layout.ts";
 import type { NotesModel } from "../model.ts";
 
 function NotesSearch({ model, data, focus, takeKeys }: { model: NotesModel; data: NotesData; focus: Focus; takeKeys: () => void }) {
@@ -19,10 +18,10 @@ function NotesSearch({ model, data, focus, takeKeys }: { model: NotesModel; data
     <SearchField
       key={`search:${focus.searching}`}
       testID="search"
+      placeholder="Search notes"
       value={data.state.query}
       onChangeText={(q) => model.setQuery(q)}
-      width={170}
-      minWidth={SEARCH_MIN}
+      minWidth={SEARCH_FIELD.least}
       autoFocus={focus.searching > 0}
       // Find in the note: one Esc keeps the words and hands the keyboard to the note, on the match;
       // with none there, to the list.
@@ -36,35 +35,30 @@ function NotesSearch({ model, data, focus, takeKeys }: { model: NotesModel; data
   );
 }
 
-/** Recently Deleted's buttons: Restore, Delete, and Delete All while there is room. */
-function TrashButtons({ model, data, setSheet, compact }: { model: NotesModel; data: NotesData; setSheet: Overlays["setSheet"]; compact: boolean }) {
+/**
+ * Recently Deleted's buttons: Restore, Delete and Delete all, glyphs named by
+ * their tooltips at every width (UI-16): Delete all has a glyph of its own,
+ * so no two of them look alike.
+ */
+function TrashButtons({ model, data, setSheet }: { model: NotesModel; data: NotesData; setSheet: Overlays["setSheet"] }) {
   const { row, state } = data;
   return (
     <>
-      {/* Narrow, the words go and Delete All leaves for File's "Delete All Recently Deleted…", so two trash glyphs never sit side by side. */}
-      <ToolbarButton
-        testID="restore"
-        glyph={RESTORE}
-        {...(compact ? { tooltip: "Restore" } : { label: "Restore" })}
-        disabled={!row}
-        onPress={() => model.restoreSelected()}
-      />
+      <ToolbarButton testID="restore" glyph={RESTORE} tooltip="Restore" disabled={!row} onPress={() => model.restoreSelected()} />
       <ToolbarButton
         testID="purge"
         glyph={TRASH}
-        {...(compact ? { tooltip: "Delete forever" } : { label: "Delete" })}
+        tooltip="Delete forever"
         disabled={!row}
         onPress={() => row && setSheet({ kind: "purge", title: row.title })}
       />
-      {!compact && (
-        <ToolbarButton
-          testID="empty-trash"
-          glyph={TRASH}
-          label="Delete All"
-          disabled={state.deleted.length === 0}
-          onPress={() => setSheet({ kind: "empty-trash", count: state.deleted.length })}
-        />
-      )}
+      <ToolbarButton
+        testID="empty-trash"
+        glyph={TRASH_ALL}
+        tooltip="Delete all"
+        disabled={state.deleted.length === 0}
+        onPress={() => setSheet({ kind: "empty-trash", count: state.deleted.length })}
+      />
     </>
   );
 }
@@ -75,15 +69,12 @@ export function NotesToolbar({
   overlays,
   focus,
   actions,
-  compact,
 }: {
   model: NotesModel;
   data: NotesData;
   overlays: Overlays;
   focus: Focus;
   actions: NoteActions;
-  /** A narrow window: the toolbar's words go. */
-  compact: boolean;
 }) {
   const { row, openNote, inTrash } = data;
   const { setSheet, setMenu } = overlays;
@@ -91,8 +82,8 @@ export function NotesToolbar({
   if (inTrash) {
     return (
       <>
-        <TrashButtons model={model} data={data} setSheet={setSheet} compact={compact} />
-        <View style={{ width: 8 }} />
+        <TrashButtons model={model} data={data} setSheet={setSheet} />
+        <View style={{ width: SPACE.m }} />
         {search}
       </>
     );
@@ -118,14 +109,14 @@ export function NotesToolbar({
           row &&
           setMenu({
             x: (event.bounds?.x ?? 0) + (event.bounds?.width ?? 0),
-            y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0) + 4,
+            y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0) + SPACE.xs,
             anchor: "end",
             items: actions.moveItems(row.id, row.folder),
           })
         }
       />
       <ToolbarButton testID="checklist" glyph={CHECKLIST} tooltip="Checklist" disabled={!row} onPress={() => actions.format("checklist")} />
-      <View style={{ width: 8 }} />
+      <View style={{ width: SPACE.m }} />
       {search}
     </>
   );

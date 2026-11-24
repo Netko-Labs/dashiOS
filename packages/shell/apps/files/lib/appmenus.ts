@@ -15,6 +15,7 @@ import type { FilesStore } from "../../../src/shared/file-browser/store.ts";
 import type { FilesState } from "../../../src/shared/file-browser/store-state.ts";
 import { mayOpen } from "../../../src/shared/files/index.ts";
 import type { MenuSpec } from "../../kit/index.ts";
+import { KEYS } from "./shortcuts.ts";
 
 const SEPARATOR = { type: "separator" } as const;
 const SORTS = [
@@ -35,10 +36,11 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations,
     {
       id: "file",
       items: [
-        { id: "new-folder", shortcut: "⇧❖N", label: "New Folder", enabled: writable },
-        { id: "open", shortcut: "❖O", label: "Open", enabled: any && selected.every((item) => mayOpen(item).ok) },
+        { id: "new-folder", shortcut: KEYS.newFolder, label: "New Folder", enabled: writable },
+        { id: "open", shortcut: KEYS.open, label: "Open", enabled: any && selected.every((item) => mayOpen(item).ok) },
         { id: "open-with", label: "Open With…", enabled: one && selected[0]?.kind === "file" },
-        { id: "info", shortcut: "❖I", label: "Get Info", enabled: one },
+        ...(state.found !== null || state.location.kind === "recents" ? [{ id: "reveal", label: "Show in Folder", enabled: one }] : []),
+        { id: "info", shortcut: KEYS.info, label: "Get Info", enabled: one },
         SEPARATOR,
         ...(trash
           ? [
@@ -48,10 +50,10 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations,
             ]
           : [
               { id: "rename", label: "Rename", enabled: one && (writable || state.found !== null || state.location.kind === "recents") },
-              { id: "duplicate", shortcut: "❖D", label: "Duplicate", enabled: any && writable },
+              { id: "duplicate", shortcut: KEYS.duplicate, label: "Duplicate", enabled: any && writable },
               ...(ops.canCompress ? [{ id: "compress", label: "Compress", enabled: any }] : []),
               SEPARATOR,
-              { id: "trash", shortcut: "❖⌫", label: "Move to Trash", enabled: any },
+              { id: "trash", shortcut: KEYS.trash, label: "Move to Trash", enabled: any },
             ]),
       ],
     },
@@ -60,41 +62,41 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations,
       items: [
         ...undoMenuItems(undo),
         SEPARATOR,
-        { id: "cut", shortcut: "❖X", label: "Cut", enabled: any && !trash },
-        { id: "copy", shortcut: "❖C", label: "Copy", enabled: any },
-        { id: "paste", shortcut: "❖V", label: "Paste", enabled: writable },
+        { id: "cut", shortcut: KEYS.cut, label: "Cut", enabled: any && !trash },
+        { id: "copy", shortcut: KEYS.copy, label: "Copy", enabled: any },
+        { id: "paste", shortcut: KEYS.paste, label: "Paste", enabled: writable },
         SEPARATOR,
-        { id: "select-all", shortcut: "❖A", label: "Select All", enabled: true },
+        { id: "select-all", shortcut: KEYS.selectAll, label: "Select All", enabled: true },
         SEPARATOR,
-        { id: "find", shortcut: "❖F", label: "Find" },
+        { id: "find", shortcut: KEYS.find, label: "Find" },
       ],
     },
     {
       id: "view",
       items: [
-        { id: "view-icons", shortcut: "❖1", label: "as Icons", checked: state.view === "icons" },
-        { id: "view-list", shortcut: "❖2", label: "as List", checked: state.view === "list" },
+        { id: "view-icons", shortcut: KEYS.viewIcons, label: "as Icons", checked: state.view === "icons" },
+        { id: "view-list", shortcut: KEYS.viewList, label: "as List", checked: state.view === "list" },
         SEPARATOR,
-        { id: "hidden", shortcut: "⇧❖.", label: "Show Hidden Files", checked: state.showHidden },
+        { id: "hidden", shortcut: KEYS.hidden, label: "Show Hidden Files", checked: state.showHidden },
         SEPARATOR,
         ...SORTS.map(([key, title]) => ({ id: `sort-${key}`, label: `Sort by ${title}`, checked: state.sort.key === key })),
         { id: "sort-reverse", label: "Reverse Order", checked: !(store.effectiveSort() ?? state.sort).ascending },
         SEPARATOR,
-        { id: "refresh", shortcut: "❖R", label: "Refresh" },
+        { id: "refresh", shortcut: KEYS.refresh, label: "Refresh" },
       ],
     },
     {
       id: "go",
       title: "Go",
       items: [
-        { id: "back", shortcut: "❖[", label: "Back", enabled: state.canBack },
-        { id: "forward", shortcut: "❖]", label: "Forward", enabled: state.canForward },
+        { id: "back", shortcut: KEYS.back, label: "Back", enabled: state.canBack },
+        { id: "forward", shortcut: KEYS.forward, label: "Forward", enabled: state.canForward },
         { id: "up", label: "Enclosing Folder", enabled: state.location.kind !== "folder" || state.location.path !== "/" },
         SEPARATOR,
         ...places.map((place) => ({ id: `go:${place.id}`, label: place.name })),
         { id: "go-trash", label: "Trash" },
         SEPARATOR,
-        { id: "go-folder", shortcut: "⇧❖G", label: "Go to Folder…" },
+        { id: "go-folder", shortcut: KEYS.goToFolder, label: "Go to Folder…" },
       ],
     },
   ];
@@ -115,6 +117,8 @@ export function chooseMenu(id: string, store: FilesStore, ops: Operations, actio
       return first && actions.openWith(first.path);
     case "info":
       return first && actions.info(first.path);
+    case "reveal":
+      return first && store.reveal(first);
     case "rename":
       return first && actions.rename(first.path);
     case "duplicate":

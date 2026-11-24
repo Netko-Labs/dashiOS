@@ -7,13 +7,14 @@
  */
 
 import { TRUE_BLACK } from "./palette.ts";
+import { LIGHT_SURFACE } from "./surface.ts";
 import { TINTS } from "./tints.ts";
 
 /** A terminal's colours: its ground and ink, the cursor, and the 16 ANSI colours programs name. */
 export interface TerminalColors {
   ground: string;
   ink: string;
-  /** The cursor: deep enough in Light and light enough in Dark that the ground's colour on it (a block cursor's letter) is AA. */
+  /** The cursor and the bell's edge: the grid's own ink (CO-9: a caret is in its field's ink), so a block cursor's letter, in the ground's colour, is as readable as the text. */
   cursor: string;
   /** Black, red, green, yellow, blue, magenta, cyan, white, then the bright eight. */
   ansi: readonly string[];
@@ -23,12 +24,15 @@ export interface TerminalColors {
  * Made from Dashi's ingredients: red from ume, yellow from broth, green from
  * moss, cyan from kombu, magenta from shiso (docs/design.html "Terminal
  * colors"). In Light the bright colours are a step darker, so they stay readable.
+ * The ground is the window's own (Light: surface.window, so the toolbar and the
+ * grid are one white; Dark: true black), and the cursor is the ink (R5): the
+ * accent means chosen or on, never a caret or the bell.
  */
 export const TERMINAL: Readonly<Record<"light" | "dark", TerminalColors>> = {
   light: {
-    ground: "#fbfaf7",
+    ground: LIGHT_SURFACE.window,
     ink: "#1d1d1f",
-    cursor: "#357a64",
+    cursor: "#1d1d1f",
     ansi: ["#1d1d1f", "#b23a50", "#3d7a2e", "#866000", "#2c5faf", "#6a4fc4", "#22786a", "#d6d3cc"].concat([
       "#636260",
       "#a8304a",
@@ -44,7 +48,7 @@ export const TERMINAL: Readonly<Record<"light" | "dark", TerminalColors>> = {
   dark: {
     ground: TRUE_BLACK.ground,
     ink: TRUE_BLACK.ink,
-    cursor: "#5fae95",
+    cursor: TRUE_BLACK.ink,
     ansi: ["#3a3a3d", "#f07a8f", "#7fc46a", "#e5b13f", "#6fa3ef", "#a897f0", "#5fbfa6", "#d8d8dc"].concat([
       "#8e8e93",
       "#ff97a8",

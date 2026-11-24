@@ -6,18 +6,19 @@
 import { ConfirmSheet, type MenuEntry, PopupMenu } from "@dashi/ui";
 import type { ReactElement } from "react";
 import type { WindowActions } from "../../../../src/shared/file-browser/context.ts";
+import { OpenWithSheet } from "../../../../src/shared/file-browser/file-sheets.tsx";
 import { formatCount } from "../../../../src/shared/file-browser/format.ts";
+import type { Suggestions } from "../../../../src/shared/file-browser/omnibox-props.ts";
+import { SuggestionList } from "../../../../src/shared/file-browser/omnibox-view.tsx";
 import type { Operations } from "../../../../src/shared/file-browser/operations.ts";
 import { Peek } from "../../../../src/shared/file-browser/peek.tsx";
 import type { FilesStore } from "../../../../src/shared/file-browser/store.ts";
 import type { FilesState } from "../../../../src/shared/file-browser/store-state.ts";
 import { baseName } from "../../../../src/shared/files/index.ts";
 import { actionMenu, backgroundMenu, itemMenu } from "../menus.ts";
-import { SuggestionList } from "../omnibox/omnibox.tsx";
-import type { Suggestions } from "../omnibox/omnibox-props.ts";
 import type { MenuState, Overlays } from "../use-overlays.ts";
 import { ConflictSheet } from "./conflict-sheet.tsx";
-import { InfoSheet, OpenWithSheet } from "./sheets.tsx";
+import { ItemInfo } from "./sheets.tsx";
 
 type DeleteAsk = Extract<NonNullable<Overlays["sheet"]>, { kind: "empty-trash" | "delete" }>;
 
@@ -28,7 +29,7 @@ function DeleteSheet({ sheet, count, ops, close }: { sheet: DeleteAsk; count: nu
       <ConfirmSheet
         testID="empty-trash"
         title="Empty the Trash?"
-        message={`${formatCount(count)} will be deleted for good.`}
+        message={`${formatCount(count)} will be deleted. You can’t undo this.`}
         confirmLabel="Empty Trash"
         danger
         onCancel={close}
@@ -44,7 +45,7 @@ function DeleteSheet({ sheet, count, ops, close }: { sheet: DeleteAsk; count: nu
     <ConfirmSheet
       testID="delete-forever"
       title={`Delete ${names} immediately?`}
-      message="You can’t undo this."
+      message={`${sheet.items.length === 1 ? "It" : "They"} will be deleted. You can’t undo this.`}
       confirmLabel="Delete"
       danger
       onCancel={close}
@@ -80,14 +81,14 @@ export function filesOverlay({
     return <ConflictSheet conflict={sheet.conflict} folderName={dest === store.env.home ? "Home" : baseName(dest)} onAnswer={sheet.answer} />;
   }
   if (sheet?.kind === "peek") return <Peek onClose={close} />;
-  if (sheet?.kind === "info") return <InfoSheet item={sheet.item} home={store.env.home} onClose={close} />;
+  if (sheet?.kind === "info") return <ItemInfo item={sheet.item} home={store.env.home} onClose={close} />;
   if (sheet?.kind === "open-with") {
     return (
       <OpenWithSheet
-        item={sheet.item}
+        name={sheet.item.name}
         apps={sheet.apps}
-        onCancel={close}
-        onChoose={(app) => {
+        onClose={close}
+        onPick={(app) => {
           void ops.openWith(app, sheet.item);
           close();
         }}

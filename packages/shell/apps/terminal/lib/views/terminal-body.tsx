@@ -14,12 +14,14 @@ import type { Tab } from "../tabs.ts";
 import { Grid } from "./grid.tsx";
 import { lineHeightFor } from "./line.tsx";
 
+/** Where the probe is laid out: above the window, on a row wide enough that its line never wraps. */
+const PROBE_PLACE = { top: -200, width: 4000 } as const;
+
 export interface TerminalBodyProps {
   front: Tab | undefined;
   store: ScreenStore;
   grid: GridSize;
   palette: TerminalPalette;
-  dark: boolean;
   bells: number;
   /** Bumped when a sheet goes: the grid is mounted again and takes the keyboard. */
   gridFocus: number;
@@ -30,7 +32,7 @@ export interface TerminalBodyProps {
   onContextMenu(x: number, y: number): void;
 }
 
-export function TerminalBody({ front, store, grid, palette, dark, bells, gridFocus, fontSize, onKeyDown, send, onContextMenu }: TerminalBodyProps) {
+export function TerminalBody({ front, store, grid, palette, bells, gridFocus, fontSize, onKeyDown, send, onContextMenu }: TerminalBodyProps) {
   return (
     <>
       {front && grid.cell ? (
@@ -40,7 +42,6 @@ export function TerminalBody({ front, store, grid, palette, dark, bells, gridFoc
           id={front.id}
           cell={grid.cell}
           palette={palette}
-          dark={dark}
           bells={bells}
           lost={front.lost}
           onKeyDown={onKeyDown}
@@ -56,7 +57,7 @@ export function TerminalBody({ front, store, grid, palette, dark, bells, gridFoc
         <View testID="terminal-starting" style={{ flex: 1, backgroundColor: palette.ground }} onLayout={grid.layoutStarting} />
       )}
       {/* Measures one cell of the monospace face, again at each size. */}
-      <View style={{ position: "absolute", left: 0, top: -200, width: 4000, flexDirection: "row", opacity: 0 }}>
+      <View style={{ position: "absolute", left: 0, top: PROBE_PLACE.top, width: PROBE_PLACE.width, flexDirection: "row", opacity: 0 }}>
         <View key={fontSize} testID="terminal-probe" style={{ flexShrink: 0 }} onLayout={grid.measure}>
           <Text style={{ fontFamily: "monospace", fontSize, lineHeight: lineHeightFor(fontSize) }}>{PROBE}</Text>
         </View>

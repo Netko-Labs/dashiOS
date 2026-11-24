@@ -10,6 +10,9 @@ import type { Location } from "../../location.ts";
 import type { StoreHost } from "../../store-state.ts";
 import { space } from "../drives.ts";
 
+/** A burst of changes in the folder is one reload, this long after the last (ms). */
+const RELOAD_AFTER_MS = 250;
+
 export class StoreLoader {
   private loadToken = 0;
   private listing: AbortController | null = null;
@@ -79,7 +82,7 @@ export class StoreLoader {
       this.watcher = watch(path, { persistent: false }, () => {
         if (this.watchTimer) clearTimeout(this.watchTimer);
         // A burst of changes (a copy, an extraction) is one reload.
-        this.watchTimer = setTimeout(() => void this.load(), 250);
+        this.watchTimer = setTimeout(() => void this.load(), RELOAD_AFTER_MS);
       });
       this.watcher.on("error", () => this.watcher?.close());
     } catch {

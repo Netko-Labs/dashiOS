@@ -7,6 +7,9 @@
 
 import { Cancelled, type OpContext } from "../files/index.ts";
 
+/** How often a running job tells its watchers, at most (ms): often enough for a bar, not every chunk. */
+const EMIT_EVERY_MS = 60;
+
 export type JobState = "running" | "done" | "failed" | "cancelled";
 
 export interface Job {
@@ -101,7 +104,7 @@ export class Jobs {
       this.timer = setTimeout(() => {
         this.timer = null;
         this.emit();
-      }, 60);
+      }, EMIT_EVERY_MS);
     }
   }
 

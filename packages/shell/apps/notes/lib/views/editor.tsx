@@ -17,7 +17,7 @@
  * line over it says it is deleted, and the toolbar has Restore.
  */
 
-import { Button, EmptyState, useColors, useSurface } from "@dashi/ui";
+import { Button, EmptyState, NoResults, SPACE, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { daysLeft, editedLine, KEEP_DAYS, untitled } from "../../../../src/shared/notes/index.ts";
@@ -29,6 +29,14 @@ import type { Pressable } from "../look.ts";
 import type { Draft } from "../state.ts";
 import { Page } from "./body.tsx";
 import { GUTTER, MetaLine, Title } from "./note-page.tsx";
+
+/** The page's empty state: its words, whether it offers New note, and the search that found nothing. */
+export interface EmptyPage {
+  title: string;
+  message: string;
+  canCreate: boolean;
+  query?: string;
+}
 
 export interface EditorProps {
   draft: Draft | null;
@@ -57,8 +65,8 @@ export interface EditorProps {
   onNew: () => void;
   /** Bumped to hand the keyboard to the body (Enter in the list, Find Next, a format command); the title's Return moves it in the host. */
   bodyFocus: number;
-  /** What the page says when the list is empty: nothing at all, nothing here, no matches. */
-  empty: { title: string; message: string; canCreate: boolean };
+  /** What the page says when the list is empty: nothing at all, nothing here, no results. */
+  empty: EmptyPage;
   hasNotes: boolean;
   /** A date in one of its forms, for the line over the note. */
   formatDate: (time: number, form: DateForm) => string;
@@ -69,6 +77,8 @@ export interface EditorProps {
 }
 
 const DATE_FORMS: readonly DateForm[] = ["long", "medium", "short"];
+/** Timers, not motion: the scroll waits this long for the layout, and keeps following this long after an append. */
+const FOLLOW = { afterMs: 40, forMs: 400 } as const;
 
 /** The scroll that follows an append waits for the layout to catch up: before that it would be clamped to the old end. */
 function useFollowEnd(follow: () => void): { followEnd: () => void; following: { current: boolean } } {
@@ -76,11 +86,11 @@ function useFollowEnd(follow: () => void): { followEnd: () => void; following: {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const followEnd = (): void => {
     following.current = true;
-    timers.current.push(setTimeout(follow, 40));
+    timers.current.push(setTimeout(follow, FOLLOW.afterMs));
     timers.current.push(
       setTimeout(() => {
         following.current = false;
-      }, 400),
+      }, FOLLOW.forMs),
     );
   };
   useEffect(
@@ -116,7 +126,7 @@ function DeletedNote({
   const left = `${days} ${days === 1 ? "day" : "days"} left`;
   return (
     <ScrollView testID="editor" onLayout={measure} style={{ flex: 1, backgroundColor: surface.card }}>
-      <View style={{ padding: GUTTER, paddingTop: 16, gap: 10, flexDirection: "column", flexShrink: 0, minHeight: height }}>
+      <View style={{ padding: GUTTER, paddingTop: SPACE.page, gap: SPACE.gap, flexDirection: "column", flexShrink: 0, minHeight: height }}>
         <MetaLine text={fitLine(room, [`In Recently Deleted · ${left} · Restore it to edit it`, `In Recently Deleted · ${left}`, left])} colors={colors} />
         <Title value={untitled(row.title)} fieldKey={`deleted-title:${row.id}`} autoFocus={false} readOnly onChange={() => {}} onLeave={onLeave} />
         <Page
@@ -147,6 +157,8 @@ function NoNote({ props }: { props: EditorProps }) {
     <View style={{ flex: 1, backgroundColor: surface.card }}>
       {hasNotes ? (
         <EmptyState testID="no-selection" title="No note open" message="Choose one from the list, or make a new one." glyph={NOTE} />
+      ) : empty.query !== undefined ? (
+        <NoResults testID="no-notes" query={empty.query} />
       ) : (
         <EmptyState
           testID="no-notes"
@@ -191,7 +203,7 @@ export function Editor(props: EditorProps) {
 
   return (
     <ScrollView testID="editor" onLayout={measure} style={{ flex: 1, backgroundColor: surface.card }}>
-      <View style={{ padding: GUTTER, paddingTop: 16, gap: 10, flexDirection: "column", flexShrink: 0, minHeight: height }}>
+      <View style={{ padding: GUTTER, paddingTop: SPACE.page, gap: SPACE.gap, flexDirection: "column", flexShrink: 0, minHeight: height }}>
         <MetaLine
           text={fitLine(
             room,

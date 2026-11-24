@@ -6,14 +6,15 @@
  * spare height going to the display. Pure.
  */
 
+import { SPACE } from "@dashi/ui";
 import type { Size } from "../../kit/index.ts";
 
 /** A key's side at the smallest. */
 export const KEY = 54;
 /** Between keys, across and down. */
-export const GAP = 10;
+export const GAP = SPACE.gap;
 /** Around the keypad. */
-export const PAD = 14;
+export const PAD = SPACE.button;
 /** The display's band: the window controls' strip, the expression line, and the result under it. */
 export const DISPLAY = 116;
 export const COLUMNS = 4;

@@ -13,6 +13,11 @@ export const TRASH = svg(
   `${stroke("M2.6 4.2h10.8M6.2 4.2V2.8h3.6v1.4")}${stroke("M4 4.2l.6 8.4a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9l.6-8.4")}${stroke("M6.7 6.8v4M9.3 6.8v4", 1.2)}`,
 );
 
+/** Delete all: a can with a second one behind it, so it never looks like Delete's. */
+export const TRASH_ALL = svg(
+  `${stroke("M2.2 5.2h9.2M5.4 5.2V3.8h2.8v1.4")}${stroke("M3.4 5.2l.5 7.4a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.5-7.4")}${stroke("M11.6 3.2h2.2M13 3.2l-.6 8.2", 1.2)}`,
+);
+
 /** A pushpin, outline. */
 export const PIN = svg(`${stroke("M6 2.4h4l-.5 3.3 2.2 2.1H4.3l2.2-2.1z", 1.3)}${stroke("M8 7.8v5.8")}`);
 /** A pushpin, filled: the note is pinned. */

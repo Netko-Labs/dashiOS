@@ -14,7 +14,7 @@ fakeClockEachTest();
 /** Until the chooser is in `folder` and has drawn it (a folder lists on the file system, outside the event loop's turns). */
 const folderIs = (m: ChooserModel, folder: string) => until(() => m.folder() === folder && !m.store.getSnapshot().loading, folder).then(() => flush());
 
-test("the chooser is Files: a slow second click only selects, a double-click opens, Up and Back move, the folder pop-up goes up", async () => {
+test("the chooser is Files: a slow second click only selects, a double-click opens, Up and Back move, a crumb goes up", async () => {
   const root = mkdtempSync(join(tmpdir(), "chooser-view-"));
   const home = join(root, "h");
   const docs = join(home, "Docs");
@@ -69,10 +69,8 @@ test("the chooser is Files: a slow second click only selects, a double-click ope
   press("chooser:back");
   await folderIs(model, taxes);
 
-  // The folder pop-up lists the folders it is in; choosing one goes there.
-  send({ type: "press", nodeId: node("chooser:folder"), bounds: { x: 300, y: 6, width: 120, height: 28 } });
-  await settle();
-  send({ type: "press", nodeId: node("chooser:folder:menu:Home") });
+  // Files' omnibox is the chooser's row too (R7): a crumb goes to the folder it names.
+  press("path:0");
   await folderIs(model, home);
   // Esc, with nothing typed, cancels.
   send({ type: "windowkey", nodeId: node("keys"), key: "escape", ctrl: false, alt: false, shift: false, meta: false, repeat: false });
@@ -82,7 +80,7 @@ test("the chooser is Files: a slow second click only selects, a double-click ope
   rmSync(root, { recursive: true, force: true });
 });
 
-test("the chooser's search takes a typed path: Return goes there; one that leads nowhere says so until a good one", async () => {
+test("the chooser's omnibox takes a typed path: Return goes there; one that leads nowhere says so until a good one", async () => {
   const root = mkdtempSync(join(tmpdir(), "chooser-path-"));
   const home = join(root, "h");
   const docs = join(home, "Docs");
@@ -107,20 +105,24 @@ test("the chooser's search takes a typed path: Return goes there; one that leads
   model.start();
   const { root: mounted, node, send } = mount(<ChooserView model={model} title="Open" exists={() => false} answer={() => {}} />);
   await folderIs(model, home);
-  const field = node("chooser:search");
+  // The omnibox at rest is the path; a press makes it a field.
+  send({ type: "press", nodeId: node("omnibox") });
+  await settle();
+  const field = node("omnibox");
   // A path is not a name to look for: no search runs while it is typed.
   send({ type: "change", nodeId: field, value: "~/Docs/Tax" });
   expect(model.store.getSnapshot().query).toBe("");
   send({ type: "submit", nodeId: field, value: "~/Docs/Nope" });
-  await until(() => model.getSnapshot().problem !== null, "the path's problem");
-  expect(model.getSnapshot().problem).toContain("Nope");
+  await until(() => model.store.getSnapshot().notice?.error === true, "the path's problem");
+  expect(model.store.getSnapshot().notice?.text).toContain("Nope");
   expect(model.folder()).toBe(home);
   send({ type: "submit", nodeId: field, value: "~/Docs/Taxes" });
   await until(() => model.folder() === join(docs, "Taxes"), "the path to open");
   expect(model.folder()).toBe(join(docs, "Taxes"));
-  expect(model.getSnapshot().problem).toBeNull();
   // Words still search.
-  send({ type: "change", nodeId: field, value: "lease" });
+  send({ type: "press", nodeId: node("omnibox") });
+  await settle();
+  send({ type: "change", nodeId: node("omnibox"), value: "lease" });
   expect(model.store.getSnapshot().query).toBe("lease");
   mounted.unmount();
   model.stop();

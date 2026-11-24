@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { detailChoices, fitDetail, textWidth } from "../apps/preview/lib/detail.ts";
+import { DETAIL_LEAD, detailChoices, fitDetail, textWidth } from "../apps/preview/lib/detail.ts";
 
 const image = { size: { width: 3200, height: 1800 }, folder: { index: 2, count: 12 }, pdf: null };
 
@@ -20,10 +20,12 @@ describe("Preview's toolbar words", () => {
     const choices = detailChoices(image);
     const full = choices[0] as string;
     const size = choices[1] as string;
+    // Each is drawn after the title's " — " (VS-2), so that is part of its room.
+    const drawn = (words: string): number => textWidth(`${DETAIL_LEAD}${words}`);
     expect(fitDetail(choices, 400)).toBe(full);
-    expect(fitDetail(choices, textWidth(full))).toBe(size);
-    expect(fitDetail(choices, textWidth(size) + 4)).toBe(size);
-    expect(fitDetail(choices, textWidth(size) - 1)).toBeNull();
+    expect(fitDetail(choices, drawn(full))).toBe(size);
+    expect(fitDetail(choices, drawn(size) + 4)).toBe(size);
+    expect(fitDetail(choices, drawn(size) - 1)).toBeNull();
     expect(fitDetail(choices, 0)).toBeNull();
   });
 

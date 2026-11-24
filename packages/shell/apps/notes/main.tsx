@@ -5,7 +5,7 @@
  */
 
 import { defaultRoot, NotesStore } from "../../src/shared/notes/index.ts";
-import { runApp } from "../kit/index.ts";
+import { onWindowTyping, runApp } from "../kit/index.ts";
 import { NOTES_MIN_SIZE } from "./lib/layout.ts";
 import { NotesModel } from "./lib/model.ts";
 import type { NotesHost } from "./lib/views/content.tsx";
@@ -40,11 +40,19 @@ host.scroll = (testID, dy) => {
   if (id) app.host.simulate({ kind: "scroll", id, dy });
 };
 host.press = (keystroke) => app.host.simulate({ kind: "key", keystroke });
+// Whether a field has the keyboard: ❖⌫ is then the field's (to the line's start), not Delete Note's.
+let typing = false;
+onWindowTyping(app.host, (now) => {
+  typing = now;
+});
+host.typing = () => typing;
 
 const stopWatching = watchNotes(store.root, () => model.reload());
+/** A timer: expired notes leave Recently Deleted once an hour. */
+const PURGE_EVERY_MS = 3_600_000;
 const purge = setInterval(() => {
   if (store.purgeExpired() > 0) model.reload();
-}, 3_600_000);
+}, PURGE_EVERY_MS);
 purge.unref();
 
 // Whatever is typed and not yet saved is written before the process goes (the window closing ends it at once).

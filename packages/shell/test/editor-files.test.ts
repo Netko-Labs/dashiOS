@@ -119,7 +119,7 @@ describe("files", () => {
   test("a new file, and a folder that isn't there", () => {
     expect(writeDocument(join(dir, "new.txt"), new TextEncoder().encode("x"))).toBeNull();
     expect(readFileSync(join(dir, "new.txt"), "utf8")).toBe("x");
-    expect(writeDocument(join(dir, "missing", "new.txt"), new Uint8Array())).toBe("That folder doesn't exist.");
+    expect(writeDocument(join(dir, "missing", "new.txt"), new Uint8Array())).toBe("That folder doesn’t exist.");
   });
 
   test("a writable file in a folder that isn't is written in place", () => {

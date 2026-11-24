@@ -5,16 +5,15 @@
  * way when the field is narrow.
  */
 
-import { SEARCH, useColors } from "@dashi/ui";
+import { RADIUS, SEARCH, SEARCH_FIELD, SearchField, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { useFiles, useFilesState } from "../../../../src/shared/file-browser/context.ts";
-import { useDropTarget } from "../../../../src/shared/file-browser/drop.ts";
-import { CHEVRON } from "../../../../src/shared/file-browser/glyphs.ts";
-import { type Location, pathSegments } from "../../../../src/shared/file-browser/location.ts";
-import { textWidth } from "../../../../src/shared/file-browser/tile-name.ts";
-import { statusLine } from "../views/footer.tsx";
-import { Field, HEIGHT } from "./omnibox-field.tsx";
+import { useFiles, useFilesState } from "../../context.ts";
+import { dropLook, useDropTarget } from "../../drop.ts";
+import { statusLine } from "../../format.ts";
+import { CHEVRON } from "../../glyphs.ts";
+import { type Location, pathSegments } from "../../location.ts";
+import { textWidth } from "../../tile-name.ts";
 
 /** Crumbs shown in full before the first ones fold into “…”. */
 const CRUMBS_SHOWN = 4;
@@ -32,7 +31,8 @@ export function foldCrumbs<T>(segments: readonly T[], shown: number = CRUMBS_SHO
 }
 
 /** A crumb's estimated width: its name at 13 px (the current one semibold), 6 either side, and the chevron before all but the first. */
-const crumbWidth = (name: string, first: boolean, last: boolean): number => textWidth(name) * 13 * (last ? 1.06 : 1) + 12 + (first ? 0 : 10);
+const crumbWidth = (name: string, first: boolean, last: boolean): number =>
+  textWidth(name) * TYPE.body.size * (last ? 1.06 : 1) + 2 * SPACE.s + (first ? 0 : SPACE.gap);
 
 /**
  * The crumbs that fit `room` pixels, folded from the left: the whole path
@@ -59,6 +59,9 @@ export function fitCrumbs<T extends { name: string }>(segments: readonly T[], ro
   return options.find((crumbs) => width(crumbs) <= room) ?? options.at(-1) ?? [];
 }
 
+/** The crumbs' measures: a crumb's height, the magnifier's column and its size, the chevron. */
+const CRUMB = { height: 22, lead: 22, glyph: 13, chevron: 10 } as const;
+
 export function Crumbs({ onEdit }: { onEdit: (text: string) => void }) {
   const colors = useColors();
   const { store } = useFiles();
@@ -73,17 +76,17 @@ export function Crumbs({ onEdit }: { onEdit: (text: string) => void }) {
   const status = statusLine(visible.length, picked, state.free?.free ?? null);
   const showsStatus = width === 0 || width >= STATUS_FROM;
   // The crumbs fold from the left to fit what the field has left beside the status line.
-  const room = width === 0 ? 0 : Math.max(1, width - FIELD_CHROME - (showsStatus ? textWidth(status) * 11 : 0));
+  const room = width === 0 ? 0 : Math.max(1, width - FIELD_CHROME - (showsStatus ? textWidth(status) * TYPE.caption.size : 0));
   const folded = fitCrumbs(
     segments.map((segment, index) => ({ ...segment, index })),
     room,
   );
-  return (
-    <Field testID="omnibox" onPress={search} onLayout={(bounds) => setWidth(Math.round(bounds.width))}>
-      <View style={{ width: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Svg markup={SEARCH} size={13} color={colors.textMuted} />
+  const crumbs = (
+    <>
+      <View style={{ width: CRUMB.lead, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Svg markup={SEARCH} size={CRUMB.glyph} color={colors.textMuted} />
       </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 0, minWidth: 0, flexShrink: 1, overflow: "hidden" }}>
+      <View style={{ flexDirection: "row", alignItems: "center", minWidth: 0, flexShrink: 1, overflow: "hidden" }}>
         {folded.map(({ segment, folded: hidden }, at) => (
           <Crumb
             key={`${segment.index}:${segment.name}`}
@@ -96,15 +99,35 @@ export function Crumbs({ onEdit }: { onEdit: (text: string) => void }) {
         ))}
       </View>
       {/* The empty end is a search too, but the whole field already is one: in a narrow window it gives its room to the crumbs. */}
-      <View testID="omnibox:edit" accessibilityRole="button" accessibilityLabel="Search" onPress={search} style={{ flex: 1, height: HEIGHT, minWidth: 0 }} />
+      <View
+        testID="omnibox:edit"
+        accessibilityRole="button"
+        accessibilityLabel="Search"
+        onPress={search}
+        style={{ flex: 1, alignSelf: "stretch", minWidth: 0 }}
+      />
       {showsStatus && (
         <View testID="status" style={{ flexShrink: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {status}
           </Text>
         </View>
       )}
-    </Field>
+    </>
+  );
+  // The kit's search field, at rest as the path (UI-11): one box, one Tab stop; a press, Space or Return makes it text.
+  return (
+    <SearchField
+      testID="omnibox"
+      width="fill"
+      minWidth={SEARCH_FIELD.least}
+      value=""
+      onChangeText={search}
+      rest={crumbs}
+      restLabel="Path. Press to search, or type a path"
+      onPressRest={search}
+      onLayout={(bounds) => setWidth(Math.round(bounds.width))}
+    />
   );
 }
 
@@ -114,24 +137,27 @@ function Crumb({ index, name, location, first, last }: { index: number; name: st
   const drop = useDropTarget(location.kind === "folder" ? location.path : location.kind === "trash" ? "trash" : null);
   return (
     <View style={{ flexDirection: "row", alignItems: "center", flexShrink: last ? 1 : 0, minWidth: 0 }}>
-      {!first && <Svg markup={CHEVRON} size={10} color={colors.textDisabled} />}
+      {!first && <Svg markup={CHEVRON} size={CRUMB.chevron} color={colors.textDisabled} />}
       <View
         testID={`path:${index}`}
         onPress={() => store.go(location)}
         {...drop.props}
         style={{
-          height: 22,
-          paddingHorizontal: 6,
+          height: CRUMB.height,
+          paddingHorizontal: SPACE.s,
           justifyContent: "center",
-          borderRadius: 5,
+          borderRadius: RADIUS.row,
           minWidth: 0,
           // The current folder gives way last and ends in an ellipsis; a parent is folded into “…” before it is cut.
           flexShrink: last ? 1 : 0,
           hoverBackgroundColor: colors.button,
-          ...(drop.over ? { backgroundColor: `${colors.selection}33` } : {}),
+          ...dropLook(colors, drop.over, RADIUS.row),
         }}
       >
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: last ? "semibold" : "normal", color: last ? colors.text : colors.textMuted }}>
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: TYPE.body.size, fontWeight: last ? WEIGHT.semibold : WEIGHT.regular, color: last ? colors.text : colors.textMuted }}
+        >
           {name}
         </Text>
       </View>

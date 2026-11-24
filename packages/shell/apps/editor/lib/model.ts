@@ -76,7 +76,7 @@ export class EditorModel extends EditorDocument {
   open(path: string): boolean {
     const read = readDocument(path);
     if (!read.ok) {
-      this.set({ notice: { text: `“${displayName(path)}” couldn't be opened. ${read.message}`, tone: "error" } });
+      this.set({ notice: { text: `“${displayName(path)}” couldn’t be opened. ${read.message}`, tone: "error" } });
       return false;
     }
     this.history.clear();
@@ -113,7 +113,7 @@ export class EditorModel extends EditorDocument {
     const notice: Notice | null =
       recovery.path === null
         ? null
-        : { text: `Changes that couldn't be saved to “${displayName(recovery.path)}” are back. They are saved once you edit again.`, tone: "info" };
+        : { text: `Changes that couldn’t be saved to “${displayName(recovery.path)}” are back. They are saved once you edit again.`, tone: "info" };
     this.set({
       path: recovery.path,
       text: recovery.text,
@@ -208,7 +208,7 @@ export class EditorModel extends EditorDocument {
     if (path === null) return false;
     const read = readDocument(path);
     if (!read.ok) {
-      this.set({ notice: { text: `“${displayName(path)}” couldn't be read. ${read.message}`, tone: "error" } });
+      this.set({ notice: { text: `“${displayName(path)}” couldn’t be read. ${read.message}`, tone: "error" } });
       return false;
     }
     this.stamp = read.stamp;
@@ -271,13 +271,13 @@ export class EditorModel extends EditorDocument {
     if (!bytes) {
       encoding = "utf-8";
       bytes = encodeText(this.state.text, encoding, this.state.lineEnding) as Uint8Array;
-      notice = { text: `“${name}” was saved as UTF-8: its encoding can't hold some of the characters.`, tone: "info" };
+      notice = { text: `“${name}” was saved as UTF-8: its encoding can’t hold some of the characters.`, tone: "info" };
     }
     this.keepVersion(path, reason);
     const problem = writeDocument(path, bytes);
     if (problem !== null) {
       const kept = reason === "auto" ? " Your changes are kept here; Save As puts them somewhere else." : "";
-      this.set({ notice: { text: `“${name}” couldn't be saved. ${problem}${kept}`, tone: "error" } });
+      this.set({ notice: { text: `“${name}” couldn’t be saved. ${problem}${kept}`, tone: "error" } });
       return false;
     }
     this.stamp = stampOf(path);

@@ -1,47 +1,35 @@
 /** The notice over the content's foot, only while it has something: running jobs with Cancel, and the last message. The path and the status line are the omnibox's. */
 
-import { Button, Notice, ProgressBar, useColors, useUndo } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { Button, GlyphButton, Notice, ProgressBar, SPACE, TYPE, useColors, useUndo } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesOps, useFilesState, useJobs } from "../../../../src/shared/file-browser/context.ts";
-import { formatCount, formatSize } from "../../../../src/shared/file-browser/format.ts";
+import { formatSize } from "../../../../src/shared/file-browser/format.ts";
 import { CLOSE } from "../../../../src/shared/file-browser/glyphs.ts";
 import type { Job } from "../../../../src/shared/file-browser/jobs.ts";
+
+/** A running job's row: its height and its bar's width. */
+const JOB_ROW = { height: 30, bar: 160 } as const;
 
 function JobRow({ job }: { job: Job }) {
   const colors = useColors();
   const ops = useFilesOps();
   const ratio = job.total && job.total > 0 ? Math.min(1, job.done / job.total) : null;
   return (
-    <View testID={`job:${job.id}`} style={{ height: 30, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14 }}>
+    <View
+      testID={`job:${job.id}`}
+      style={{ height: JOB_ROW.height, flexDirection: "row", alignItems: "center", gap: SPACE.gap, paddingHorizontal: SPACE.button }}
+    >
       <View style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>{`${job.label}…`}</Text>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>{`${job.label}…`}</Text>
       </View>
       {/* While the total isn't known yet (measuring, a move, the Trash) the bar sweeps rather than standing still. */}
-      <ProgressBar testID={`job:${job.id}:bar`} value={ratio} width={160} />
+      <ProgressBar testID={`job:${job.id}:bar`} value={ratio} width={JOB_ROW.bar} />
       {ratio !== null && job.total !== null && job.total > 1000 && (
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${formatSize(job.done)} of ${formatSize(job.total)}`}</Text>
+        <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{`${formatSize(job.done)} of ${formatSize(job.total)}`}</Text>
       )}
-      <View
-        testID={`job:${job.id}:cancel`}
-        accessibilityRole="button"
-        accessibilityLabel="Cancel"
-        onPress={() => ops.jobs.cancel(job.id)}
-        style={{ width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-      >
-        <Svg markup={CLOSE} size={11} color={colors.textMuted} />
-      </View>
+      <GlyphButton testID={`job:${job.id}:cancel`} glyph={CLOSE} label="Cancel" quiet onPress={() => ops.jobs.cancel(job.id)} />
     </View>
   );
-}
-
-/** "12 items, 41.3 GB available", or "3 of 12 selected, 4.2 MB". */
-export function statusLine(total: number, selected: readonly { size: number; kind: string }[], free: number | null): string {
-  if (selected.length > 0) {
-    const bytes = selected.filter((item) => item.kind === "file").reduce((sum, item) => sum + item.size, 0);
-    const size = selected.some((item) => item.kind === "file") ? `, ${formatSize(bytes)}` : "";
-    return `${selected.length} of ${formatCount(total)} selected${size}`;
-  }
-  return free === null ? formatCount(total) : `${formatCount(total)}, ${formatSize(free)} available`;
 }
 
 export function Footer() {

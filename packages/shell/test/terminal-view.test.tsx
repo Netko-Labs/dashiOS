@@ -126,3 +126,14 @@ test("one chrome row: the tab is named by its folder, the failed command is mark
 function readLog(): string {
   return readFileSync(log, "utf8");
 }
+
+test("without its engine the window says what failed as an error state, naming no package (PA-6)", async () => {
+  const host = fakeHost();
+  const root = render(<TerminalWindow binary={null} onExit={() => {}} newWindow={() => {}} setTitle={() => {}} clipboard={clipboard} />, host.transport);
+  await settle();
+  expect(root.nodeId("terminal-missing")).toBeDefined();
+  const tree = host.trees.at(-1) ?? "";
+  expect(tree).toContain("Terminal can’t start.");
+  expect(tree).not.toContain("package");
+  root.unmount();
+});

@@ -1,7 +1,7 @@
 /**
  * What the window's commands do, once: open, the file's ways out (Show in
  * Files, Open With, Export, Print, Trash), copy, zoom, sidebar, rotate and
- * step. The menu bar (menus.ts), the keys (use-keys.ts), the toolbar and the
+ * step. What goes wrong is said in the window's notice (`say`). The menu bar (menus.ts), the keys (use-keys.ts), the toolbar and the
  * sheets all run these; the commands themselves are commands.ts's.
  */
 
@@ -39,6 +39,7 @@ export function useActions({
   zoom,
   hasPicture,
   chrome,
+  say,
 }: {
   viewer: Viewer;
   board: Clipboard;
@@ -48,13 +49,14 @@ export function useActions({
   zoom: ZoomControls;
   hasPicture: boolean;
   chrome: Chrome;
+  /** The notice over the content's foot (use-notice.ts). */
+  say: commands.Say;
 }): WindowCommands {
   const { pdf } = snap;
   const isPdf = snap.kind === "pdf";
   // Previous and next: a PDF's pages, or the folder's pictures.
   const canPrevious = pdf ? doc.page > 1 : snap.folder.previous !== null;
   const canNext = pdf ? doc.page < pdf.pages : snap.folder.next !== null;
-  const say = (title: string, message: string): void => chrome.setSheet({ kind: "message", title, message });
   const hooks: commands.CommandHooks = {
     viewer,
     board,
@@ -78,7 +80,7 @@ export function useActions({
   const formats = exportFormats(snap.kind, snap.format, commands.toolsOf(snap));
   const canPrint = commands.sourceOf(snap) !== null && (isPdf || snap.tools.magick) && formats.length > 0;
   const actions: MenuActions = {
-    open: () => commands.openFile(hooks),
+    open: () => chrome.setSheet({ kind: "open", request: commands.openRequest(snap) }),
     openRecent: (path: string) => void viewer.open(path),
     clearRecents: () => viewer.forgetRecents(),
     openWith: openWithSheet,
@@ -86,7 +88,7 @@ export function useActions({
     exportFile: () => formats.length > 0 && chrome.setSheet({ kind: "export", formats }),
     print: () => void commands.print(hooks, snap, (printer, file) => chrome.setSheet({ kind: "print-cups", printer, pdf: file })),
     info: showInfo,
-    trash: () => snap.path && chrome.setSheet({ kind: "trash" }),
+    trash: () => commands.trash(hooks, snap),
     copy: () => void commands.copy(hooks, snap, doc.hasSelection() ? doc.copyText : null, doc.page),
     selectAll: () => doc.selectAll(),
     copyPath: () => commands.copyPath(hooks, snap.path),

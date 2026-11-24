@@ -1,13 +1,13 @@
 /**
- * The Calculator's commands: copy, paste, cut, the tape's show and clear, and
- * the menu bar that names them (menus.ts). The clipboard is the kit's
+ * The Calculator's commands: copy, paste, cut, the tape's show and clear, its
+ * chosen entry's use, edit and copy, and the menu bar that names them (menus.ts). The clipboard is the kit's
  * (`Clipboard`); copying shows "Copied" under the line for a moment.
  */
 
 import { type Clipboard, type Size, useAppMenus } from "../../kit/index.ts";
 import { copyNumber } from "./format.ts";
 import { leastSize, sizeWithTape } from "./layout.ts";
-import { selectedText } from "./line.ts";
+import { selectedText, shownExpression } from "./line.ts";
 import type { NumberLocale } from "./locale.ts";
 import { calculatorMenus } from "./menus.ts";
 import type { CalcAction, CalcState } from "./state.ts";
@@ -29,10 +29,13 @@ export interface CalculatorCommandsInput {
   size: Size;
   resizeWindow?: (size: Size, least: Size) => void;
   resultValue: Parameters<typeof copyNumber>[0] | null;
+  /** The tape's chosen entry, by its place in the tape; null when none shows. */
+  chosenEntry: number | null;
 }
 
 export function useCalculatorCommands(input: CalculatorCommandsInput): CalculatorCommands {
-  const { clipboard, state, dispatch, locale, showsTape, setShowsTape, size, resizeWindow, resultValue } = input;
+  const { clipboard, state, dispatch, locale, showsTape, setShowsTape, size, resizeWindow, resultValue, chosenEntry } = input;
+  const entry = chosenEntry === null ? undefined : state.tape[chosenEntry];
   const { line } = state;
   const copy = (text: string): void => {
     void clipboard.writeText(text).then((done) => done && dispatch({ type: "notice", notice: "copied" }));
@@ -55,6 +58,7 @@ export function useCalculatorCommands(input: CalculatorCommandsInput): Calculato
     hasResult: resultValue !== null,
     showsTape,
     hasTape: state.tape.length > 0,
+    hasEntry: showsTape && entry !== undefined,
     actions: {
       cut: () => {
         copy(selectedText(line));
@@ -67,6 +71,9 @@ export function useCalculatorCommands(input: CalculatorCommandsInput): Calculato
       clear: () => dispatch({ type: "clear" }),
       toggleTape,
       clearTape,
+      useEntry: () => entry && dispatch({ type: "use", value: entry.value, locale }),
+      editEntry: () => chosenEntry !== null && dispatch({ type: "recall-entry", index: chosenEntry, locale }),
+      copySum: () => entry && copy(shownExpression(entry.expression, locale)),
     },
   });
   useAppMenus(menus, run);
