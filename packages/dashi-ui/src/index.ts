@@ -16,7 +16,7 @@ export {
 export { ALERT_WINDOW, type AlertContent, alertButtonsWidth, alertWindowHeight, alertWordsWidth, wrappedLines } from "./alert-size.ts";
 export { BUTTON, Button, type ButtonProps, type ButtonSize, type Look } from "./button.tsx";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
-export { CHECKBOX, Checkbox, type CheckboxProps } from "./checkbox.tsx";
+export { CHECKBOX, Checkbox, type CheckboxProps, CheckMark } from "./checkbox.tsx";
 export { CHIP, Chip, type ChipTone, chipColors } from "./chip.tsx";
 export { type Choice, Choices } from "./choices.tsx";
 export { type Confirm, type ConfirmRequest, ConfirmSheet, type ConfirmSheetProps, confirmKeyAction, useConfirm } from "./confirm.tsx";

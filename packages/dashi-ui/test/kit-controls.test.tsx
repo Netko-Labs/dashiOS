@@ -3,7 +3,7 @@
 import { expect, test } from "bun:test";
 import { View } from "@mirinjs/metal";
 import { Button } from "../src/button.tsx";
-import { CHECKBOX, Checkbox } from "../src/checkbox.tsx";
+import { CHECKBOX, Checkbox, CheckMark } from "../src/checkbox.tsx";
 import { CHIP, Chip } from "../src/chip.tsx";
 import { ShowStates } from "../src/control-state.tsx";
 import { SEARCH } from "../src/glyphs.ts";
@@ -176,5 +176,21 @@ test("TextArea: a field's edge, ground and focus over many lines; it fills its c
     access: { label: "Notes" },
   });
   expect(node("file")?.props).toMatchObject({ height: 120, size: 12, access: { label: "Text" } });
+  root.unmount();
+});
+
+test("CheckMark: the box alone for a list whose row is the control; a pick-one list's is round with a dot", async () => {
+  const { node, root } = await sent(
+    <View>
+      <CheckMark testID="ticked" checked />
+      <CheckMark testID="empty" checked={false} />
+      <CheckMark testID="picked" checked round />
+    </View>,
+  );
+  expect(node("ticked")?.props).toMatchObject({ width: CHECKBOX.box, cornerRadius: 4 });
+  expect(node("ticked")?.props.focusable).toBeUndefined();
+  expect(node("ticked")?.props.access).toBeUndefined();
+  expect(node("empty")?.props).toMatchObject({ borderColor: lightColors.controlEdge });
+  expect(node("picked")?.props).toMatchObject({ cornerRadius: CHECKBOX.box / 2 });
   root.unmount();
 });

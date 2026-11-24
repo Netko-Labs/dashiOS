@@ -3,6 +3,7 @@
 import {
   Button,
   Checkbox,
+  CheckMark,
   Chip,
   EmptyState,
   ErrorState,
@@ -53,6 +54,14 @@ export function ChecksPage() {
         <States states={["enabled", "pressed", "disabled"]}>
           {({ state, disabled }) => <Checkbox testID={`check:panel:${state}`} look="panel" label="Websites" checked onChange={noop} disabled={disabled} />}
         </States>
+      </Exhibit>
+      <Exhibit title="Check mark" note="The box alone, for a list whose row is the control (dashi-dialog's checklist); a pick-one list's is round.">
+        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <CheckMark testID="mark:on" checked />
+          <CheckMark testID="mark:off" checked={false} />
+          <CheckMark testID="mark:round" checked round />
+          <CheckMark testID="mark:round-off" checked={false} round />
+        </View>
       </Exhibit>
       <Exhibit title="Status chip" note="A state in a few words, never a control (UI-12): 18 tall on its tone's wash; a toolbar's is 24.">
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
