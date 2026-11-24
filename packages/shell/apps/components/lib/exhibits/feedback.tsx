@@ -15,6 +15,7 @@ import {
   Notice,
   PopupMenu,
   ProgressBar,
+  SPACE,
   Spinner,
   useDark,
 } from "@dashi/ui";
@@ -49,7 +50,7 @@ export function ProgressPage() {
         <ProgressBar testID="progress:indeterminate-regular" value={null} size="regular" width={240} />
       </Exhibit>
       <Exhibit title="Spinner" note="A wait with nothing to measure: 16 beside a word, 24 or 32 on its own.">
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.page }}>
           <Spinner size={16} testID="spinner:16" />
           <Spinner size={24} testID="spinner:24" />
           <Spinner size={32} testID="spinner:32" />
@@ -121,7 +122,7 @@ function OpenAlerts() {
   const wrap = (node: ReactNode): void => show(<Appearance dark={dark}>{node}</Appearance>);
   const id = dark ? "dark" : "light";
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.m }}>
       <Button
         testID={`alert:open:confirm:${id}`}
         label="Ask"

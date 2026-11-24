@@ -26,6 +26,7 @@ export const STEPS: Step[] = [
   { name: "H18 H19 H20 modules", command: ["bun", "scripts/check-modules.ts"], fast: true },
   { name: "H7 H8 H10 boundaries", command: ["bun", "scripts/check-boundaries.ts"], fast: true },
   { name: "H21a design values on the scales", command: ["bun", "scripts/check-design-values.ts"], fast: true },
+  { name: "H21b design measures are tokens", command: ["bun", "scripts/check-design-measures.ts"], fast: true },
   { name: "H22 controls from the kit", command: ["bun", "scripts/check-design-kit.ts"], fast: true },
   { name: "H23 colours keep their job", command: ["bun", "scripts/check-design-colours.ts"], fast: true },
   { name: "H24 design.html agrees with the tokens", command: ["bun", "scripts/check-design-sync.ts"], fast: true },

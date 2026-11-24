@@ -6,7 +6,7 @@
  * draw with them.
  */
 
-import { CLEAR, KeyedText, Button as KitButton, RADIUS, Shortcut, SPACE, type Surface, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
+import { CLEAR, KeyedText, Button as KitButton, OnPanelCard, RADIUS, Shortcut, SPACE, type Surface, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Children, createContext, Fragment, isValidElement, type ReactNode, useContext, useMemo } from "react";
 import { CardRowsContext, cardRows } from "./edge.ts";
@@ -80,7 +80,10 @@ export function Group({ children, testID, list }: { children: ReactNode; testID?
       >
         {/* Always there, so lighting the card never remounts its rows. */}
         <View style={{ flexDirection: "column", backgroundColor: lit ? colors.lit : CLEAR }}>
-          <Hairlined rows={rowsOf(children)} />
+          {/* A panel field on the card sinks to the window's colour, so it shows on the card's. */}
+          <OnPanelCard.Provider value={true}>
+            <Hairlined rows={rowsOf(children)} />
+          </OnPanelCard.Provider>
         </View>
       </View>
     </CardRowsContext.Provider>

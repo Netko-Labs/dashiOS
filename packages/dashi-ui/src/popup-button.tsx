@@ -17,7 +17,7 @@ import { CHEVRON_UP_DOWN } from "./glyphs.ts";
 import { MENU, type MenuRowKind, menuLabelLeft, rowTop } from "./menu-place.ts";
 import { isSeparator, type MenuEntry, type MenuSeparator, PopupMenu, tidyEntries } from "./popup-menu.tsx";
 import { StepKeys } from "./step-keys.tsx";
-import { useColors } from "./theme/index.ts";
+import { RADIUS, SPACE, TYPE, useColors } from "./theme/index.ts";
 import { useWindowLayer } from "./tooltip.tsx";
 
 /** An option, or a line between two groups of them. */
@@ -77,10 +77,10 @@ function faceStyle(width: number | undefined, look: ReturnType<typeof buttonLook
     flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingLeft: 10,
-    paddingRight: 6,
-    borderRadius: 7,
+    gap: SPACE.s,
+    paddingLeft: SPACE.gap,
+    paddingRight: SPACE.s,
+    borderRadius: RADIUS.control,
     backgroundColor: look.fill,
     borderWidth: 1,
     borderColor: look.edge,
@@ -149,7 +149,7 @@ export function PopUpButton<T extends string | number>({
     >
       {glyph !== undefined && <Svg markup={glyph} size={14} color={colors.textMuted} />}
       <View style={{ ...(width !== undefined ? { flex: 1 } : {}), flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: chosen ? colors.text : colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: chosen ? colors.text : colors.textMuted }}>
           {chosen?.label ?? placeholder}
         </Text>
       </View>

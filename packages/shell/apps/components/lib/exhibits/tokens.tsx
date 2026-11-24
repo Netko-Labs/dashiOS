@@ -4,7 +4,21 @@
  * its column, with its name and its value.
  */
 
-import { contrastRatio, ON_TINT, type Palette, type Surface, TEXT_SIZES, TINT_ORDER, TINTS, useColors, useSurface } from "@dashi/ui";
+import {
+  contrastRatio,
+  ON_TINT,
+  type Palette,
+  RADIUS,
+  SPACE,
+  type Surface,
+  TEXT_SIZES,
+  TINT_ORDER,
+  TINTS,
+  TYPE,
+  useColors,
+  useSurface,
+  WEIGHT,
+} from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Exhibit, Inked, PageBody } from "../specimen.tsx";
 
@@ -13,19 +27,27 @@ function Swatch({ name, color, ratio }: { name: string; color: string; ratio?: n
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 26 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, height: 26 }}>
       <View
-        style={{ width: 22, height: 22, borderRadius: 5, backgroundColor: surface.card, borderWidth: 1, borderColor: colors.separator, overflow: "hidden" }}
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: RADIUS.row,
+          backgroundColor: surface.card,
+          borderWidth: 1,
+          borderColor: colors.separator,
+          overflow: "hidden",
+        }}
       >
         <View style={{ flex: 1, backgroundColor: color }} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>
           {name}
         </Text>
       </View>
-      {ratio !== undefined && <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${ratio.toFixed(2)}:1`}</Text>}
-      <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: "monospace" }}>{color}</Text>
+      {ratio !== undefined && <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{`${ratio.toFixed(2)}:1`}</Text>}
+      <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted, fontFamily: "monospace" }}>{color}</Text>
     </View>
   );
 }
@@ -37,7 +59,7 @@ function PaletteSwatches() {
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View style={{ flexDirection: "column", gap: 2 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.xxs }}>
       {(Object.keys(colors) as Array<keyof Palette>).map((name) => (
         <Swatch key={name} name={name} color={colors[name]} {...(INKS.has(name) ? { ratio: contrastRatio(colors[name], surface.window) } : {})} />
       ))}
@@ -58,7 +80,7 @@ export function ColorsPage() {
 function SurfaceSwatches() {
   const surface = useSurface();
   return (
-    <View style={{ flexDirection: "column", gap: 2 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.xxs }}>
       {(Object.keys(surface) as Array<keyof Surface>).map((name) => (
         <Swatch key={name} name={name} color={surface[name]} />
       ))}
@@ -82,14 +104,16 @@ export function TintsPage() {
       <Exhibit title="Tints" note="Color that only tells things apart, never a job color, in the order a list takes them. White reads on every one.">
         <Inked>
           {(colors) => (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.gap }}>
               {TINT_ORDER.map((name) => (
-                <View key={name} style={{ width: 72, flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <View style={{ width: 44, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: TINTS[name] }}>
-                    <Text style={{ fontSize: 15, fontWeight: "bold", color: ON_TINT }}>{name.slice(0, 1).toUpperCase()}</Text>
+                <View key={name} style={{ width: 72, flexDirection: "column", alignItems: "center", gap: SPACE.xs }}>
+                  <View
+                    style={{ width: 44, height: 44, borderRadius: RADIUS.card, alignItems: "center", justifyContent: "center", backgroundColor: TINTS[name] }}
+                  >
+                    <Text style={{ fontSize: TYPE.heading.size, fontWeight: WEIGHT.bold, color: ON_TINT }}>{name.slice(0, 1).toUpperCase()}</Text>
                   </View>
-                  <Text style={{ fontSize: 11, color: colors.text }}>{name}</Text>
-                  <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: "monospace" }}>{TINTS[name]}</Text>
+                  <Text style={{ fontSize: TYPE.caption.size, color: colors.text }}>{name}</Text>
+                  <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted, fontFamily: "monospace" }}>{TINTS[name]}</Text>
                 </View>
               ))}
             </View>
@@ -118,10 +142,10 @@ export function TypePage() {
         <Inked>
           {(colors) =>
             SCALE.map((step) => (
-              <View key={`${step.size}:${step.weight}`} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View key={`${step.size}:${step.weight}`} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap }}>
                 <View style={{ width: 70, flexShrink: 0 }}>
                   <Text
-                    style={{ fontSize: 11, color: colors.textMuted }}
+                    style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}
                   >{`${step.size} ${step.weight === "normal" ? "Regular" : step.weight === "bold" ? "Bold" : "SemiBold"}`}</Text>
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -136,7 +160,9 @@ export function TypePage() {
       </Exhibit>
       <Exhibit title="Text size" note="Settings › Appearance › Text size multiplies every size by one of these.">
         <Inked>
-          {(colors) => <Text style={{ fontSize: 12, color: colors.text }}>{TEXT_SIZES.map((size) => `${Math.round(size * 100)}%`).join(" · ")}</Text>}
+          {(colors) => (
+            <Text style={{ fontSize: TYPE.secondary.size, color: colors.text }}>{TEXT_SIZES.map((size) => `${Math.round(size * 100)}%`).join(" · ")}</Text>
+          )}
         </Inked>
       </Exhibit>
     </PageBody>

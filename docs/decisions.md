@@ -8265,3 +8265,80 @@ short words, as the rulebook is written.
 - **Cost:** a stray ⌫ no longer offers to trash; the chooser is Files' even on a desktop that has
   another portal.
 - **Undo:** per item, from git.
+
+### D680. What H21b reads as a literal measure, and how its last offenders became tokens
+
+- **Date:** 2026-11-24. The `design-finish` agent's (W8; H21b, TK-1, TY-3).
+- **Question:** H21b ("every measure in a style is a token or a named constant beside its
+  component in `@dashi/ui`") came last, after W2–W7's token swaps. What exactly is a literal, and
+  should the 140 left be listed or fixed?
+- **Choice:** `scripts/check-design-measures.ts` counts a literal font size, line height,
+  spacing, radius, opacity, weight or shadow, written in a style or reached through a name bound
+  to a bare literal (the scanner H21a shares, `scripts/design-scan.ts`). A named constant is a
+  SCREAMING_CASE `const` at a file's top level holding a value or a table of them (not a
+  function); it is fine in the kit and still a literal elsewhere. No measure: 0, `"auto"`, a
+  percentage, spacing ±1 (a hairline's offset), a negated token or constant (`-SPACE.xs`),
+  arithmetic on a name (`KNOB / 2`). Timers (setTimeout's delay, `…Ms`, `…Duration`) are their
+  module's named constants and not style measures: H21b leaves them alone. Weight and shadow
+  count too, as TK-1 names `WEIGHT` and `SHADOW` (Metal's words were H21a's only). All 140 were
+  fixed, so every `h21b/Wn` list starts empty: the kit's and the Components app's were the
+  token they already equalled; Setup's and the Installer's 56 became the kit's `WIZARD_PAGE.inset`
+  (UI-1: a second user); the Dock's table is `SPACE` and `RADIUS.dock`; Activity Monitor's graph
+  head is its 15 row plus `SPACE.xs`; the consent card's 80 is `CONSENT.below`, beside its
+  surface's size. Three moved a little to land on the scale: the shortcuts sheet's columns 22 → 24,
+  the Store page's icon gap 18 → 16, Calendar's cell padding 3 → 2; and Bluetooth's Forget question
+  now starts under the row's name, as its comment said (40 → 52).
+- **Why:** a rule with an empty list protects every file at once; a list of 140 would have been
+  a hole. Timers are not drawn, so a token set for them would be a list of every delay.
+- **Cost:** a module's table of its own sizes (`FORM.padX`, `PAGE_ROW.knob`) is not followed into
+  where it is used: 81 such uses outside the kit (most are a circle's `size / 2`), so a spacing
+  written in a table under a key that is not a style's name still slips past.
+- **Undo:** drop the step from `scripts/check.ts`; the moved measures, per file, from git.
+
+### D681. A panel field on a Settings card sinks to the window's colour; the region pickers are the panel look again
+
+- **Date:** 2026-11-24. The `design-finish` agent's (W8; UI-11, SE-8, CO-8, TK-2).
+- **Question:** the panel look's `SearchField` sat on the off colour, which is also a Settings
+  card's: on a card it vanished, in Light and Dark. W2 put the time zone and language pickers on
+  the window look to get round it (D629), and Keyboard's layout search was still invisible.
+- **Choice:** a card says it is one: the kit's `OnPanelCard` context, provided by Settings'
+  `Group` (shared/cards, the Installer's too), and a panel field on it takes the window's colour
+  (`panelFieldGround`), the "field" Settings already sinks its lists into (SE-8's compact list).
+  Off a card (Settings' sidebar search, design.html's "a pill … the off color") it keeps the off
+  colour. The pickers take a `look`: Settings passes the panel look, Setup keeps the window's.
+  In the VM the pickers' field then showed alone, the list under it gone: a `width="fill"`
+  field was `flex: 1`, which widens it in a row but, in the pickers' column, grew its height
+  and pushed the rest off the card. A fill field now holds its height (`minHeight` and
+  `maxHeight`, `boxOf`), so `flex` only ever widens it.
+- **Why:** a card knows what it is; every field on one gets it right without a prop at each
+  use. The window's colour differs from the card's in both modes (Light lilac `#F7F4FA` on
+  `#E4DDEE`, Dark black on the second lift), and the search and the list under it now match.
+- **Cost:** in Light the sunk field is lighter than its card, not darker (CO-8 speaks of the app
+  look); it is the same as the lists Settings sinks already.
+- **Undo:** drop the provider in `shared/cards/cards.tsx`; pass `look="window"` to the pickers.
+
+### D682. The widget gallery stays on a narrow screen: its list gives way, then its place
+
+- **Date:** 2026-11-24. The `design-finish` agent's (W8; LA-3, VS-7).
+- **Question:** the gallery was 700 wide, 394 from the screen's right edge: it needs 1094
+  points, so a 1024-wide screen (1280 × 800 at 1.25, a VM at 1792 × 1344 at 1.75) cut it at its
+  left edge. Shrink it, move it, or lay it over the column?
+- **Choice:** `galleryPlace` (notifications/lib/place.ts) keeps it beside the column and narrows
+  it to the room there (`galleryFit`): the list gives way first, from 240 to at least 180, and the
+  previews never, so a whole Wide preview (356 and its ring) always fits. A screen too narrow even
+  for that (under 1015) moves it left over the column, 12 from the screen's left edge.
+- **Why:** the previews are what the gallery is for, and the list's names already end in an
+  ellipsis; covering the column only when there is no other way keeps what was added in sight.
+- **Cost:** on a very narrow screen the gallery covers part of the column (its Add · Done bar is
+  at the column's foot, under it; Esc still closes the gallery).
+- **Undo:** `galleryPlace` returns the old place (`right: 394`, 700 wide).
+
+### D683. The Timer at Compact says "Start one" in its head
+
+- **Date:** 2026-11-24. The `design-finish` agent's (W8).
+- **Question:** a Compact Timer with none running stacked its head (14), "Start one" (17) and two
+  26-tall buttons in 56 points of room, so the line slid under the buttons.
+- **Choice:** at Compact "Start one" is the head's right side (where a running timer says when
+  it ends), and the row under it is the buttons'. Small and up keep their own line.
+- **Why:** one row of cells has room for a head and one row of controls, not three rows.
+- **Undo:** from git (`widgets/lib/views/timer.tsx`).

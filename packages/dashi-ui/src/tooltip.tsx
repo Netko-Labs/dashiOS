@@ -9,7 +9,7 @@
 
 import { type Bounds, createPortal, Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
-import { useColors } from "./theme/index.ts";
+import { RADIUS, SHADOW, SPACE, TYPE, useColors } from "./theme/index.ts";
 
 /** How long the pointer rests before the tip shows. */
 export const TOOLTIP_DELAY_MS = 600;
@@ -60,17 +60,17 @@ function Tip({ text, anchor, layer }: { text: string; anchor: Bounds; layer: Lay
         // Laid out once unseen, to learn its width, then centered.
         opacity: size === null ? 0 : 1,
         height: 22,
-        paddingHorizontal: 8,
-        borderRadius: 5,
+        paddingHorizontal: SPACE.m,
+        borderRadius: RADIUS.row,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: colors.menu,
         borderWidth: 1,
         borderColor: colors.separator,
-        shadow: "sm",
+        shadow: SHADOW.sm,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>
         {text}
       </Text>
     </View>,

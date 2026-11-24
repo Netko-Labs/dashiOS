@@ -7,7 +7,7 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
-import { pill, TYPE, useColors } from "../theme/index.ts";
+import { pill, RADIUS, SPACE, TYPE, useColors } from "../theme/index.ts";
 import { useControlColors } from "./colors.ts";
 
 /**
@@ -126,10 +126,10 @@ export function LimitBar({ percent, limit, height, label }: { percent: number; l
       {limit !== null && limit < 100 && (
         <View style={{ position: "absolute", left: 0, right: 0, top: -4, height: tick, flexDirection: "row" }}>
           <View style={{ width: share(limit) }} />
-          <View testID="limit-tick" style={{ marginLeft: -1, width: 2, height: tick, borderRadius: pill(2), backgroundColor: colors.muted }} />
+          <View testID="limit-tick" style={{ marginLeft: -1, width: 2, height: tick, borderRadius: pill(RADIUS.thumb), backgroundColor: colors.muted }} />
           {label && (
             <View style={{ position: "absolute", left: 0, right: 0, top: -14, flexDirection: "row" }}>
-              <View style={{ width: share(limit), marginLeft: -8 }} />
+              <View style={{ width: share(limit), marginLeft: -SPACE.m }} />
               <Text style={{ fontSize: TYPE.panel.micro.size, color: colors.muted }}>{String(limit)}</Text>
             </View>
           )}

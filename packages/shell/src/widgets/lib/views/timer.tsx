@@ -85,13 +85,15 @@ export function TimerWidget({ size }: { size: WidgetSize }) {
   const shown = timers.at(-1);
   // A running timer is the live card at the top of the area: it floods there, not here too.
   if (shown) return <TimerFace timer={shown} size={size} air={false} />;
+  // Compact is one row of cells: no room for a line of its own over the buttons, so "Start one" sits in the head.
+  const compact = size === "compact";
   return (
     <>
-      <Head left={<Lab>Timer</Lab>} />
+      <Head left={<Lab>Timer</Lab>} right={compact ? <Meta>Start one</Meta> : null} />
       <Grow />
-      <Words>Start one</Words>
-      <View style={{ flexDirection: "row", gap: SPACE.s, marginTop: SPACE.m, flexWrap: "wrap" }}>
-        {QUICK_TIMERS.slice(0, size === "compact" ? 2 : 4).map((minutes) => (
+      {compact ? null : <Words>Start one</Words>}
+      <View style={{ flexDirection: "row", gap: SPACE.s, ...(compact ? {} : { marginTop: SPACE.m }), flexWrap: "wrap" }}>
+        {QUICK_TIMERS.slice(0, compact ? 2 : 4).map((minutes) => (
           <Btn key={minutes} label={`${minutes} min`} onPress={() => hub?.timers.start("Timer", minutes)} testID={`timer-start:${minutes}`} />
         ))}
       </View>

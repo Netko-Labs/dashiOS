@@ -58,7 +58,7 @@ export function DateTimePane({ region, settings }: { region: RegionStore; settin
       </View>
       <Group>
         <Setting id="date-time/time-zone" detail={zoneWords(state.timezone, zone)}>
-          <TimezonePicker zones={state.zones} current={state.timezone} height={150} onPick={(id) => void region.setTimezone(id)} />
+          <TimezonePicker look="panel" zones={state.zones} current={state.timezone} height={150} onPick={(id) => void region.setTimezone(id)} />
         </Setting>
       </Group>
       {state.busy !== null && <Caption>Changing it. If a password sheet appears, enter your password there.</Caption>}

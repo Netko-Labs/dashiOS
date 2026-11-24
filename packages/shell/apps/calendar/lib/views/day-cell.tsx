@@ -18,7 +18,7 @@ import { EventLine } from "./chips.tsx";
 
 /** A day's number on its disc; the cell's padding; the hairlines between cells; the ring round the picked day; a dragged event's wash. */
 const NUMBER_DISC = 20;
-const CELL_PADDING = 3;
+const CELL_PADDING = SPACE.xxs;
 const RULE = 1;
 const PICKED_EDGE = 1;
 const LANDING_WASH = 0.2;

@@ -10,7 +10,7 @@
 import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { CLOSE } from "./glyphs.ts";
-import { useColors, useSurface } from "./theme/index.ts";
+import { RADIUS, SHADOW, SPACE, TYPE, useColors, useSurface } from "./theme/index.ts";
 
 export interface NoticeProps {
   /** One plain sentence; error text is ume. Leave it out to lay out `children` instead. */
@@ -36,19 +36,29 @@ export function Notice({ text, tone = "info", action, onDismiss, children, testI
         maxWidth: 560,
         minWidth: 240,
         flexDirection: "column",
-        borderRadius: 10,
+        borderRadius: RADIUS.card,
         backgroundColor: surface.card,
         borderWidth: 1,
         borderColor: colors.separator,
-        shadow: "xl",
+        shadow: SHADOW.xl,
         overflow: "hidden",
       }}
     >
       {children}
       {text !== undefined && (
-        <View style={{ minHeight: 32, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 14, paddingRight: 8, paddingVertical: 6 }}>
+        <View
+          style={{
+            minHeight: 32,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: SPACE.gap,
+            paddingLeft: SPACE.button,
+            paddingRight: SPACE.m,
+            paddingVertical: SPACE.s,
+          }}
+        >
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: 12, color: tone === "error" ? colors.ume : colors.text }}>{text}</Text>
+            <Text style={{ fontSize: TYPE.secondary.size, color: tone === "error" ? colors.ume : colors.text }}>{text}</Text>
           </View>
           {action}
           {onDismiss !== undefined && (
@@ -57,7 +67,7 @@ export function Notice({ text, tone = "info", action, onDismiss, children, testI
               accessibilityRole="button"
               accessibilityLabel="Dismiss"
               onPress={onDismiss}
-              style={{ width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
+              style={{ width: 20, height: 20, borderRadius: RADIUS.card, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
             >
               <Svg markup={CLOSE} size={11} color={colors.textMuted} />
             </View>

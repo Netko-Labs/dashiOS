@@ -3,7 +3,7 @@
 import { Text, View } from "@mirinjs/metal";
 import { buttonLook } from "./button-look.ts";
 import { useControlState } from "./control-state.tsx";
-import { useColors } from "./theme/index.ts";
+import { pill, SPACE, TYPE, useColors } from "./theme/index.ts";
 
 export interface Choice<T> {
   value: T;
@@ -38,7 +38,7 @@ export function Choices<T extends string | number>({
       focusGroup
       accessibilityRole="group"
       data-focused={state.focused}
-      style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, opacity: state.opacity }}
+      style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.s, opacity: state.opacity }}
     >
       {options.map((option) => (
         <Pill
@@ -52,6 +52,9 @@ export function Choices<T extends string | number>({
     </View>
   );
 }
+
+/** A choice pill's height (UI-2); its ends are round. */
+const PILL_HEIGHT = 26;
 
 /** One choice pill: kombu when chosen, the quiet fill otherwise; deeper while held. */
 function Pill({ label, chosen, testID, onPress }: { label: string; chosen: boolean; testID: string; onPress?: () => void }) {
@@ -67,9 +70,9 @@ function Pill({ label, chosen, testID, onPress }: { label: string; chosen: boole
       onPress={onPress}
       onPointer={state.onPointer}
       style={{
-        height: 26,
-        paddingHorizontal: 12,
-        borderRadius: 13,
+        height: PILL_HEIGHT,
+        paddingHorizontal: SPACE.inset,
+        borderRadius: pill(PILL_HEIGHT),
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: look.fill,
@@ -77,7 +80,7 @@ function Pill({ label, chosen, testID, onPress }: { label: string; chosen: boole
         focusRingColor: colors.focusRing,
       }}
     >
-      <Text style={{ fontSize: 12, fontWeight: look.weight, color: look.ink }}>{label}</Text>
+      <Text style={{ fontSize: TYPE.secondary.size, fontWeight: look.weight, color: look.ink }}>{label}</Text>
     </View>
   );
 }

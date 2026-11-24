@@ -205,6 +205,7 @@ export function PopoverRoot({
   // Esc: back to the bar when the keyboard came from it (bar-keys.ts), else closed.
   const back = () => controller.back();
   const fromBar = bar !== undefined;
+  const area = { store: notifications, dockInset: dockInset(output), screenWidth: width, onClose: close, onEscape: back, hub: widgetHub(), openerOf };
   // The app took down the menu that is open (it quit, or changed its menus): close it.
   const vanished = popover?.kind === "menu" && popover.id.startsWith("app:") && entries.length === 0;
   useEffect(() => {
@@ -254,9 +255,7 @@ export function PopoverRoot({
       {/* The agents' panel closes for Esc only: its rows close the menus themselves (handoff-shell.tsx). */}
       {popover?.kind === "agents" && agentsPanel?.({ right: popover.right, focus: popover.focus, close: back })}
       {popover?.kind === "overflow" && overflowRow?.({ right: popover.right, keys: popover.keys, close, escape: back })}
-      {popover?.kind === "notification-center" && (
-        <NotificationArea store={notifications} dockInset={dockInset(output)} onClose={close} onEscape={back} hub={widgetHub()} openerOf={openerOf} />
-      )}
+      {popover?.kind === "notification-center" && <NotificationArea {...area} />}
     </View>
   );
 }

@@ -6,7 +6,9 @@ import { SPACE, useColors } from "./theme/index.ts";
 
 /** The field's box: its row's room ("fill"), or its width, shrinking toward `minWidth` when one is given. */
 export function boxOf(width: number | "fill", minWidth: number | undefined, height: number): ViewStyle {
-  if (width === "fill") return { flex: 1, minWidth: minWidth ?? 0, alignSelf: "stretch", height: height };
+  // `flex` widens it in a row; in a column (a picker's stack) it would grow its height instead, so the
+  // height is held: one row tall wherever it is, and stretched across a column.
+  if (width === "fill") return { flex: 1, minWidth: minWidth ?? 0, alignSelf: "stretch", height, minHeight: height, maxHeight: height };
   return { width, height: height, ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }) };
 }
 

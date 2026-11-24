@@ -11,7 +11,7 @@ import { Text, View } from "@mirinjs/metal";
 import { Children, Fragment, type ReactNode } from "react";
 import { ControlName } from "./control-name.ts";
 import { Shortcut } from "./shortcut.tsx";
-import { CLEAR, useColors, useSurface } from "./theme/index.ts";
+import { CLEAR, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "./theme/index.ts";
 
 /**
  * A sentence pulled 8 closer to the group above it. It keeps the default
@@ -28,16 +28,20 @@ export const ROW_INSET = 12;
 /** A heading over a group, or a sentence under it (`TUCK`); `keys` draws a shortcut after it ("⌃❖Q"). */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useColors();
-  const text = <Text style={{ fontSize: above ? 12 : 11, fontWeight: above ? "semibold" : "normal", color: colors.textMuted }}>{children}</Text>;
+  const text = (
+    <Text style={{ fontSize: above ? TYPE.secondary.size : TYPE.caption.size, fontWeight: above ? WEIGHT.semibold : WEIGHT.regular, color: colors.textMuted }}>
+      {children}
+    </Text>
+  );
   // A shortcut is drawn after the text, not typed into it: text fonts don't reliably carry ❖.
   return (
     // With keys, a row the width of its content, so the shortcut sits right after the text (keep such captions to one line).
     <View
       style={{
-        ...(above ? { flexShrink: 0, marginTop: 4 } : TUCK),
+        ...(above ? { flexShrink: 0, marginTop: SPACE.xs } : TUCK),
         // The rows' inset: a caption's words start where its card's rows' words do.
         paddingHorizontal: ROW_INSET,
-        ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4 } : {}),
+        ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: SPACE.xs } : {}),
       }}
     >
       {text}
@@ -65,7 +69,7 @@ export function Group({
       style={{
         flexShrink: 0,
         flexDirection: "column",
-        borderRadius: 10,
+        borderRadius: RADIUS.card,
         backgroundColor: surface.card,
         borderWidth: 1,
         borderColor: colors.separator,
@@ -123,13 +127,13 @@ function RowBody({
   const colors = useColors();
   const labels = (
     <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
-      <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
-      {detail !== undefined && <Text style={{ fontSize: 11, color: colors.textMuted }}>{detail}</Text>}
+      <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>{label}</Text>
+      {detail !== undefined && <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{detail}</Text>}
     </View>
   );
   if (stack) {
     return (
-      <View testID={testID} style={{ flexDirection: "column", gap: 10, padding: ROW_INSET }}>
+      <View testID={testID} style={{ flexDirection: "column", gap: SPACE.gap, padding: ROW_INSET }}>
         {labels}
         {children}
       </View>
@@ -144,7 +148,7 @@ function RowBody({
         style={{
           flexDirection: "row",
           alignItems: "flex-start",
-          gap: 12,
+          gap: SPACE.inset,
           minHeight: ROW_MIN,
           paddingHorizontal: ROW_INSET,
           paddingTop: over,
@@ -157,7 +161,10 @@ function RowBody({
     );
   }
   return (
-    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW_MIN, paddingHorizontal: ROW_INSET, paddingVertical: 8 }}>
+    <View
+      testID={testID}
+      style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, minHeight: ROW_MIN, paddingHorizontal: ROW_INSET, paddingVertical: SPACE.m }}
+    >
       {labels}
       {children}
     </View>
@@ -168,8 +175,8 @@ function RowBody({
 export function Note({ children, testID }: { children: string; testID?: string }) {
   const colors = useColors();
   return (
-    <View testID={testID} style={{ padding: 16, alignItems: "center" }}>
-      <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{children}</Text>
+    <View testID={testID} style={{ padding: SPACE.page, alignItems: "center" }}>
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, textAlign: "center" }}>{children}</Text>
     </View>
   );
 }

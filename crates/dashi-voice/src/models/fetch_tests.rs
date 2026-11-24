@@ -101,9 +101,31 @@ fn a_stopped_fetch_is_resumed_from_its_part() {
         })
         .unwrap()
     );
-    // It began from the ten bytes that were there.
+    // It began from the ten bytes that were there: said before curl starts, so it never depends on
+    // how fast curl reads a local file.
     assert_eq!(first, Some(10));
     assert!(fixture.store.installed(fixture.set));
+}
+
+#[test]
+fn the_start_is_said_before_curl_runs() {
+    if !has_curl() {
+        return;
+    }
+    let fixture = fixture(WORDS_SHA);
+    let part = fixture.store.partial(fixture.set, &fixture.set.files[0]);
+    std::fs::create_dir_all(part.parent().unwrap()).unwrap();
+    std::fs::write(&part, &WORDS[..10]).unwrap();
+    // Stopped at the first report: curl never ran, so the part is as it was.
+    let mut reports = Vec::new();
+    let finished = fetch(&fixture.store, &[fixture.set], &mut |progress| {
+        reports.push(progress.received);
+        false
+    })
+    .unwrap();
+    assert!(!finished);
+    assert_eq!(reports, vec![10]);
+    assert_eq!(std::fs::read_to_string(&part).unwrap(), &WORDS[..10]);
 }
 
 #[test]

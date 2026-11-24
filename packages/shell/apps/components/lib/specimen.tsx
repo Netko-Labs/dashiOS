@@ -6,7 +6,7 @@
  * without anyone touching it; the first row is live.
  */
 
-import { Appearance, type Palette, ShowStates, useColors, useDark, useSurface } from "@dashi/ui";
+import { Appearance, type Palette, RADIUS, ShowStates, SPACE, TYPE, useColors, useDark, useSurface, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext } from "react";
 import { columnsFor, type Mode } from "./pages.ts";
@@ -55,15 +55,15 @@ function Ground({ children }: { children: ReactNode }) {
         flex: 1,
         minWidth: PANEL_LEAST,
         flexDirection: "column",
-        gap: 10,
-        padding: 14,
-        borderRadius: 10,
+        gap: SPACE.gap,
+        padding: SPACE.button,
+        borderRadius: RADIUS.card,
         backgroundColor: surface.window,
         borderWidth: 1,
         borderColor: colors.separator,
       }}
     >
-      <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{dark ? "Dark" : "Light"}</Text>
+      <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{dark ? "Dark" : "Light"}</Text>
       {children}
     </View>
   );
@@ -74,10 +74,10 @@ export function Exhibit({ title, note, children }: { title: string; note?: strin
   const colors = useColors();
   const mode = useContext(ModeContext);
   return (
-    <View style={{ flexShrink: 0, flexDirection: "column", gap: 6 }}>
-      <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>{title}</Text>
-      {note !== undefined && <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{note}</Text>}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 4, alignItems: "flex-start" }}>
+    <View style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.s }}>
+      <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{title}</Text>
+      {note !== undefined && <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, lineHeight: TYPE.secondary.line }}>{note}</Text>}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.inset, marginTop: SPACE.xs, alignItems: "flex-start" }}>
         {columnsFor(mode).map((dark) => (
           <Appearance key={dark ? "dark" : "light"} dark={dark}>
             <Ground>{children}</Ground>
@@ -92,13 +92,13 @@ export function Exhibit({ title, note, children }: { title: string; note?: strin
 export function States({ states = CONTROL_STATES, children }: { states?: readonly State[]; children: (shown: Shown) => ReactNode }) {
   const colors = useColors();
   return (
-    <View style={{ flexDirection: "column", gap: 8 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.m }}>
       {states.map((state) => (
-        <View key={state} style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 28 }}>
+        <View key={state} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, minHeight: 28 }}>
           <View style={{ width: 62, flexShrink: 0 }}>
-            <Text style={{ fontSize: 11, color: colors.textMuted }}>{STATE_LABELS[state]}</Text>
+            <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{STATE_LABELS[state]}</Text>
           </View>
-          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: SPACE.m }}>
             <ShowStates pressed={state === "pressed"} focused={state === "focused"}>
               {children({ state, disabled: state === "disabled", selected: state === "selected" })}
             </ShowStates>
@@ -121,10 +121,10 @@ export function Inked({ children }: { children: (colors: Palette) => ReactNode }
 /** A labeled line inside an exhibit (a token's name and value, a measure). */
 export function Caption({ children }: { children: string }) {
   const colors = useColors();
-  return <Text style={{ fontSize: 11, color: colors.textMuted }}>{children}</Text>;
+  return <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{children}</Text>;
 }
 
 /** A page: its exhibits, one under another. */
 export function PageBody({ children }: { children: ReactNode }) {
-  return <View style={{ flexDirection: "column", gap: 22, padding: 20, paddingBottom: 32 }}>{children}</View>;
+  return <View style={{ flexDirection: "column", gap: SPACE.xl, padding: SPACE.sheet, paddingBottom: SPACE.xl }}>{children}</View>;
 }

@@ -3,19 +3,21 @@
  * taskbar. The palettes are @dashi/ui's (`useColors`).
  */
 
+import { RADIUS, SPACE } from "@dashi/ui";
+
 export const MENU_BAR_HEIGHT = 28;
 
 export const DOCK = {
   icon: 48,
-  gap: 6,
+  gap: SPACE.s,
   /** Panel padding around the icons; the bottom leaves room for the dot. */
-  paddingX: 8,
-  paddingTop: 6,
-  paddingBottom: 4,
+  paddingX: SPACE.m,
+  paddingTop: SPACE.s,
+  paddingBottom: SPACE.xs,
   dot: 4,
-  radius: 18,
+  radius: RADIUS.dock,
   /** Gap between the Dock and the bottom edge. */
-  margin: 6,
+  margin: SPACE.s,
 } as const;
 
 /** The Dock panel's height: icon, the running dot under it, and padding. */

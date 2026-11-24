@@ -16,7 +16,7 @@ import { WidgetColumn } from "./column.tsx";
 import { EditBar } from "./edit-bar.tsx";
 import type { EditSession } from "./edit-session.tsx";
 import { useWidgetEnv } from "./env.tsx";
-import { Gallery } from "./gallery.tsx";
+import { Gallery, type GalleryProps } from "./gallery.tsx";
 import { packColumn, sizeWord } from "./layout.ts";
 import { cycleSize, dropIndex } from "./lib/edit-keys.ts";
 import type { Placed, Placement, WidgetInfo, WidgetSize } from "./types.ts";
@@ -216,7 +216,7 @@ export function EditWidgets({ placements, session: edit, onDone }: { placements:
 }
 
 /** The gallery beside the column, for every widget there is; a press on a size adds it. */
-export function GalleryPanel({ placements, session }: { placements: readonly Placement[]; session: EditSession }) {
+export function GalleryPanel({ placements, session, fit }: { placements: readonly Placement[]; session: EditSession; fit?: GalleryProps["fit"] }) {
   const { hub } = useWidgetEnv();
   const store = hub?.store;
   const weather = placements.find((each) => each.kind === "weather");
@@ -228,6 +228,7 @@ export function GalleryPanel({ placements, session }: { placements: readonly Pla
       sizeAt={session.gallery.sizeAt}
       onAdd={(info, size) => void store?.add(info.kind, size)}
       mayGoOnAir={{ on: weather?.mayGoOnAir === true, set: (on) => weather && store?.update(weather.id, { mayGoOnAir: on }) }}
+      {...(fit ? { fit } : {})}
     />
   );
 }

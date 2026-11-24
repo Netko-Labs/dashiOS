@@ -18,7 +18,7 @@ import { MoreEvents } from "./more-events.tsx";
 
 export const ALL_DAY_ROWS = 4;
 /** A day's cell: its padding round the bars, and the wash of a dragged event over the days it would cover. */
-const CELL_PADDING = 3;
+const CELL_PADDING = SPACE.xxs;
 const LANDING_WASH = 0.18;
 /** The strip's room under its rows, the hairlines, and where "All-day" sits in the gutter. */
 const STRIP_FOOT = 8;

@@ -14,6 +14,7 @@ import {
   SearchField,
   Segmented,
   Slider,
+  SPACE,
   Switch,
   TextArea,
   TextField,
@@ -108,7 +109,7 @@ function MoreExhibit() {
       title="More"
       note="The word and a chevron, ink, never underlined, never an ellipsis; pressed, it says Less. Without room for a word: the dots, lit while their menu is open."
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.page }}>
         <MoreButton testID="more:words" open={open} onPress={() => setOpen((now) => !now)} />
         <ToolbarButton testID="more:glyph" glyph={glyphs.MORE} tooltip="More" onPress={noop} />
         <ToolbarButton testID="more:glyph-open" glyph={glyphs.MORE} tooltip="More" active onPress={noop} />

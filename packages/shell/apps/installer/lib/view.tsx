@@ -9,7 +9,7 @@
  * (TK-2): Settings' cards (src/shared/cards) and the kit's panel controls.
  */
 
-import { LOGO, ProgressBar, SPACE, Switch, TextField, TYPE, useColors, useControlColors, WEIGHT } from "@dashi/ui";
+import { LOGO, ProgressBar, SPACE, Switch, TextField, TYPE, useColors, useControlColors, WEIGHT, WIZARD_PAGE } from "@dashi/ui";
 import { ScrollView, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { Button, Caption, Group, Note, useSurface } from "../../../src/shared/cards/index.ts";
@@ -25,11 +25,13 @@ export const INSTALLER_SIZE = { width: 720, height: 600 };
 export const INSTALLER_LEAST = { width: 600, height: 480 };
 
 /**
- * The frame's measures: the page's side margin, the mark on the welcome and
- * on the other pages, and the room above the head without window controls.
+ * The frame's measures: the mark on the welcome and on the other pages, and
+ * the room above the head without window controls.
  * A line under a card starts where Settings' captions do (`Caption`), 10 in.
  */
-const FRAME = { margin: 56, mark: 72, smallMark: 40, top: SPACE.sheet, caption: SPACE.gap } as const;
+/** The page's sides: the kit's wizard inset. */
+const SIDE = WIZARD_PAGE.inset;
+const FRAME = { mark: 72, smallMark: 40, top: SPACE.sheet, caption: SPACE.gap } as const;
 
 interface PageProps {
   wizard: Wizard;
@@ -51,7 +53,7 @@ function Frame({ page, children, footer }: { page: Page; children: ReactNode; fo
           alignItems: "center",
           gap: SPACE.s,
           paddingTop: controls ? SPACE.xs : FRAME.top,
-          paddingHorizontal: FRAME.margin,
+          paddingHorizontal: SIDE,
         }}
       >
         {/* The mark in ink: a logo never wears the accent (CO-2). */}
@@ -65,7 +67,7 @@ function Frame({ page, children, footer }: { page: Page; children: ReactNode; fo
       </View>
       <ScrollView
         testID={`installer-page:${page}`}
-        style={{ flex: 1, flexDirection: "column", gap: SPACE.button, paddingHorizontal: FRAME.margin, paddingTop: SPACE.sheet, paddingBottom: SPACE.inset }}
+        style={{ flex: 1, flexDirection: "column", gap: SPACE.button, paddingHorizontal: SIDE, paddingTop: SPACE.sheet, paddingBottom: SPACE.inset }}
       >
         {children}
       </ScrollView>
@@ -78,7 +80,7 @@ function Frame({ page, children, footer }: { page: Page; children: ReactNode; fo
           alignItems: "center",
           justifyContent: "flex-end",
           gap: SPACE.m,
-          paddingHorizontal: FRAME.margin,
+          paddingHorizontal: SIDE,
           paddingTop: SPACE.inset,
           paddingBottom: SPACE.xl,
         }}

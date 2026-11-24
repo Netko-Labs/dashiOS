@@ -102,9 +102,11 @@ export {
   LimitBar,
   LOW_CHARGE,
   moreMenuOrigin,
+  OnPanelCard,
   PANEL_EDGE_WIDTH,
   type PanelEdge,
   panelEdge,
+  panelFieldGround,
   RoundTile,
   type SliderLook,
   SliderTile,
@@ -291,5 +293,6 @@ export {
   type TitleBarInset,
   ToolbarButton,
   useTitleBarInset,
+  WIZARD_PAGE,
 } from "./window.tsx";
 export { placeOf, TITLE_KEEP, titleRoom, WindowTitle } from "./window-title.tsx";

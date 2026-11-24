@@ -783,7 +783,7 @@ sound at once and forgets what was queued; every utterance it ended gets a
 | `heard` | `text`, `speech_ms`, `language?`, `ended`, `model` | A listen ended (by `listen.stop`, by silence, by the microphone ending, or at five minutes). Not after `listen.cancel`. `ended` says why (`key-up(224)`, `silence(1824)`, `max`, `closed`), `model` what heard it (`parakeet-v3`, `whisper-turbo`). |
 | `sentence` | `id`, `index`, `text`, `ms`, `words[]` (`text`, `start`, `end`), `voice`, `language` | A sentence's (or, for a long first one, each of its two pieces') first sound plays now. `ms` is how long it lasts; a word's `start` and `end` are milliseconds from now. `voice` says it, read as `language` (`"en-US"`, `"es-419"`). |
 | `spoken` | `id`, `reason` (`done`, `stopped`, `failed`), `error?` | An utterance ended. |
-| `fetch` | `set?`, `file?`, `received`, `bytes`, `done`, `error?` | A fetch's progress, about five times a second: `received` of `bytes` over every file asked for. `done: true` ends it; with `error`, it failed or was cancelled. |
+| `fetch` | `set?`, `file?`, `received`, `bytes`, `done`, `error?` | A fetch's progress: first where it starts from (what a stopped fetch left), then about five times a second: `received` of `bytes` over every file asked for. `done: true` ends it; with `error`, it failed or was cancelled. |
 | `models` | none | Which models are here changed (a fetch ended, a set was removed): ask `models` again. |
 | `error` | `message` | Something failed outside a request: the microphone gave no sound, a sentence could not be said. |
 

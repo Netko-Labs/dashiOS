@@ -9,7 +9,7 @@ import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
 import { hungHeight, litAfter, MENU, type MenuRowKind, menuFits, menuHeight, menuMaxWidth, placeMenu, type Size } from "./menu-place.ts";
 import { MenuLine, MenuRow } from "./menu-row.tsx";
-import { useColors, useSurface } from "./theme/index.ts";
+import { SHADOW, useColors, useSurface } from "./theme/index.ts";
 
 export interface MenuItem {
   type?: "item";
@@ -143,7 +143,7 @@ function MenuCard({
         backgroundColor: surface.card,
         borderWidth: MENU.edge,
         borderColor: colors.menuEdge,
-        shadow: "xl",
+        shadow: SHADOW.xl,
       }}
     >
       <View

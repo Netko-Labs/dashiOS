@@ -1,4 +1,13 @@
-export { controlMenuHighlight, PANEL_EDGE_WIDTH, type PanelEdge, panelEdge, useControlColors, usePanelEdge } from "./colors.ts";
+export {
+  controlMenuHighlight,
+  OnPanelCard,
+  PANEL_EDGE_WIDTH,
+  type PanelEdge,
+  panelEdge,
+  panelFieldGround,
+  useControlColors,
+  usePanelEdge,
+} from "./colors.ts";
 export { FOLD_PAST, FOLDED_PILLS, type Folded, foldChoices, moreMenuOrigin } from "./fold.ts";
 export { INK_SLIDER, InkSlider, type InkSliderProps, valueBoxWidth, valueOnInk } from "./ink-slider.tsx";
 export { KNOB_BUTTON, KnobButton, type KnobButtonProps } from "./knob-button.tsx";
