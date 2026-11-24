@@ -7234,3 +7234,116 @@ short words, as the rulebook is written.
 - **Cost:** a file that moves to another workstream's folder moves lists by hand (`--shrink` on
   both sides).
 - **Undo:** merge the seven files into one list per check.
+
+### D604. The panel look is a `look` prop on the kit's own controls; its parts live in `panel/`
+
+- **Date:** 2026-11-24. The `design-kit` agent's (W1b; Q4, D573).
+- **Question:** `shell/src/shared/controls` moves into `@dashi/ui`. Keep its names (ControlSwitch,
+  PillButton, a second Segmented), or fold them into the kit's controls?
+- **Choice:** folded: `Switch`, `Button`, `Segmented`, `Checkbox`, `TextField`, `SearchField` and
+  `TextLink` take `look="panel"`. What only the panel look has (its palette reader, the spring,
+  the fold of pills, `InkSlider`, `Knob`, `InkFill`, `LimitBar`, and the slider's glyph disc, now
+  `GlyphDisc` because `Chip` is the status chip, UI-12) lives in `dashi-ui/src/panel/` and is
+  exported by the kit. The slider math is one file. `PillButton`'s `tone` became Button's
+  `primary` and `danger`; a module that wraps the kit under the same name imports it as
+  `KitButton` or `KitSwitch`.
+- **Why:** one control per job, in two looks, is what UI-1 and Q4 say; two names for one switch
+  is the second kit again.
+- **Cost:** 55 shell files changed their imports; tests that named the shell's files moved.
+- **Undo:** none wanted.
+
+### D605. A ring a surface's own keys put somewhere is Metal's: `focusRingShown`
+
+- **Date:** 2026-11-24. The `design-kit` agent's (KB-2, H23).
+- **Question:** Control Center and its pages walk their tiles with the arrows in two directions,
+  which Metal's focus groups can't, so they drew the purple ring by hand (`FocusRing`), the one
+  H23 hit in W1's files.
+- **Choice:** fixed in mirin (PR #57, branch `v10-design-kit`): a view with `focusRingShown`
+  draws Metal's own ring now, in its nearest `focusRingColor`, while the window is active. The
+  tiles, page rows and app rows set it where their keys are; `FocusRing` is gone from the kit.
+- **Why:** fix it where it starts; KB-2 says nothing draws a purple border by hand.
+- **Cost:** Dashi needs mirin with the PR (`MIRIN_METAL_FOCUS_SHOWN`); an older host refuses a
+  tree that sends it, which happens only while Control Center's keys are on a tile.
+- **Undo:** the kit's `FocusRing` from git, and the tiles back on it.
+
+### D606. A field's glyph sits over its start, and the field keeps its own edge
+
+- **Date:** 2026-11-24. The `design-kit` agent's (UI-9, UI-11).
+- **Question:** TextField's leading glyph and SearchField's magnifier sat in a wrapper with the
+  field inside it, which loses the field's focus edge (Metal draws `focusBorderColor` on the
+  field itself) or puts it round the text alone.
+- **Choice:** mirin's field takes `paddingLeft` and `paddingRight` (PR #57); the field is the
+  whole box, edge and focus edge included, the glyph is drawn over its start, its text and caret
+  clear of it. SearchField draws its own placeholder (one line, cut with an ellipsis, "Search"
+  under 140), so a long one never runs under the clear button; the field is named by it. A plain
+  TextField (no glyph, no line under it) is the field alone, as before.
+- **Why:** one edge that turns purple with the keyboard, as UI-9 asks.
+- **Cost:** needs mirin with the PR.
+- **Undo:** the wrapper back, without a focus edge.
+
+### D607. Return in a list of pick rows presses the row, as a click does
+
+- **Date:** 2026-11-24. The `design-kit` agent's (UI-13).
+- **Question:** UI-13 says ↑ ↓ and Return. In a focus group Metal gives Return to the focused row
+  as a press, so a list can't tell Return from a click.
+- **Choice:** `PickList` is a focus group whose selection follows the arrows; Return presses the
+  row the keyboard is on. A sheet picks on a press of the chosen row, or on its default button.
+- **Why:** no second key path to keep in step with the pointer's.
+- **Cost:** a list that wants "choose, then Return opens" uses the sheet's default button.
+- **Undo:** a key sink on the list, once Metal lets a group hand Return on.
+
+### D608. A reading's bar is ink; the alert's tiles lose the accent
+
+- **Date:** 2026-11-24. The `design-kit` agent's (CO-13, R4, Q3).
+- **Question:** the kit's `LimitBar` (the battery row, the battery panel, Settings' hero) filled
+  with "on", `ProgressBar` with the accent, and `AlertTone` had an accent tile.
+- **Choice:** `LimitBar` fills with the panel's ink, ume under 10 %; `ProgressBar` fills with ink
+  on its track; `AlertTone` is neutral, danger, warning or agent (shiso), and the six places that
+  asked for "accent" ask for neutral (Calendar's repeat question, dashi-dialog's info and
+  question, Text Editor's sheet, the portal's account and access sheets).
+- **Why:** owner rules: on means on, a reading is not on, the accent never washes a tile.
+- **Cost:** the battery surfaces and those sheets look different; W3, W4, W5 and W6 own the rest
+  of their readings.
+- **Undo:** the fills back in `panel/parts.tsx` and `progress.tsx`.
+
+### D609. H22 lets a component built on the kit's Sheet or Button keep its name
+
+- **Date:** 2026-11-24. The `design-kit` agent's.
+- **Question:** H22 flags a component named like a control outside the kit. A shell sheet built on
+  `AlertSheet` or `FormSheet` (`RenameSheet`) is named like one and is fine.
+- **Choice:** a component whose JSX renders a kit frame (`Sheet`, `SheetCard`, `AlertSheet`,
+  `FormSheet`, `ConfirmSheet`, `AlertWindow`, `Button`) is not counted; the plan's escape. It
+  finds 206 controls today (W2 16 · W3 47 · W4 57 · W5 29 · W6 54 · W7 3), not the plan's 271:
+  the escape and W1's own move account for the difference.
+- **Why:** the rule is about drawing a control by hand, not about naming a sheet.
+- **Cost:** a component that renders a kit Button beside a hand-drawn control passes.
+- **Undo:** empty `KIT_FRAMES` in `scripts/check-design-kit.ts`.
+
+### D610. H24 resolves a `data-token` against the kit's exports, and binds the component measures
+
+- **Date:** 2026-11-24. The `design-kit` agent's (D589).
+- **Question:** what does a bound name mean when it is not one of the theme's sets?
+- **Choice:** any path into `@dashi/ui`'s exports: `TYPE.body`, `MENU.padding`, and the kit's
+  component constants (`BUTTON.window.height`, `CHECKBOX.box`, `TEXT_FIELD.height`,
+  `SEARCH_FIELD.width`, `SEGMENTED_WINDOW.height`, `CHIP.height`, `PICK_ROW.height`,
+  `MONTH_GRID.target`, `ERROR_STATE.glyph`, `PANEL_SWITCH.width`, `BUTTON.panel.height`). A
+  name that is no export fails like a wrong number. design.html binds 135 measures; none
+  disagree. No list: it fails on any row.
+- **Why:** a component's measure is a named constant beside it (TK-1), so it is an export too.
+- **Cost:** renaming a constant means editing the page in the same commit, which is the point.
+- **Undo:** drop the component bindings from the page.
+
+### D611. Small calls made while building the kit
+
+- **Date:** 2026-11-24. The `design-kit` agent's.
+- **Question:** small choices made while building the kit, recorded together.
+- **Choice:** a status chip's tones are neutral, agent, danger, warning and success (moss words
+  on the neutral wash: done is not on); the month grid's today is an ink disc with the primary's
+  words, a marked day an ink dot (an indicator); `ErrorState` uses a new `PROBLEM` glyph (ume)
+  and `OFFLINE` (broth); `EmptyState` gains `variant="panel"` and `NoResults`; `Loading` gains
+  `inline`; `AppWindow`'s `center` is `titleSlot`, with `hideTitle` and `afterTitle`, and the
+  toolbar row shows whenever there is a slot; a sidebar folds to `SIDEBAR.rail` 56 with
+  `rail`, its rows named "Name — count".
+- **Why:** each follows a rule already written (UI-12, UI-14, PA-6, PA-7, PA-17, VS-8, LA-5).
+- **Cost:** none beyond each line.
+- **Undo:** per component.
