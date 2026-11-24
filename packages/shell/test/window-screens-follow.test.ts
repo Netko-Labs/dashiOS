@@ -116,6 +116,20 @@ describe("bug 2: windows on hidden Desktops follow a screen that moves or change
     await world.become({ ...FIRST }, { ...SECOND });
     expect(world.asked()).toEqual([["frame", { window: 1, x: 1700, y: 100, width: 1800, height: 900 }]]);
   });
+
+  // The installed pass (20-design-installed): Notes 980 × 640 moved off a screen that went, onto one
+  // with the Dock up (581 tall); the Dock hid, and it stayed 581 while its own screen stayed away.
+  test("moved off a screen that went and shrunk there, it grows back to its size when the screen it is on has room", async () => {
+    const notes = window(1, rect(1700, 100, 980, 640));
+    const world = await screens([notes]);
+    await world.become({ ...FIRST, usable: rect(0, 28, 1646, 581) });
+    expect(world.asked()).toEqual([["frame", { window: 1, x: 54, y: 28, width: 980, height: 581 }]]);
+    await world.become({ ...FIRST, usable: rect(0, 28, 1646, 658) });
+    expect(world.asked()).toEqual([["frame", { window: 1, x: 54, y: 28, width: 980, height: 640 }]]);
+    // Its own screen back: it goes home, at its own frame.
+    await world.become({ ...FIRST }, { ...SECOND });
+    expect(world.asked()).toEqual([["frame", { window: 1, x: 1700, y: 100, width: 980, height: 640 }]]);
+  });
 });
 
 describe("bug 3: a screen that comes back small, then settles", () => {
@@ -139,5 +153,17 @@ describe("bug 3: a screen that comes back small, then settles", () => {
     await world.become({ ...FIRST, frame: rect(0, 0, 640, 480), usable: rect(0, 28, 640, 400) }, { ...SECOND });
     await world.become({ ...FIRST }, { ...SECOND });
     expect(world.asked()).toEqual([["frame", { window: 1, x: 44, y: 46, width: 980, height: 640 }]]);
+  });
+});
+
+// The installed pass: tile_window on a window whose Desktop wasn't showing said "arranged" and did nothing.
+describe("arranging a window on a Desktop that isn't showing", () => {
+  test("it takes its tile where it waits, and has it when that Desktop shows", async () => {
+    const notes = window(1, rect(100, 100, 800, 600));
+    const world = await screens([notes]);
+    hide(notes);
+    await world.arranger.arrange(1, "left");
+    expect(world.asked()).toEqual([["frame", { window: 1, x: 6, y: 34, width: 814, height: 826, tiled: true }]]);
+    expect(world.arranger.arrangement(1)).toBe("left");
   });
 });

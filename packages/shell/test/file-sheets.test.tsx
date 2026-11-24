@@ -4,6 +4,7 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { itemRows } from "../apps/files/lib/views/sheets.tsx";
 import { infoRows } from "../apps/preview/lib/views/sheets.tsx";
+import { formatPlace } from "../src/shared/file-browser/format.ts";
 import { firstChoice, InfoSheet, type OpenWithChoice, OpenWithSheet } from "../src/shared/file-browser/file-sheets.tsx";
 import { settle } from "./support/time.ts";
 
@@ -73,7 +74,7 @@ test("Info: the name is the heading, Done closes; Files and Preview write a file
       kind: "PDF document",
       mime: "application/pdf",
       size: 58_312,
-      where: "~/Documents",
+      where: formatPlace("/home/alexk/Documents", "/home/alexk"),
       modified,
       accessed: modified,
       created: null,
@@ -102,4 +103,14 @@ test("Info: the name is the heading, Done closes; Files and Preview write a file
   );
   const value = (rows: readonly (readonly [string, string])[], label: string): string | undefined => rows.find(([each]) => each === label)?.[1];
   for (const label of ["Size", "Modified", "Where"]) expect(value(preview, label)).toBe(value(files, label));
+  expect(value(preview, "Where")).toBe("Home › Documents");
+});
+
+// "Where –" on the installed pass: a file in Home said "~", which reads as a dash (PA-18).
+test("Where names the folder in words, never a bare ~", () => {
+  expect(formatPlace("/home/alexk", "/home/alexk")).toBe("Home");
+  expect(formatPlace("/home/alexk/Documents/Work", "/home/alexk")).toBe("Home › Documents › Work");
+  expect(formatPlace("/", "/home/alexk")).toBe("Computer");
+  expect(formatPlace("/home/alexkim", "/home/alexk")).toBe("/home/alexkim");
+  expect(formatPlace("/run/media/alexk/USB", "/home/alexk")).toBe("/run/media/alexk/USB");
 });

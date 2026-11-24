@@ -1,6 +1,6 @@
 /** A window asked to come forward, minimize, close or take a tile. */
 
-import { type RunContext, type ToolResult, text } from "../../context.ts";
+import { type RunContext, type ToolResult, text, toolError } from "../../context.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { CallOf, Handlers } from "./run-types.ts";
 
@@ -20,6 +20,9 @@ async function windowVerb(call: CallOf<WindowVerb>, ctx: RunContext): Promise<To
   if (!window) return noWindow(call.window);
   ctx.status(`${STATUS[call.name]} ${subject(window, ctx)}`);
   if (call.name === "tile_window") {
+    // Minimized or full screen, it can't take a tile: say so, never "arranged" for nothing.
+    if (window.state !== "normal") return toolError(`w${window.id} is ${window.state}: bring it back first (focus_window), then arrange it.`);
+    if (window.fullscreen === true) return toolError(`w${window.id} is full screen: it can't be arranged until it leaves full screen.`);
     await ctx.tile(window.id, call.tile);
   } else if (call.name === "focus_window" && ctx.elsewhere.away !== null && (window.space ?? 0) === ctx.elsewhere.away) {
     // On the Space this agent works in, which does not show: raised there, and the person's screen stays as it is.

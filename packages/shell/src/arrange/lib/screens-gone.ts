@@ -14,7 +14,8 @@
  *     screen over it as it is now, and inside what the bar and Dock leave
  *     free. One the screen had no room for (it shrank, or its scale grew) is
  *     shrunk and remembered as displaced too: it gets its own size back when
- *     there is room again, and its memory (remember.ts) keeps that size, not
+ *     there is room again (one moved off a screen that is still away too, on
+ *     the screen it is on, D698), and its memory (remember.ts) keeps that size, not
  *     the one a screen still settling gave it.
  *
  * A window moved, arranged or closed meanwhile is no longer displaced
@@ -112,7 +113,10 @@ async function follow(context: ScreensContext, window: CompositorWindow, at: Rec
   }
   const tile = context.arranged.get(window.id)?.tile ?? null;
   if (tile) return frameIfMoved(context, window, at, tileFrame(tile, now.usable), tile);
-  const moved = along(at, was.frame, now.frame);
+  // Displaced from a screen still away and shrunk to fit here: it grows back to its own size as far as this screen has room.
+  const own = context.displaced.get(window.id);
+  const size = own && !own.tile && !own.fullscreen ? { width: own.frame.width, height: own.frame.height } : {};
+  const moved = { ...along(at, was.frame, now.frame), ...size };
   const fitted = keepLeast(fitFrame(moved, now.usable), window.minSize, now.usable);
   // No room for it here as it is: it gets its size back when there is.
   if (!sameRect(fitted, moved) && !context.displaced.has(window.id)) {

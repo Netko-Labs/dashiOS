@@ -160,11 +160,16 @@ export class Arranger {
     return this.arranged.get(window)?.tile ?? null;
   }
 
-  /** The frame of a window on screen that can be arranged (not full screen), or null. */
+  /**
+   * The frame of a window that can be arranged (not minimized or full screen),
+   * or null: on screen, or where it waits on a Desktop that isn't showing
+   * (it takes its tile there, and has it when that Desktop shows; D699).
+   */
   private async frameOf(id: number): Promise<Rect | null> {
     await this.ready;
     const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
-    return window && window.state === "normal" && !window.fullscreen ? configuredFrame(window) : null;
+    if (!window || window.state !== "normal" || window.fullscreen) return null;
+    return configuredFrame(window) ?? (window.away ? { ...window.away, ...window.configuring } : null);
   }
 
   /** Tile it, fill, center it at its own size, or give it its own frame back (the Window menu, ⌃❖↩ ⌃❖C ⌃❖R, agents). */

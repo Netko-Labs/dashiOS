@@ -8390,3 +8390,29 @@ short words, as the rulebook is written.
   nothing translucency buys over a window but noise.
 - **Cost:** the launcher, the switcher, banners and menus no longer hint at the wallpaper under them.
 - **Undo:** put the alpha back on the two tokens (and DE-4's wording) when the compositor blurs.
+
+### D698. A window moved off a screen that went grows back to its size where it is
+
+- **Date:** 2026-11-24. `v10/fix-installed` (the installed pass's P2, D537's unchecked case).
+- **Question:** Notes, 980 × 640, moved off a screen that went onto one with the Dock up, shrank to
+  980 × 581. When the Dock hid (room for 658) it stayed 581: displaced toward its own screen, it was
+  only ever put back there, and that screen stayed away. Wait for its screen, or regrow it here?
+- **Choice:** regrow it here: while its own screen is away, a displaced window (not a tile, not full
+  screen) follows the screen it is on at its own size, as far as there is room
+  (`arrange/lib/screens-gone.ts` `follow`). It is still displaced, so when its screen comes back it
+  goes home at its own frame.
+- **Why:** D537's promise is "whenever its screen has room again it gets its own frame back"; a
+  window that can't go home should at least not stay smaller than it needs to.
+- **Undo:** drop `size` in `follow`.
+
+### D699. A window on a Desktop that isn't showing can be arranged; tile_window says when it can't
+
+- **Date:** 2026-11-24. `v10/fix-installed` (the installed pass's P3).
+- **Question:** `tile_window` on a window whose Desktop wasn't showing said "w25 (Notes) is arranged."
+  and changed nothing: the arranger only arranged a window with a `frame`, and one waiting on another
+  Desktop has `away` instead. Refuse, or arrange it there?
+- **Choice:** arrange it where it waits (`frameOf` reads `away`; the compositor takes a frame there,
+  compositor-ipc.md `frame`), so an agent working on another Desktop can tile its windows. A
+  minimized, hidden or full-screen window can't take a tile, and `tile_window` now says so as an
+  error instead of "is arranged" (`agents/lib/run/run-windows.ts`).
+- **Undo:** from git (`arrange/arrange.ts` `frameOf`, `run-windows.ts`).
