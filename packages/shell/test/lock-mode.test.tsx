@@ -1,0 +1,81 @@
+/** The lock follows the person's mode (Q2, D671); its clock is the one clock (Q1, D670). */
+
+import { afterEach, expect, test } from "bun:test";
+import { Appearance, INK_RULE, inkHex, inkTokens, LOCK_GLASS, LOGIN, LOGIN_LIGHT } from "@dashi/ui";
+import { type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
+import { LockScreen } from "../src/lock/lib/screen.tsx";
+import { cardColours, lockTime, setWidgetHub, WidgetHub } from "../src/widgets/index.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
+
+fakeClockEachTest();
+let root: NativeRoot | null = null;
+afterEach(() => {
+  root?.unmount();
+  root = null;
+  setWidgetHub(null);
+});
+
+interface Node {
+  type: string;
+  props: Record<string, unknown>;
+  children?: unknown[];
+}
+const isNode = (child: unknown): child is Node => typeof child === "object" && child !== null && "props" in child;
+function find(tree: Node, keep: (node: Node) => boolean): Node | undefined {
+  if (keep(tree)) return tree;
+  for (const child of tree.children ?? [])
+    if (isNode(child)) {
+      const hit = find(child, keep);
+      if (hit) return hit;
+    }
+  return undefined;
+}
+
+async function lockIn(dark: boolean): Promise<{ tree: Node; root: NativeRoot }> {
+  setWidgetHub(new WidgetHub({ notify() {}, live: false }));
+  const trees: string[] = [];
+  const transport: NativeTransport = { send: (tree) => trees.push(tree), onEvent() {}, onClose() {}, simulate() {}, close() {} };
+  root = render(
+    <Appearance dark={dark}>
+      <LockScreen name="Alex Kim" onSubmit={async () => "wrong"} waitMs={() => 0} />
+    </Appearance>,
+    transport,
+  );
+  await settle();
+  return { tree: JSON.parse(trees.at(-1) ?? "{}") as Node, root };
+}
+
+for (const [mode, colors] of [
+  ["light", LOGIN_LIGHT],
+  ["dark", LOGIN],
+] as const) {
+  test(`in ${mode} the lock is ${mode}'s look, with the stacked clock`, async () => {
+    const { tree, root } = await lockIn(mode === "dark");
+    const screen = find(tree, (node) => node.props.id === root.nodeId("login-screen"));
+    expect(String(screen?.props.background).toLowerCase()).toBe(colors.ground.toLowerCase());
+    const clock = find(tree, (node) => node.props.id === root.nodeId("clock"));
+    expect((clock?.children ?? []).filter(isNode).map((line) => line.props.size)).toEqual([120, 120]);
+    expect(find(tree, (node) => node.props.size === 88)).toBeUndefined();
+  });
+}
+
+test("the lock's glass is the mode's: smoked in Dark, milky in Light", () => {
+  for (const mode of ["light", "dark"] as const) {
+    const inks = inkTokens(mode, { lock: true });
+    const look = cardColours({ inks, ink: null, air: false, houseDown: false, redact: false, glass: true });
+    expect(look.paper).toBe(LOCK_GLASS[mode].paper);
+    expect(look.hairline).toBe(LOCK_GLASS[mode].hairline);
+  }
+});
+
+test("the lock's inks lift on Dark's wash and sink on Light's (inks frames 4 and 5)", () => {
+  expect(INK_RULE.lockL.dark).toBeGreaterThan(0);
+  expect(INK_RULE.lockL.light).toBeLessThan(0);
+  expect(inkHex("mizu", "dark", { lock: true })).not.toBe(inkHex("mizu", "dark"));
+});
+
+test("the lock's time pads its hours in 24-hour time", () => {
+  const nine = new Date(2026, 10, 15, 9, 5).getTime();
+  expect(lockTime(nine, true)).toBe("09:05");
+  expect(lockTime(nine, false)).toBe("9:05");
+});

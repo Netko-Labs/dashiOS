@@ -1,6 +1,7 @@
 /**
- * The widgets on the lock screen (round five, frames 4, 13 and 14): a date
- * row with the weather inline, the clock stacked in two lines, a row of
+ * The widgets on the lock screen (round five, frames 4, 5, 13 and 14): a
+ * date row with the weather inline, the clock in two lines (@dashi/ui's
+ * ClockHead, the login screen's and Glance's too: D670), a row of
  * compacts under it (Weather, Battery, what is next), the notifications as
  * counts only, Dashi's widgets on the left in the small size, and the Now
  * Bar over the password: the one thing on air, flooded. Private parts are
@@ -8,6 +9,7 @@
  * press on anything asks for the password first and says what it will open.
  */
 
+import { ClockHead, loginColors, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { glyph, isGlyphName } from "../shared/inks/index.ts";
@@ -19,14 +21,14 @@ import { useWidgetEnv } from "./env.tsx";
 import { SPANS, span } from "./layout.ts";
 import { noticeCounts } from "./lib/counts.ts";
 import { clockText, useSource } from "./lib/data.ts";
-import { clockFace } from "./lib/numerals.ts";
+import { printsDisplay } from "./lib/numerals.ts";
 import { weatherLook } from "./lib/sources/weather.ts";
 import { WidgetTile } from "./lib/views/widget.tsx";
 import { Btn, Lab, NowTag, Num } from "./parts.tsx";
 import type { Placement, WidgetKind, WidgetSize } from "./types.ts";
 
-const INK = "#ECECEE";
-const MUTED = "#ECECEEB3";
+/** The head's own measures: the weather's glyph on the day's row; the side column's inset from the screen's edge and from its top. */
+const LOCK_HEAD = { weatherGlyph: 13, sideInset: 48, sideTop: 170 } as const;
 
 /** The lock's row under the clock: Dashi's three, in the compact size. */
 export const LOCK_ROW: readonly WidgetKind[] = ["weather", "battery", "calendar"];
@@ -43,49 +45,44 @@ export function lockSide(placements: readonly Placement[]): Placement[] {
     .map((each) => ({ ...each, size: "small" as WidgetSize }));
 }
 
-function DateRow({ now }: { now: number }) {
+/** The weather after the day, on its row: "· ☁ LISBON 19°", when there is weather to say. */
+function DayWeather({ ink, muted }: { ink: string; muted: string }) {
   const { hub } = useWidgetEnv();
   const weather = useSource(hub?.weather, { status: "loading" } as const);
-  const day = new Date(now).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
+  if (weather.status !== "ok" && weather.status !== "stale") return null;
+  const words = { fontSize: TYPE.inks.body.size, fontWeight: WEIGHT.semibold, color: ink } as const;
   return (
-    <View testID="lock-date" style={{ flexDirection: "row", alignItems: "center", gap: 10, height: 18 }}>
-      <Text style={{ fontSize: 12.5, fontWeight: "semibold", color: INK }}>{day}</Text>
-      {weather.status === "ok" || weather.status === "stale" ? (
-        <>
-          <Text style={{ fontSize: 12.5, color: MUTED }}>·</Text>
-          <Svg markup={glyph(weatherLook(weather.now.code).glyph)} size={13} color={INK} />
-          <Text style={{ fontSize: 12.5, fontWeight: "semibold", color: INK }}>{`${weather.now.place.toUpperCase()} ${weather.now.temperature}°`}</Text>
-        </>
-      ) : null}
-    </View>
+    <>
+      <Text style={{ fontSize: TYPE.inks.body.size, color: muted }}>·</Text>
+      <Svg markup={glyph(weatherLook(weather.now.code).glyph)} size={LOCK_HEAD.weatherGlyph} color={ink} />
+      <Text style={words}>{`${weather.now.place.toUpperCase()} ${weather.now.temperature}°`}</Text>
+    </>
   );
 }
 
-/** The clock, its hours over its minutes, in Inter Display ExtraLight (Regular on a host from before mirin PR #55). */
-function StackedClock({ now, hour24 }: { now: number; hour24: boolean }) {
-  const face = clockFace(useHostAbilities());
-  const [hours, minutes] = clockText(now, hour24).split(":");
-  // Two lines of 120 points: the design's 196 on the laptop's 1029-point screen leaves no room on a smaller one.
-  const line = (text: string) => <Text style={{ fontSize: 120, lineHeight: 112, color: INK, ...face }}>{hour24 ? text.padStart(2, "0") : text}</Text>;
-  return (
-    <View testID="lock-clock" style={{ flexDirection: "column", alignItems: "center" }}>
-      {line(hours ?? "")}
-      {line(minutes ?? "")}
-    </View>
-  );
+/** The time on the lock's clock: the hours two digits in 24-hour time ("09:05"), as the Inks draw it. */
+export function lockTime(now: number, hour24: boolean): string {
+  const [hours = "", minutes = ""] = clockText(now, hour24).split(":");
+  return `${hour24 ? hours.padStart(2, "0") : hours}:${minutes}`;
 }
 
-/** The date row, the clock, the row of compacts (a press on one asks for the password first: `onPress`), the counts. */
-export function LockHead({ onPress }: { onPress?: (kind: WidgetKind) => void }) {
-  const { now, hour24, hub } = useWidgetEnv();
+/** Whether this session's hosts draw the clock's Inter Display ExtraLight (else it is Regular). */
+export function useClockDisplay(): boolean {
+  return printsDisplay(useHostAbilities());
+}
+
+/** The day's row, the clock, the row of compacts (a press on one asks for the password first: `onPress`), the counts. */
+export function LockHead({ day, onPress }: { day: string; onPress?: (kind: WidgetKind) => void }) {
+  const { now, hour24, hub, inks } = useWidgetEnv();
+  const display = useClockDisplay();
   const counts = noticeCounts(useSource(hub?.notices, []));
   const width = span(SPANS.compact.cols);
   const height = span(SPANS.compact.rows);
+  // The lock's words: the mode's login ink, and 70% of it (the lock follows the mode, Q2).
+  const { ink, muted } = loginColors(inks.mode);
   return (
-    <View style={{ marginTop: 28, flexDirection: "column", alignItems: "center", gap: 12 }}>
-      <DateRow now={now} />
-      <StackedClock now={now} hour24={hour24} />
-      <View testID="lock-row" style={{ flexDirection: "row", gap: 12 }}>
+    <ClockHead day={day} time={lockTime(now, hour24)} ink={ink} display={display} after={<DayWeather ink={ink} muted={muted} />} testID="lock-head">
+      <View testID="lock-row" style={{ flexDirection: "row", gap: SPACE.inset }}>
         {LOCK_ROW.map((kind) => (
           <WidgetTile
             key={kind}
@@ -100,23 +97,23 @@ export function LockHead({ onPress }: { onPress?: (kind: WidgetKind) => void }) 
         ))}
       </View>
       {counts.length > 0 ? (
-        <View testID="lock-counts" style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
+        <View testID="lock-counts" style={{ flexDirection: "row", gap: SPACE.page, alignItems: "center" }}>
           {counts.slice(0, 4).map(({ app, count }) => (
-            <Text key={app} style={{ fontSize: 13, color: INK }}>{`${app} ${count}`}</Text>
+            <Text key={app} style={{ fontSize: TYPE.body.size, color: ink }}>{`${app} ${count}`}</Text>
           ))}
-          <Text style={{ fontSize: 12.5, color: MUTED }}>Unlock to read</Text>
+          <Text style={{ fontSize: TYPE.inks.body.size, color: muted }}>Unlock to read</Text>
         </View>
       ) : null}
-    </View>
+    </ClockHead>
   );
 }
 
 /** How many of the side column's columns fit beside the clock's row on a screen `width` wide: two, one, or none. */
 export function sideColumns(width: number): 0 | 1 | 2 {
-  const row = 3 * span(SPANS.compact.cols) + 24;
-  const room = (width - row) / 2 - 48;
+  const row = 3 * span(SPANS.compact.cols) + 2 * SPACE.inset;
+  const room = (width - row) / 2 - LOCK_HEAD.sideInset;
   const small = span(SPANS.small.cols);
-  return room >= 2 * small + 16 ? 2 : room >= small ? 1 : 0;
+  return room >= 2 * small + SPACE.page ? 2 : room >= small ? 1 : 0;
 }
 
 /** The side column, on the left: the person's widgets in small, two by two where the screen has room, else one column of two. */
@@ -136,7 +133,15 @@ function SideCards({ side, size, columns, onPress }: { side: readonly Placement[
   return (
     <View
       testID="lock-side"
-      style={{ position: "absolute", left: 48, top: 170, width: size * columns + 16 * (columns - 1), flexDirection: "row", flexWrap: "wrap", gap: 16 }}
+      style={{
+        position: "absolute",
+        left: LOCK_HEAD.sideInset,
+        top: LOCK_HEAD.sideTop,
+        width: size * columns + SPACE.page * (columns - 1),
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: SPACE.page,
+      }}
     >
       {side.map((each) => (
         <WidgetTile
@@ -155,6 +160,9 @@ function SideCards({ side, size, columns, onPress }: { side: readonly Placement[
   );
 }
 
+/** The Now Bar's measures: its size, its glyph, its number. */
+const NOW_BAR = { width: 580, height: 68, glyph: 14, value: 36 } as const;
+
 /** The Now Bar: the one thing on air, flooded, over the password. A timer's pause and +1 work while locked (lock-safe, widgets/api.md § 6.2). */
 export function NowBar() {
   const { tally, inks, hub } = useWidgetEnv();
@@ -167,13 +175,20 @@ export function NowBar() {
   const label = item.label.toUpperCase();
   const value = words.slice(item.label.length).trim();
   return (
-    <View style={{ marginBottom: 28 }}>
-      <Card look={{ inks, ink: item.ink, air: true, houseDown: false, redact: false }} width={580} height={68} compact padding={14} testID="now-bar">
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 14, flex: 1 }}>
+    <View style={{ marginBottom: SPACE.xl }}>
+      <Card
+        look={{ inks, ink: item.ink, air: true, houseDown: false, redact: false }}
+        width={NOW_BAR.width}
+        height={NOW_BAR.height}
+        compact
+        padding={SPACE.button}
+        testID="now-bar"
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.button, flex: 1 }}>
           <NowTag tally={inks.tally} />
-          <Svg markup={glyph(isGlyphName(item.glyph) ? item.glyph : "spark")} size={14} color={inks.onInk} />
+          <Svg markup={glyph(isGlyphName(item.glyph) ? item.glyph : "spark")} size={NOW_BAR.glyph} color={inks.onInk} />
           <Lab strong>{item.key.startsWith("event:") ? "Next" : label}</Lab>
-          {value ? <Num value={value} size={36} /> : null}
+          {value ? <Num value={value} size={NOW_BAR.value} /> : null}
           <View style={{ flex: 1 }} />
           {timer ? (
             <>

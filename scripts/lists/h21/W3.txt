@@ -45,8 +45,7 @@
 1	packages/shell/src/widgets/edit-bar.tsx
 1	packages/shell/src/widgets/edit.tsx
 5	packages/shell/src/widgets/gallery.tsx
-2	packages/shell/src/widgets/lib/numerals.ts
+1	packages/shell/src/widgets/lib/numerals.ts
 1	packages/shell/src/widgets/lib/views/extension.tsx
 1	packages/shell/src/widgets/lib/views/rundown.tsx
-2	packages/shell/src/widgets/look.tsx
 6	packages/shell/src/widgets/parts.tsx
