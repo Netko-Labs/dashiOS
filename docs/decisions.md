@@ -7451,8 +7451,9 @@ short words, as the rulebook is written.
   compositor or a Settings window, it is centred as before. `settings-app/services.ts` and
   `boot/settings.ts` (W4's and W3's files) each gained one line to pass where Settings is.
 - **Why:** SE-15 and UI-5: a sheet is the same sheet wherever it opens; the safety stays.
-- **Cost:** if Settings moves while the sheet is open, the sheet does not follow (the keyboard is
-  the sheet's, so it can't be moved by the keys; the pointer can).
+- **Cost:** the surface covers Settings' window, so the window can't be moved or reached while
+  the sheet is open (as a sheet holds its window); a window moved by other means (an agent, a
+  screen unplugged) leaves the sheet where it was.
 - **Undo:** pass no `settingsPlace`.
 
 ### D622. What a shell sheet's tile shows

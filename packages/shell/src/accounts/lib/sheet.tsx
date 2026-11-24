@@ -30,6 +30,63 @@ export function passwordProblem(current: string, next: string, again: string, ne
   return null;
 }
 
+/** The three fields (UI-9): the current password when it is asked for, the new one, and the new one again. */
+function PasswordFields({
+  needsCurrent,
+  values,
+  edit,
+  refusal,
+  onSubmit,
+  onCancel,
+}: {
+  needsCurrent: boolean;
+  values: { current: string; next: string; again: string };
+  edit: { current: (text: string) => void; next: (text: string) => void; again: (text: string) => void };
+  refusal: PasswordFailure | null;
+  onSubmit: () => void;
+  onCancel: () => void;
+}) {
+  const keys = (key: string) => key === "Escape" && onCancel();
+  const submit = () => onSubmit();
+  return (
+    <>
+      {needsCurrent && (
+        <TextField
+          testID="pw-current"
+          value={values.current}
+          secure
+          autoFocus
+          placeholder="Current password"
+          onChangeText={edit.current}
+          onSubmit={submit}
+          onKeyPress={keys}
+          invalid={refusal === "wrong-current"}
+        />
+      )}
+      <TextField
+        testID="pw-new"
+        value={values.next}
+        secure
+        {...(needsCurrent ? {} : { autoFocus: true })}
+        placeholder="New password"
+        onChangeText={edit.next}
+        onSubmit={submit}
+        onKeyPress={keys}
+        invalid={refusal === "rejected"}
+      />
+      <TextField
+        testID="pw-again"
+        value={values.again}
+        secure
+        placeholder="Verify new password"
+        onChangeText={edit.again}
+        onSubmit={submit}
+        onKeyPress={keys}
+      />
+    </>
+  );
+}
+
 /** Where the sheet is: over Settings' window (`window`), or on the screen when Settings can't be found. */
 export type PasswordSheetPlace = "window" | "screen";
 
@@ -67,7 +124,6 @@ export function PasswordChangeSheet({
     set(text);
     if (refusal) setRefusal(null);
   };
-  const keys = (key: string) => key === "Escape" && onClose();
 
   const refused = refusal ? `${FAILURE[refusal.reason]}${refusal.message ? ` ${refusal.message}.` : ""}` : null;
   const hint = working
@@ -85,31 +141,14 @@ export function PasswordChangeSheet({
         { label: working ? "Changing…" : "Change password", testID: "pw-change", onPress: submit, kind: "primary", disabled: working || problem !== null },
       ]}
     >
-      {needsCurrent && (
-        <TextField
-          testID="pw-current"
-          value={current}
-          secure
-          autoFocus
-          placeholder="Current password"
-          onChangeText={edit(setCurrent)}
-          onSubmit={submit}
-          onKeyPress={keys}
-          invalid={refusal?.reason === "wrong-current"}
-        />
-      )}
-      <TextField
-        testID="pw-new"
-        value={next}
-        secure
-        {...(needsCurrent ? {} : { autoFocus: true })}
-        placeholder="New password"
-        onChangeText={edit(setNext)}
+      <PasswordFields
+        needsCurrent={needsCurrent}
+        values={{ current, next, again }}
+        edit={{ current: edit(setCurrent), next: edit(setNext), again: edit(setAgain) }}
+        refusal={refusal?.reason ?? null}
         onSubmit={submit}
-        onKeyPress={keys}
-        invalid={refusal?.reason === "rejected"}
+        onCancel={onClose}
       />
-      <TextField testID="pw-again" value={again} secure placeholder="Verify new password" onChangeText={edit(setAgain)} onSubmit={submit} onKeyPress={keys} />
       <View testID="pw-hint">
         <Text style={{ fontSize: TYPE.caption.size, lineHeight: TYPE.caption.line, color: refusal ? colors.ume : colors.textMuted }}>{hint}</Text>
       </View>
