@@ -16,6 +16,7 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
+import type { ReactNode } from "react";
 import { fillLength, levelAt } from "../slider-math.ts";
 import { OPACITY, pill, RADIUS, SPACE, TYPE, WEIGHT } from "../theme/index.ts";
 import { useControlColors } from "./colors.ts";
@@ -159,8 +160,14 @@ export interface SliderLook {
   height: number;
 }
 
-export function SliderTile({ look, standing, onLevel }: { look: SliderLook; standing: boolean; onLevel: (level: number) => void }) {
+/**
+ * A slider tile. `lead` takes the glyph's place on a lying one (an app's
+ * icon on its chip: Sound's apps). Its corners are the panel's, or a pill on
+ * a tile less tall than that.
+ */
+export function SliderTile({ look, standing, onLevel, lead }: { look: SliderLook; standing: boolean; onLevel: (level: number) => void; lead?: ReactNode }) {
   const colors = useControlColors();
+  const radius = Math.min(RADIUS.panel, pill(Math.min(look.width, look.height)));
   const length = standing ? look.height : look.width;
   const fill = fillLength(look.level, length);
   const drag = (x: number, y: number, bounds?: { x: number; y: number; width: number; height: number }) => {
@@ -175,9 +182,9 @@ export function SliderTile({ look, standing, onLevel }: { look: SliderLook; stan
       onPointer={(event) => drag(event.x, event.y, event.bounds)}
       accessibilityRole="group"
       accessibilityLabel={`${look.title}, ${look.value}`}
-      style={{ flex: 1, position: "relative", borderRadius: RADIUS.panel, backgroundColor: colors.off, overflow: "hidden" }}
+      style={{ flex: 1, position: "relative", borderRadius: radius, backgroundColor: colors.off, overflow: "hidden" }}
     >
-      <InkFill length={fill} total={length} standing={standing} radius={RADIUS.panel} />
+      <InkFill length={fill} total={length} standing={standing} radius={radius} />
       {standing ? (
         <>
           <View style={{ position: "absolute", top: TILE.levelTop, left: 0, right: 0, alignItems: "center" }}>
@@ -189,7 +196,7 @@ export function SliderTile({ look, standing, onLevel }: { look: SliderLook; stan
         </>
       ) : (
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.gap, paddingLeft: SPACE.inset, paddingRight: SPACE.button }}>
-          <GlyphDisc glyph={look.glyph} />
+          {lead ?? <GlyphDisc glyph={look.glyph} />}
           <View style={{ paddingHorizontal: SPACE.m, paddingVertical: SPACE.xxs, borderRadius: TILE.chipRadius, backgroundColor: colors.chip }}>
             <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{look.title}</Text>
           </View>

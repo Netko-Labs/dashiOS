@@ -81,3 +81,19 @@ test("a panel switch on a lit tile: on, its track the on ink under a knob in the
   expect(node("lit")?.props).toMatchObject({ background: LIGHT_CONTROLS.onInk, access: { role: "switch", checked: true } });
   root.unmount();
 });
+
+test("a lying slider tile less tall than the panel's corner is a pill, and takes a lead in its glyph's place", async () => {
+  const { node, root } = await sent(
+    <View>
+      <SliderTile
+        look={{ testID: "app", title: "Helium", glyph: SEARCH, level: 0.3, value: "30%", width: 266, height: 48 }}
+        standing={false}
+        onLevel={noop}
+        lead={<View testID="lead" />}
+      />
+    </View>,
+  );
+  expect(node("app")?.props.cornerRadius).toBe(24);
+  expect(node("lead")).not.toBeNull();
+  root.unmount();
+});
