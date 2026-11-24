@@ -73,6 +73,12 @@ test("the time now is drawn in ink, never the accent", () => {
 
 test("the sidebar's month is the kit's month grid, and the calendars are sidebar rows with a check box", () => {
   expect(root.nodeId("mini:previous")).toBeTruthy();
+  // On today's month, with today's disc on today (the grid's months are 0–11, as monthOf's are).
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  expect(root.nodeId(`mini:${today}`)).toBeTruthy();
+  const title = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(now);
+  expect(JSON.stringify(find(tree(), id("mini:title")))).toContain(title);
   const calendar = model.getSnapshot().calendars[0];
   if (!calendar) throw new Error("no calendar");
   const row = find(tree(), id(`calendar:${calendar.id}`));

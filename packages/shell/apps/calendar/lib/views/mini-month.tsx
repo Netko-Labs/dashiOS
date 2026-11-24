@@ -37,8 +37,9 @@ export interface MiniMonthProps {
 
 /** A `YYYY-MM-DD` day as the grid's. */
 export function gridDay(day: Day): GridDay {
+  // monthOf's month is 0–11, as the grid's is.
   const { year, month } = monthOf(day);
-  return { year, month: month - 1, date: Number(day.slice(8, 10)) };
+  return { year, month, date: Number(day.slice(8, 10)) };
 }
 
 /** The grid's day as a `YYYY-MM-DD` day. */
@@ -59,7 +60,7 @@ export function MiniMonth({ anchor, today, firstDay, prefs, busy, onPick, idPref
       <MonthGrid
         testID={idPrefix}
         year={year}
-        month={month - 1}
+        month={month}
         {...(today !== undefined ? { today: gridDay(today) } : {})}
         chosen={gridDay(anchor)}
         onChoose={(day) => onPick(fromGridDay(day))}
