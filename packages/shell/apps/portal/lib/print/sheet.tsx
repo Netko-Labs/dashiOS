@@ -98,9 +98,6 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
       {request.printers.length === 0 && (
         <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted }}>No printers are set up. Add one in Settings, or save a PDF.</Text>
       )}
-      {printer && !printer.accepting && (
-        <Text style={{ fontSize: TYPE.secondary.size, color: colors.critical }}>This printer isn’t taking jobs right now.</Text>
-      )}
       {/* The rows on a card, so their 12 of inset is the card's: the words around it, More… and the buttons keep the sheet's edge. */}
       <Group testID="print:rows">
         {request.printers.length > 0 && (
@@ -136,6 +133,12 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
           />
         </Row>
       </Group>
+      {/* The printer's problem, under the card that holds it, in ume ink (PA-6). */}
+      {printer && !printer.accepting && (
+        <Text testID="print:not-accepting" style={{ fontSize: TYPE.secondary.size, color: colors.critical }}>
+          This printer isn’t taking jobs right now.
+        </Text>
+      )}
       {twoSided && <Checkbox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}
       <MoreButton testID="print:more" open={more} more="More options" less="Fewer options" onPress={() => setMore(!more)} />
       {more && media.length > 0 && <PaperRow media={media} chosen={choice.media ?? media[0] ?? ""} onChange={(keyword) => update({ media: keyword })} />}
