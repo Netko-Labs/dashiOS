@@ -4,7 +4,8 @@
  * field now takes the row's room, never under a name's worth, and the label
  * stays on one line. As Text Editor's sheet it was as wide as the editor and
  * started 8 from the window's top, so the window's buttons sat on its Back
- * and Up: it now hangs below the title bar, inside the window at each side.
+ * and Up: it now hangs below the title bar, inside the window at each side,
+ * on the kit's Sheet (its scrim, 0.10).
  */
 
 import { afterAll, expect, test } from "bun:test";
@@ -64,10 +65,11 @@ test("the Save as field takes the row's room, at least 160 wide, and its label k
 
 test("as a sheet it hangs below the title bar and stays inside the window", async () => {
   const { node: card, parent: scrim } = (await sheet())("chooser");
-  expect(scrim?.props).toMatchObject({ paddingX: CHOOSER_SHEET.inset, paddingBottom: CHOOSER_SHEET.inset });
-  expect(Number(scrim?.props?.paddingTop)).toBeGreaterThanOrEqual(CHOOSER_SHEET.below);
-  // Never as wide as the window: all the scrim leaves, at most 760; and shorter when the window is.
-  expect(card.props).toMatchObject({ widthPercent: 1, maxWidth: CHOOSER_SHEET.width, height: CHOOSER_SHEET.height, minHeight: 0 });
+  // The kit's Sheet: the window's scrim, SHEET_MARGIN from its foot; the card under the title bar.
+  expect(scrim?.props).toMatchObject({ paddingBottom: CHOOSER_SHEET.inset });
+  expect(Number(card.props?.marginTop)).toBeGreaterThanOrEqual(CHOOSER_SHEET.below);
+  // At most 760 (the window's width less 16 a side once laid out, sheetWidth); shorter when the window is.
+  expect(Number(card.props?.width)).toBeLessThanOrEqual(CHOOSER_SHEET.width);
+  expect(card.props).toMatchObject({ height: CHOOSER_SHEET.height, minHeight: 0 });
   expect(card.props?.shrink).not.toBe(false);
-  expect(card.props?.marginTop).toBeUndefined();
 });

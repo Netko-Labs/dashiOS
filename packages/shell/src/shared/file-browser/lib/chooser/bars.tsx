@@ -10,7 +10,7 @@ import { Text, View } from "@mirinjs/metal";
 import { filterExtension, withExtension } from "../../../files/index.ts";
 import { type ChooserModel, folderName, folderTrail } from "../../chooser-model.ts";
 import { BACK, FOLDER_PLUS, sidebarGlyph } from "../../glyphs.ts";
-import { ViewSwitch } from "../../toolbar.tsx";
+import { ViewPicker } from "../../toolbar.tsx";
 import type { ChooserInput } from "./use-chooser-input.ts";
 
 const UP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 13V3.6M3.8 7.6L8 3.4l4.2 4.2" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -47,7 +47,7 @@ export function ChooserTools({ model, input }: { model: ChooserModel; input: Cho
           onChange={(path) => store.go({ kind: "folder", path })}
         />
       )}
-      <ViewSwitch />
+      <ViewPicker />
       {model.canMakeFolder() && <ToolbarButton testID="chooser:new-folder" glyph={FOLDER_PLUS} tooltip="New folder" onPress={() => void model.newFolder()} />}
       <SearchField
         testID="chooser:search"
