@@ -2,13 +2,15 @@
  * A button that is one glyph (IC-3, UI-8): a notification's ✕, the
  * overview's × and +, a toolbar's tool. Round, the glyph in ink (muted with
  * `quiet`), nothing under it at rest unless `filled`, a wash under the
- * pointer and a deeper one while held; disabled, dimmed whole (UI-4). Named
- * for screen readers by `label`, since it has no words; Tab reaches it.
+ * pointer and a deeper one while held; disabled, dimmed whole (UI-4). One
+ * that turns something on (the capture toolbar's microphone) shows `on` in
+ * the one "on" (CO-1). Named for screen readers by `label`, since it has no
+ * words; Tab reaches it.
  */
 
 import { Svg, View } from "@mirinjs/metal";
 import { useControlState } from "./control-state.tsx";
-import { CLEAR, pill, useColors } from "./theme/index.ts";
+import { CLEAR, onOf, pill, useColors } from "./theme/index.ts";
 
 /** Its sizes: the target and the glyph in it. */
 export const GLYPH_BUTTON = { regular: { target: 24, glyph: 14 }, small: { target: 18, glyph: 10 } } as const;
@@ -25,17 +27,21 @@ export interface GlyphButtonProps {
   filled?: boolean;
   /** The glyph muted: a secondary tool. */
   quiet?: boolean;
+  /** It turns something on, and it is on: the one "on" under its ink (a toggle; screen readers hear it checked). */
+  on?: boolean;
   disabled?: boolean;
   focusable?: boolean;
   /** Keyboard focus is on it (`data-focused`, the gallery's state rows). */
   focused?: boolean;
 }
 
-export function GlyphButton({ glyph, label, onPress, testID, size = "regular", filled, quiet, disabled, focusable = true, focused }: GlyphButtonProps) {
+export function GlyphButton({ glyph, label, onPress, testID, size = "regular", filled, quiet, on, disabled, focusable = true, focused }: GlyphButtonProps) {
   const colors = useColors();
   const state = useControlState({ disabled, focused });
   const m = GLYPH_BUTTON[size];
-  const rest = filled ? colors.track : CLEAR;
+  const lit = onOf(colors);
+  const rest = on ? lit.on : filled ? colors.track : CLEAR;
+  const ink = on ? lit.onInk : quiet ? colors.textMuted : colors.text;
   return (
     <View
       testID={testID}
@@ -43,7 +49,7 @@ export function GlyphButton({ glyph, label, onPress, testID, size = "regular", f
       focusable={focusable && !disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled: disabled === true }}
+      accessibilityState={{ disabled: disabled === true, ...(on !== undefined ? { checked: on } : {}) }}
       onPress={disabled ? undefined : onPress}
       onPointer={state.onPointer}
       style={{
@@ -53,13 +59,13 @@ export function GlyphButton({ glyph, label, onPress, testID, size = "regular", f
         borderRadius: pill(m.target),
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: state.pressed ? colors.pressed : rest,
-        hoverBackgroundColor: disabled ? rest : filled ? colors.checkbox : colors.button,
+        backgroundColor: state.pressed ? (on ? colors.selectionPressed : colors.pressed) : rest,
+        hoverBackgroundColor: disabled || on ? rest : filled ? colors.checkbox : colors.button,
         opacity: state.opacity,
         focusRingColor: colors.focusRing,
       }}
     >
-      <Svg markup={glyph} size={m.glyph} color={quiet ? colors.textMuted : colors.text} />
+      <Svg markup={glyph} size={m.glyph} color={ink} />
     </View>
   );
 }

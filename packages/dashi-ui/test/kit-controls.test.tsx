@@ -93,6 +93,7 @@ test("GlyphButton: round, named for screen readers, a Tab stop; filled shows a d
       <GlyphButton testID="close" glyph={CLOSE} label="Remove" onPress={() => pressed++} />
       <GlyphButton testID="filled" glyph={CLOSE} label="Remove" size="small" filled onPress={noop} />
       <GlyphButton testID="off" glyph={CLOSE} label="Remove" disabled onPress={() => pressed++} />
+      <GlyphButton testID="mic" glyph={CLOSE} label="Microphone" on onPress={noop} />
     </View>,
   );
   expect(node("close")?.props).toMatchObject({ width: GLYPH_BUTTON.regular.target, cornerRadius: GLYPH_BUTTON.regular.target / 2, focusable: true });
@@ -100,6 +101,7 @@ test("GlyphButton: round, named for screen readers, a Tab stop; filled shows a d
   expect(node("filled")?.props).toMatchObject({ width: GLYPH_BUTTON.small.target, background: lightColors.track });
   expect(node("off")?.props).toMatchObject({ opacity: 0.4 });
   expect(node("off")?.props.focusable).toBeUndefined();
+  expect(node("mic")?.props).toMatchObject({ background: lightColors.selection, access: { label: "Microphone", checked: true } });
   host.emit({ type: "press", nodeId: root.nodeId("close") ?? "" });
   host.emit({ type: "press", nodeId: root.nodeId("off") ?? "" });
   expect(pressed).toBe(1);
