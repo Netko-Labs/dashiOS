@@ -65,6 +65,9 @@ export interface StoreOptions {
   /** The view, sort and Show Hidden to start with, and where a change to them goes (prefs.ts); none: the defaults, kept nowhere. */
   prefs?: { read(): FilesPrefs; write(prefs: FilesPrefs): void };
 }
+/** How often the drives are looked at again (ms): one plugged in shows within this. */
+export const VOLUMES_EVERY_MS = 4000;
+
 /** How long a notice that only informs stays. */
 export const NOTICE_FADE_MS = 5000;
 
