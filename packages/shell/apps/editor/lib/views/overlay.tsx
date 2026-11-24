@@ -92,7 +92,7 @@ export function editorOverlay({
           testID="delete-draft"
           title={`Delete the draft “${name}”?`}
           // Two sentences, two lines: broken by hand, so no word is left alone on the second.
-          message={"The window closes and its text is gone.\nYou can't undo this."}
+          message={"The window closes and its text is gone.\nYou can’t undo this."}
           confirmLabel="Delete"
           danger
           onConfirm={() => quit(true)}

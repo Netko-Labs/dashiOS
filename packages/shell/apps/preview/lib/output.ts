@@ -25,6 +25,9 @@ import { pdftoppmArgs } from "./pdf/pdf.ts";
 import { type RunOptions, type RunResult, runTool } from "./tools.ts";
 import { mod4 } from "./zoom.ts";
 
+/** How long drawing one PDF page may take (ms): a timer, not motion. */
+const PAGE_RENDER_MS = 45_000;
+
 /** A PDF page exported or copied as a picture is rendered at this resolution. */
 export const PAGE_DPI = 150;
 
@@ -70,7 +73,7 @@ export async function pagePng(source: Source, page: number, dpi: number, root: s
   const plain = cacheFile(root, cacheKey(source.stamp, `pdf:${page}:${dpi}`), "png");
   if (!(await Bun.file(plain).exists())) {
     const base = partialName(join(root, cacheKey(source.stamp, `pdf:${page}:${dpi}`)));
-    const result = await run(pdftoppmArgs(source.path, page, dpi, base), { timeoutMs: 45_000, memoryMiB: 2048 });
+    const result = await run(pdftoppmArgs(source.path, page, dpi, base), { timeoutMs: PAGE_RENDER_MS, memoryMiB: 2048 });
     if (!result.ok || !(await Bun.file(`${base}.png`).exists())) return null;
     await rename(`${base}.png`, plain);
   }

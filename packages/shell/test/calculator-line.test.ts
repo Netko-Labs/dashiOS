@@ -9,7 +9,7 @@ import { keyForChar } from "../apps/calculator/lib/keys.ts";
 import { GAP, KEY, keypadLayout, keySide, leastSize, MIN_SIZE, PAD, sizeWithTape, TAPE_WIDTH } from "../apps/calculator/lib/layout.ts";
 import { EMPTY_LINE, equals, type Line, liveResult, negate, recall, tidy, typeChar } from "../apps/calculator/lib/line.ts";
 import { EN_US, numberLocale } from "../apps/calculator/lib/locale.ts";
-import { calculatorMenus } from "../apps/calculator/lib/menus.ts";
+import { calculatorMenus, TAPE_COMMANDS } from "../apps/calculator/lib/menus.ts";
 import { type CalcAction, type CalcState, calculate, initialState } from "../apps/calculator/lib/state.ts";
 import { parseRemembered, readRemembered, TAPE_LIMIT, withEntry, writeRemembered } from "../apps/calculator/lib/store.ts";
 import { resultWords } from "../apps/calculator/lib/words.ts";
@@ -115,7 +115,7 @@ describe("the line", () => {
     expect(liveResult(typed("1250*12+340"), EN_US)).toMatchObject({ kind: "value", value: 15340 });
     expect(liveResult(typed("42"), EN_US)).toEqual({ kind: "none" });
     expect(resultWords(liveResult(typed("1250*12+340"), EN_US))).toEqual({ text: "= 15,340", tone: "result" });
-    expect(resultWords(liveResult(typed("1/0"), EN_US))).toEqual({ text: "Can't divide by 0", tone: "error" });
+    expect(resultWords(liveResult(typed("1/0"), EN_US))).toEqual({ text: "Can’t divide by 0", tone: "error" });
   });
 });
 
@@ -270,16 +270,25 @@ describe("keys and menus", () => {
     expect(keyForChar("n", EN_US)).toBe("negate");
   });
 
-  test("Edit acts on the line; View shows the tape", () => {
+  test("Edit acts on the line and the tape's chosen entry; View shows the tape", () => {
     const ran: string[] = [];
     const actions = new Proxy({} as Parameters<typeof calculatorMenus>[0]["actions"], { get: (_target, name) => () => ran.push(String(name)) });
-    const { menus, run: choose } = calculatorMenus({ hasSelection: false, canCopy: true, hasResult: true, showsTape: false, hasTape: false, actions });
+    const context = { hasSelection: false, canCopy: true, hasResult: true, showsTape: false, hasTape: false, hasEntry: false, actions };
+    const { menus, run: choose } = calculatorMenus(context);
     const labels = menus.flatMap((menu) => menu.items).flatMap((row) => (row.type === "separator" ? [] : [row.label]));
-    expect(labels).toEqual(["Cut", "Copy", "Paste", "Select All", "Copy Result", "Clear", "Show Tape", "Clear Tape"]);
+    expect(labels).toEqual(["Cut", "Copy", "Paste", "Select All", "Copy Result", "Use Result", "Edit Sum", "Copy Sum", "Clear", "Show Tape", "Clear Tape"]);
     choose("copy");
     choose("clear-tape");
     choose("copy-result");
     choose("tape");
+    choose("use-result");
     expect(ran).toEqual(["copyResult", "toggleTape"]);
+    // With an entry chosen on the tape, its rows are the right-click menu's, by the same names (PA-8).
+    const chosen = calculatorMenus({ ...context, showsTape: true, hasTape: true, hasEntry: true });
+    chosen.run("use-result");
+    chosen.run("edit-sum");
+    chosen.run("copy-sum");
+    expect(ran.slice(2)).toEqual(["useEntry", "editEntry", "copySum"]);
+    expect(TAPE_COMMANDS.use.label).toBe("Use Result");
   });
 });

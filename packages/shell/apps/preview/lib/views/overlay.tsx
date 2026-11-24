@@ -5,21 +5,25 @@
 
 import { ConfirmSheet, type MenuEntry, PopupMenu } from "@dashi/ui";
 import type { ReactElement } from "react";
+import { InfoSheet, OpenWithSheet } from "../../../../src/shared/file-browser/file-sheets.tsx";
+import type { ChooserRequest } from "../../../../src/shared/files/index.ts";
 import * as commands from "../commands.ts";
 import type { ExportFormat } from "../convert.ts";
 import * as glyphs from "../glyphs.ts";
 import type { Handler } from "../handlers.ts";
 import type { Snapshot } from "../snapshot.ts";
 import { turned } from "../zoom.ts";
-import { ExportSheet, InfoSheet, imageRows, infoRows, MessageSheet, OpenWithSheet, pdfRows } from "./sheets.tsx";
+import { FileChooser } from "./chooser.tsx";
+import { type ExportChoice, ExportSheet, imageRows, infoRows, pdfRows } from "./sheets.tsx";
 
+/** The sheet up over the window: a question, a form, or Files' chooser (Open, and where an Export goes: R7). */
 export type SheetState =
   | { kind: "info" }
   | { kind: "open-with"; handlers: Handler[] | null }
-  | { kind: "trash" }
+  | { kind: "open"; request: ChooserRequest }
   | { kind: "export"; formats: ExportFormat[] }
+  | { kind: "save"; request: ChooserRequest; choice: ExportChoice }
   | { kind: "print-cups"; printer: string; pdf: string }
-  | { kind: "message"; title: string; message: string }
   | null;
 
 /** The window's state the overlay shows (use-chrome.ts holds it; that file imports SheetState from here, so the type is named here). */
@@ -46,7 +50,7 @@ export function windowOverlay({
   moreItems: MenuEntry[];
 }): ReactElement | undefined {
   if (chrome.sheet !== null) {
-    return <PreviewSheet sheet={chrome.sheet} snap={snap} page={page} hooks={hooks} onClose={() => chrome.setSheet(null)} />;
+    return <PreviewSheet sheet={chrome.sheet} snap={snap} page={page} hooks={hooks} onSheet={chrome.setSheet} onClose={() => chrome.setSheet(null)} />;
   }
   if (chrome.menu) {
     return <PopupMenu testID="more-menu" x={chrome.menu.x} y={chrome.menu.y} anchor="end" items={moreItems} onClose={() => chrome.setMenu(null)} />;
@@ -72,6 +76,7 @@ export function PreviewSheet({
   snap,
   page,
   hooks,
+  onSheet,
   onClose,
 }: {
   sheet: Exclude<SheetState, null>;
@@ -79,6 +84,8 @@ export function PreviewSheet({
   /** The PDF's page in view. */
   page: number;
   hooks: commands.CommandHooks;
+  /** Another sheet in this one's place (the export's chooser after its format). */
+  onSheet: (next: SheetState) => void;
   onClose: () => void;
 }) {
   switch (sheet.kind) {
@@ -87,8 +94,8 @@ export function PreviewSheet({
     case "open-with":
       return (
         <OpenWithSheet
-          handlers={sheet.handlers ?? []}
-          loading={sheet.handlers === null}
+          name={snap.name}
+          apps={sheet.handlers}
           onClose={onClose}
           onPick={(handler) => {
             onClose();
@@ -96,19 +103,13 @@ export function PreviewSheet({
           }}
         />
       );
-    case "trash":
+    case "open":
       return (
-        <ConfirmSheet
-          testID="trash"
-          title={`Move “${snap.name}” to the Trash?`}
-          message="You can put it back from the Trash."
-          confirmLabel="Move to Trash"
-          glyph={glyphs.TRASH}
-          danger
-          onCancel={onClose}
-          onConfirm={() => {
+        <FileChooser
+          request={sheet.request}
+          answer={(paths) => {
             onClose();
-            commands.trash(hooks, snap);
+            if (paths?.[0]) void hooks.viewer.open(paths[0]);
           }}
         />
       );
@@ -118,9 +119,16 @@ export function PreviewSheet({
           formats={sheet.formats}
           pageNote={snap.kind === "pdf" ? `Page ${page}, as a picture` : null}
           onClose={onClose}
-          onExport={(choice) => {
+          onExport={(choice) => onSheet({ kind: "save", request: commands.exportRequest(snap, choice, page), choice })}
+        />
+      );
+    case "save":
+      return (
+        <FileChooser
+          request={sheet.request}
+          answer={(paths) => {
             onClose();
-            void commands.exportTo(hooks, snap, choice, page);
+            if (paths?.[0]) void commands.exportTo(hooks, snap, sheet.choice, page, paths[0]);
           }}
         />
       );
@@ -139,7 +147,5 @@ export function PreviewSheet({
           }}
         />
       );
-    case "message":
-      return <MessageSheet title={sheet.title} message={sheet.message} onClose={onClose} />;
   }
 }

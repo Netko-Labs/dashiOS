@@ -9,7 +9,7 @@
 
 import { hostBinary, runApp, systemClipboard } from "../kit/index.ts";
 import { engineBinary, splitCommand } from "./lib/engine.ts";
-import { TERMINAL_SIZE, TerminalWindow } from "./lib/views/view.tsx";
+import { TERMINAL_LEAST, TERMINAL_SIZE, TerminalWindow } from "./lib/views/view.tsx";
 
 /** A window opened from another starts its first shell where that one's front tab is. */
 const FOLDER_VAR = "DASHI_TERMINAL_FOLDER";
@@ -35,7 +35,7 @@ const retitle = (title: string): void => setTitle(title);
 // The unified title bar: one row for the title, or the tabs once there are two (VS-1, VS-4).
 const app = runApp(
   // The host is named before `-e`: a command's own words (a path) are never taken for it.
-  { id: "dev.dashi.terminal", title: "Terminal", size: TERMINAL_SIZE, host: hostBinary(own) },
+  { id: "dev.dashi.terminal", title: "Terminal", size: TERMINAL_SIZE, minSize: TERMINAL_LEAST, host: hostBinary(own) },
   <TerminalWindow
     binary={binary}
     onExit={() => quit()}

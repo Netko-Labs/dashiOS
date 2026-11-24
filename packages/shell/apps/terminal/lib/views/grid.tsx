@@ -3,22 +3,23 @@
  * ground, and what sits over it. The margin on the left holds each
  * command's mark from the shell integration: ume for a command that failed,
  * and for any of them a press selects its output. The cursor is drawn in
- * the accent, the letter under a block cursor in the ground's color. A thin
- * bar on the right edge shows where the view is while it is scrolled back;
- * the grid's size shows for a moment while the window is resized; the bell
- * flashes the grid's edge. A tab whose engine went away says so.
+ * the grid's ink, the letter under a block cursor in the ground's color (R5).
+ * A thin bar on the right edge shows where the view is while it is scrolled
+ * back; the grid's size shows for a moment while the window is resized; the
+ * bell flashes the grid's edge in its ink. A tab whose engine went away
+ * takes no typing and draws no cursor; the window's notice says so.
  *
  * It reads the screen from the store (store.ts), so a frame re-renders this
  * and the rows that changed, nothing else.
  */
 
-import { useColors } from "@dashi/ui";
+import { OPACITY, pill, SPACE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, type KeyDownInfo, type PointerInfo, Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TerminalPalette } from "../palette.ts";
 import { cellAt, cellText, type Screen, scrolledBack } from "../screen.ts";
 import { type ScreenStore, useScreen } from "../store.ts";
-import { LostNote, SizeNote } from "./grid-notes.tsx";
+import { SizeNote } from "./grid-notes.tsx";
 import { type Cell, color, Line, type Look, lookFor } from "./line.tsx";
 
 /**
@@ -27,19 +28,24 @@ import { type Cell, color, Line, type Look, lookFor } from "./line.tsx";
  * the same under it. The cells' leftover (less than one) adds to the right
  * and the bottom.
  */
-export const MARGIN = 12;
-export const GRID_TOP = 6;
+export const MARGIN = SPACE.inset;
+export const GRID_TOP = SPACE.s;
 /** The ground's room around the grid, both sides together: what fitting a grid to the window subtracts. */
 export const GRID_INSET = { width: MARGIN * 2, height: GRID_TOP * 2 } as const;
 /** A failed command's mark: 3 px wide, inset 2 px from its row's top and bottom. */
 const MARK_WIDTH = 3;
-const MARK_INSET = 2;
+const MARK_INSET = SPACE.xxs;
 /** Two presses this close (ms) and this near (cells) count as a double click. */
 const MULTI_CLICK_MS = 400;
 /** How long the grid's size shows after the window stops resizing (ms). */
 const SIZE_SHOWN_MS = 1000;
-/** How long the bell lights the grid's edge (ms). */
+/** How long the bell lights the grid's edge (ms), and how wide. */
 const BELL_MS = 150;
+const BELL_EDGE = SPACE.xxs;
+/** A bar or underline cursor's thickness. */
+const CURSOR_LINE = SPACE.xxs;
+/** The scrollback bar: its width, its least height, and its room from the edge. */
+const SCROLL_BAR = { width: SPACE.xs, least: SPACE.page, inset: SPACE.xxs } as const;
 
 export interface GridProps {
   store: ScreenStore;
@@ -47,10 +53,9 @@ export interface GridProps {
   id: number;
   cell: Cell;
   palette: TerminalPalette;
-  dark: boolean;
   /** Bumped when the bell rings in this tab: the edge flashes. */
   bells: number;
-  /** The engine went away: the grid says so (Return starts a new shell, view.tsx). */
+  /** The engine went away: no cursor (the window's notice says so; Return starts a new shell, view.tsx). */
   lost: boolean;
   onKeyDown(key: KeyDownInfo): void;
   /** The pointer on a cell: press (with the click count), drag, release. */
@@ -62,11 +67,11 @@ export interface GridProps {
   onLayout(bounds: Bounds): void;
 }
 
-export function Grid({ store, id, cell, palette, dark, bells, lost, onKeyDown, onSelect, onWheel, onMark, onContextMenu, onLayout }: GridProps) {
+export function Grid({ store, id, cell, palette, bells, lost, onKeyDown, onSelect, onWheel, onMark, onContextMenu, onLayout }: GridProps) {
   const colors = useColors();
   const screen = useScreen(store, id);
   // One object while nothing it is made of changes, so the rows' memo holds.
-  const look = useMemo(() => lookFor(palette, dark, colors.selection, screen.ink, screen.ground), [palette, dark, colors.selection, screen.ink, screen.ground]);
+  const look = useMemo(() => lookFor(palette, colors.textSelection, screen.ink, screen.ground), [palette, colors.textSelection, screen.ink, screen.ground]);
   const grid = useRef<Bounds | null>(null);
   const lastPress = useRef({ at: 0, x: -1, y: -1, clicks: 0 });
   const size = useShownSize(screen.cols, screen.rows);
@@ -120,15 +125,18 @@ export function Grid({ store, id, cell, palette, dark, bells, lost, onKeyDown, o
       </View>
       {scrolledBack(screen.scroll) && <ScrollBar scroll={screen.scroll} track={screen.rows * cell.height} color={colors.textMuted} />}
       {size !== null && <SizeNote size={size} />}
-      {lost && <LostNote />}
       {flashing && (
-        <View testID="terminal-bell" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderWidth: 2, borderColor: look.cursor }} />
+        <View testID="terminal-bell" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderWidth: BELL_EDGE, borderColor: look.ink }} />
       )}
     </View>
   );
 }
 
-/** The marks in the margin: a failed command's in ume; any of them, pressed, selects its command's output. */
+/**
+ * The marks in the margin: a failed command's in ume; any of them, pressed,
+ * selects its command's output. Each is a hit area the margin's width and a
+ * row tall, washed under the pointer edge to edge: not a drawn button.
+ */
 function Marks({ screen, cell, failed, hover, onMark }: { screen: Screen; cell: Cell; failed: string; hover: string; onMark(y: number): void }) {
   return (
     <>
@@ -137,7 +145,7 @@ function Marks({ screen, cell, failed, hover, onMark }: { screen: Screen; cell: 
           key={mark.y}
           testID={`terminal-mark-${mark.y}`}
           accessibilityRole="button"
-          accessibilityLabel={mark.failed ? "Select a failed command's output" : "Select a command's output"}
+          accessibilityLabel={mark.failed ? "Select a failed command’s output" : "Select a command’s output"}
           onPress={() => onMark(mark.y)}
           style={{
             position: "absolute",
@@ -147,11 +155,10 @@ function Marks({ screen, cell, failed, hover, onMark }: { screen: Screen; cell: 
             height: cell.height,
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: 3,
             hoverBackgroundColor: hover,
           }}
         >
-          {mark.failed && <View style={{ width: MARK_WIDTH, height: cell.height - MARK_INSET * 2, borderRadius: MARK_WIDTH / 2, backgroundColor: failed }} />}
+          {mark.failed && <View style={{ width: MARK_WIDTH, height: cell.height - MARK_INSET * 2, borderRadius: pill(MARK_WIDTH), backgroundColor: failed }} />}
         </View>
       ))}
     </>
@@ -159,27 +166,27 @@ function Marks({ screen, cell, failed, hover, onMark }: { screen: Screen; cell: 
 }
 
 /**
- * The cursor on its cell, in the accent: a block draws the letter under it in
- * the ground's color, so it is never hidden; a bar, an underline, a hollow box.
+ * The cursor on its cell, in the grid's ink: a block draws the letter under it
+ * in the ground's color, so it is never hidden; a bar, an underline, a hollow box.
  */
 function TerminalCursor({ screen, cell, look }: { screen: Screen; cell: Cell; look: Look }) {
   const { cursor } = screen;
   if (!cursor.visible) return null;
   const under = cursor.style === "block" ? cellText(screen.lines[cursor.y] ?? [], cursor.x) : null;
   const wide = under !== null && under.span.w === 2 && Array.from(under.span.s).length === 1;
-  const width = cursor.style === "bar" ? 2 : cell.width * (wide ? 2 : 1);
+  const width = cursor.style === "bar" ? CURSOR_LINE : cell.width * (wide ? 2 : 1);
   return (
     <View
       testID="terminal-cursor"
       style={{
         position: "absolute",
         left: (wide && under ? under.span.x : cursor.x) * cell.width,
-        top: cursor.y * cell.height + (cursor.style === "underline" ? cell.height - 2 : 0),
+        top: cursor.y * cell.height + (cursor.style === "underline" ? cell.height - CURSOR_LINE : 0),
         width,
-        height: cursor.style === "underline" ? 2 : cell.height,
+        height: cursor.style === "underline" ? CURSOR_LINE : cell.height,
         alignItems: "center",
         overflow: "hidden",
-        ...(cursor.style === "hollow" ? { borderWidth: 1, borderColor: look.cursor } : { backgroundColor: look.cursor }),
+        ...(cursor.style === "hollow" ? { borderWidth: SPACE.px, borderColor: look.cursor } : { backgroundColor: look.cursor }),
       }}
     >
       {under && (
@@ -190,7 +197,7 @@ function TerminalCursor({ screen, cell, look }: { screen: Screen; cell: Cell; lo
               fontSize: cell.fontSize,
               lineHeight: cell.height,
               color: color(under.span.bg === undefined ? "bg" : under.span.bg, look, look.ground),
-              fontWeight: under.span.b ? "bold" : "normal",
+              fontWeight: under.span.b ? WEIGHT.bold : WEIGHT.regular,
               fontStyle: under.span.i ? "italic" : "normal",
             }}
           >
@@ -206,12 +213,21 @@ function TerminalCursor({ screen, cell, look }: { screen: Screen; cell: Cell; lo
 function ScrollBar({ scroll, track, color: ink }: { scroll: readonly [number, number, number]; track: number; color: string }) {
   const [total, offset, len] = scroll;
   if (total <= 0 || track <= 0) return null;
-  const height = Math.max((len / total) * track, 16);
+  const height = Math.max((len / total) * track, SCROLL_BAR.least);
   const top = Math.min((offset / total) * track, track - height);
   return (
     <View
       testID="terminal-scrollbar"
-      style={{ position: "absolute", right: 2, top: GRID_TOP + top, width: 4, height, borderRadius: 2, backgroundColor: ink, opacity: 0.5 }}
+      style={{
+        position: "absolute",
+        right: SCROLL_BAR.inset,
+        top: GRID_TOP + top,
+        width: SCROLL_BAR.width,
+        height,
+        borderRadius: pill(SCROLL_BAR.width),
+        backgroundColor: ink,
+        opacity: OPACITY.half,
+      }}
     />
   );
 }

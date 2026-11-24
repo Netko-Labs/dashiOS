@@ -4,11 +4,12 @@
  * tall as its words, and what is drawn here sits where the field leaves room
  * for it), with the things a text field cannot draw in their places: a
  * table as a table, a rule as a line, a code block's panel, a quote's bar.
- * A probe at 100 px tells how tall a line is for its size, so a table's rows
- * in the field can be sized to the drawn table's height.
+ * A probe at the figure's size tells how tall a line is for each px of its
+ * size, so a table's rows in the field can be sized to the drawn table's
+ * height.
  */
 
-import { type Palette, useColors } from "@dashi/ui";
+import { CLEAR, type Palette, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactElement, useMemo } from "react";
 import { TASK_BOX, type Table, TableView } from "../../../../src/shared/markdown/index.ts";
@@ -18,11 +19,14 @@ import { BODY_SIZE } from "../sizes.ts";
 /** About the width of a letter of the body, for a column's least width. */
 const LETTER = 7.6;
 
-const CLEAR = "#00000000";
+/** The probe's size: any size measures the factor; a large one measures it finely. Never shown (no ink). */
+const PROBE = TYPE.figure.size;
+/** A quote's bar: 3 wide, at a thumbnail's radius, a quote's inset left of the words. */
+const QUOTE_BAR = { width: 3, inset: SPACE.inset } as const;
 
 /** A paragraph's words, in no ink, as the field lays them out. */
 function Line({ para, text }: { para: Para; text: string }) {
-  return <Text style={{ fontSize: para.size, fontWeight: para.bold ? "bold" : "normal", color: CLEAR }}>{text === "" ? " " : text}</Text>;
+  return <Text style={{ fontSize: para.size, fontWeight: para.bold ? WEIGHT.bold : WEIGHT.regular, color: CLEAR }}>{text === "" ? " " : text}</Text>;
 }
 
 /** A cell's words as drawn: its Markdown's markers gone, a box as a box. */
@@ -37,8 +41,8 @@ function NoteTable({ table, onHeight }: { table: Table; onHeight: (height: numbe
 function Backed({ children, colors, kind }: { children: ReactElement[] | ReactElement; colors: Palette; kind: "code" | "quote" }) {
   const back =
     kind === "code"
-      ? { left: -8, right: -8, top: 0, bottom: 0, borderRadius: 6, backgroundColor: colors.button }
-      : { left: -12, top: 1, bottom: 1, width: 3, borderRadius: 2, backgroundColor: colors.separator };
+      ? { left: -SPACE.m, right: -SPACE.m, top: 0, bottom: 0, borderRadius: RADIUS.row, backgroundColor: colors.button }
+      : { left: -QUOTE_BAR.inset, top: SPACE.px, bottom: SPACE.px, width: QUOTE_BAR.width, borderRadius: RADIUS.thumb, backgroundColor: colors.separator };
   return (
     <View style={{ position: "relative", flexDirection: "column" }}>
       <View style={{ position: "absolute", ...back }} />
@@ -108,8 +112,8 @@ export function PageUnder({
       onLayout={(bounds) => onHeight(bounds.height)}
       style={{ position: "absolute", left: 0, top: 0, right: 0, flexDirection: "column" }}
     >
-      <View onLayout={(bounds) => onLineFactor(bounds.height / 100)} style={{ position: "absolute", left: 0, top: 0, opacity: 0 }}>
-        <Text style={{ fontSize: 100, color: CLEAR }}> </Text>
+      <View onLayout={(bounds) => onLineFactor(bounds.height / PROBE)} style={{ position: "absolute", left: 0, top: 0, opacity: 0 }}>
+        <Text style={{ fontSize: PROBE, color: CLEAR }}> </Text>
       </View>
       {children}
     </View>

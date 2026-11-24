@@ -19,6 +19,12 @@ export interface SheetProps {
   onCancel?: () => void;
   /** Enter, when the sheet has no field of its own to type into. */
   onConfirm?: () => void;
+  /** A tall sheet's height (the file chooser's): shorter when the window is, SHEET_MARGIN from its foot. */
+  height?: number;
+  /** The card as the window's ground with no padding: a sheet laid out like a window inside (the file chooser). */
+  bare?: boolean;
+  /** What screen readers call it when no heading in it does (the chooser, whose title's place is the path). */
+  label?: string;
   /**
    * `window` (the default): hung from the top of its window over the scrim.
    * `screen`: a shell sheet with no window to hang from (polkit, the power
@@ -55,9 +61,26 @@ export function sheetBodyRoom(windowHeight: number, top: number, rest: number): 
  * shadow): `Sheet` hangs one from a window; a surface of its own (the
  * shell's applet consent) shows one with no window to hang from.
  */
-export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { children: ReactNode; testID: string; width?: number; marginTop?: number }) {
+export function SheetCard({
+  children,
+  testID,
+  width = 380,
+  marginTop = 0,
+  height,
+  bare = false,
+  label,
+}: {
+  children: ReactNode;
+  testID: string;
+  width?: number;
+  marginTop?: number;
+  height?: number;
+  bare?: boolean;
+  label?: string;
+}) {
   const colors = useColors();
   const surface = useSurface();
+  const tall = height !== undefined ? { height, flexShrink: 1 as const, minHeight: 0 } : {};
   return (
     <View
       testID={testID}
@@ -65,14 +88,15 @@ export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { ch
       // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
       focusTrap
       accessibilityRole="dialog"
+      {...(label !== undefined ? { accessibilityLabel: label } : {})}
       style={{
         width,
         marginTop,
+        ...tall,
         flexDirection: "column",
-        gap: 10,
-        padding: 20,
+        ...(bare ? { overflow: "hidden" as const } : { gap: 10, padding: 20 }),
         borderRadius: 12,
-        backgroundColor: surface.card,
+        backgroundColor: bare ? surface.window : surface.card,
         borderWidth: 1,
         borderColor: colors.separator,
         shadow: "xl",
@@ -119,7 +143,7 @@ export function Sheet(props: SheetProps) {
   return props.place === "screen" ? <ScreenSheet {...props} /> : <WindowSheet {...props} />;
 }
 
-function WindowSheet({ children, testID, width = 380, onCancel, onConfirm, hang }: SheetProps) {
+function WindowSheet({ children, testID, width = 380, onCancel, onConfirm, hang, height, bare, label }: SheetProps) {
   const colors = useColors();
   const dark = useDark();
   const inset = useTitleBarInset();
@@ -142,12 +166,20 @@ function WindowSheet({ children, testID, width = 380, onCancel, onConfirm, hang 
         bottom: 0,
         flexDirection: "column",
         alignItems: "center",
+        ...(height !== undefined ? { paddingBottom: SHEET_MARGIN } : {}),
         backgroundColor: dark ? SCRIM.dark : SCRIM.light,
         focusRingColor: colors.focusRing,
       }}
     >
       <SheetKeys testID={testID} onCancel={onCancel} onConfirm={onConfirm} />
-      <SheetCard testID={testID} width={sheetWidth(width, room)} marginTop={Math.max(hang ?? inset.top, 0) + 8}>
+      <SheetCard
+        testID={testID}
+        width={sheetWidth(width, room)}
+        marginTop={Math.max(hang ?? inset.top, 0) + 8}
+        {...(height !== undefined ? { height } : {})}
+        bare={bare === true}
+        {...(label !== undefined ? { label } : {})}
+      >
         {children}
       </SheetCard>
     </View>

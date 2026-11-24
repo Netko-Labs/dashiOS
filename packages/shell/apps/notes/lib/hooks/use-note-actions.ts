@@ -8,6 +8,7 @@ import type { MenuItem } from "@dashi/ui";
 import { DEFAULT_FOLDER_NAME } from "../../../../src/shared/notes/index.ts";
 import type { FormatCommand } from "../formats.ts";
 import type { Row } from "../list.ts";
+import { NOTE_KEYS } from "../menus.ts";
 import type { NotesModel } from "../model.ts";
 import type { NotesData } from "./use-notes-data.ts";
 import type { Overlays } from "./use-overlays.ts";
@@ -63,7 +64,7 @@ export function useNoteActions({
         : [
             { label: target.pinned ? "Unpin Note" : "Pin Note", onPress: () => model.togglePin(target.id) },
             ...moveItems(target.id, target.folder),
-            { label: "Delete", onPress: () => model.trashSelected() },
+            { label: "Delete", keys: NOTE_KEYS.deleteNote, onPress: () => model.trashSelected() },
           ],
     });
   };

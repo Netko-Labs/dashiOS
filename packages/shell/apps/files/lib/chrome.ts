@@ -1,6 +1,6 @@
 /**
  * How Files' window gives way as it narrows (review 54): the sidebar becomes
- * a rail of glyphs first, then New Folder (and the Trash's Empty) leave the
+ * the kit's rail of glyphs first (LA-5, `SIDEBAR.rail`), then New Folder (and the Trash's Empty) leave the
  * toolbar for its "…" menu, which already holds them. Back, Forward, the
  * view switch and "…" stay whole at every width; the omnibox takes what is
  * left and folds its path (omnibox.tsx). Pure.
@@ -10,8 +10,6 @@
 export const RAIL_BELOW = 560;
 /** Below this window width New Folder and Empty go into the toolbar's "…" menu. */
 export const COMPACT_BELOW = 480;
-/** The rail's width: a 16 px glyph in a 36 px row, 10 either side. */
-export const RAIL_WIDTH = 56;
 
 export interface WindowChrome {
   /** The sidebar shows only its glyphs, its names as tooltips. */

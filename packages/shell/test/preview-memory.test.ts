@@ -153,12 +153,14 @@ describe("the bare keys", () => {
     expect(keyAction(key("end"), true)).toEqual({ kind: "end", direction: 1 });
   });
 
-  test("among pictures every arrow steps; letters do nothing; chords are the menus'", () => {
+  test("among pictures every arrow steps; letters and a bare ⌫ do nothing; chords are the menus'", () => {
     expect(keyAction(key("up"), false)).toEqual({ kind: "step", direction: -1 });
     expect(keyAction(key("left"), false)).toEqual({ kind: "step", direction: -1 });
     expect(keyAction(key("f"), false)).toBeNull();
     expect(keyAction(key("0"), false)).toBeNull();
     expect(keyAction({ ...key("c"), meta: true }, true)).toBeNull();
-    expect(keyAction(key("backspace"), false)).toEqual({ kind: "trash" });
+    // Move to Trash is ❖⌫, File's row: a stray ⌫ never moves a file.
+    expect(keyAction(key("backspace"), false)).toBeNull();
+    expect(keyAction({ ...key("backspace"), meta: true }, false)).toBeNull();
   });
 });

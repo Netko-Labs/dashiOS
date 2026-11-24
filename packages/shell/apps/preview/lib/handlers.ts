@@ -11,6 +11,9 @@ import { join } from "node:path";
 import { dataDirs, entryIcon, parseDesktopEntry, resolvePinned } from "../../../src/shared/apps/index.ts";
 import { runTool } from "./tools.ts";
 
+/** How long each helper may take (ms): timers, not motion. */
+const TIMERS = { mime: 5000, launch: 10_000, trash: 15_000 } as const;
+
 export interface Handler {
   /** `org.gnome.Loupe.desktop`. */
   id: string;
@@ -52,7 +55,7 @@ export function findDesktopFile(id: string, dirs: readonly string[] = dataDirs()
 /** The apps for a MIME type, named, the default marked; `skip` leaves out an id (Preview itself). */
 export async function handlersFor(mime: string, skip: readonly string[] = []): Promise<Handler[]> {
   if (!/^[a-z]+\/[a-z0-9.+-]+$/i.test(mime)) return [];
-  const result = await runTool(["gio", "mime", mime], { timeoutMs: 5000 });
+  const result = await runTool(["gio", "mime", mime], { timeoutMs: TIMERS.mime });
   if (!result.ok) return [];
   const ids = parseGioMime(result.stdout);
   const defaultId = /^Default application for [^:\n]*:\s*(\S+)\s*$/m.exec(result.stdout)?.[1];
@@ -77,18 +80,18 @@ export async function handlersFor(mime: string, skip: readonly string[] = []): P
 /** Open `path` with a handler. True when the launcher accepted it. */
 export async function openWith(handler: Handler, path: string): Promise<boolean> {
   if (!path.startsWith("/")) return false;
-  return (await runTool(["gio", "launch", handler.file, path], { timeoutMs: 10_000, untilExit: true })).ok;
+  return (await runTool(["gio", "launch", handler.file, path], { timeoutMs: TIMERS.launch, untilExit: true })).ok;
 }
 
 /** Open the folder in the default file manager (`gio open`). */
 export async function showInFiles(dir: string): Promise<boolean> {
   if (!dir.startsWith("/")) return false;
-  return (await runTool(["gio", "open", dir], { timeoutMs: 10_000, untilExit: true })).ok;
+  return (await runTool(["gio", "open", dir], { timeoutMs: TIMERS.launch, untilExit: true })).ok;
 }
 
 /** Move a file to the Trash (`gio trash`). The error text when it failed, else null. */
 export async function moveToTrash(path: string): Promise<string | null> {
   if (!path.startsWith("/")) return "Not an absolute path.";
-  const result = await runTool(["gio", "trash", path], { timeoutMs: 15_000 });
+  const result = await runTool(["gio", "trash", path], { timeoutMs: TIMERS.trash });
   return result.ok ? null : result.stderr.replace(/^gio:\s*/, "").trim() || "The file could not be moved to the Trash.";
 }

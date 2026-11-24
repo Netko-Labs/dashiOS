@@ -15,7 +15,7 @@ import { FilesStore } from "../../src/shared/file-browser/store.ts";
 import { runApp } from "../kit/index.ts";
 import { parseArgs } from "./lib/args.ts";
 import { startFrom } from "./lib/start-from.ts";
-import { FILES_SIZE, FilesWindow } from "./lib/views/view.tsx";
+import { FILES_LEAST, FILES_SIZE, FilesWindow } from "./lib/views/view.tsx";
 
 const kind = (path: string): boolean | null => {
   try {
@@ -38,7 +38,7 @@ if (import.meta.main) {
   const searchFor = process.env.DASHI_FILES_SEARCH?.trim();
   if (searchFor) store.setQuery(searchFor);
   runApp(
-    { id: "dev.dashi.files", title: "Files", size: FILES_SIZE, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST },
+    { id: "dev.dashi.files", title: "Files", size: FILES_SIZE, minSize: FILES_LEAST, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST },
     <FilesWindow store={store} ops={ops} {...(args.info && start.select[0] ? { info: start.select[0] } : {})} />,
   );
 }

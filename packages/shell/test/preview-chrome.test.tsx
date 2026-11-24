@@ -3,12 +3,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { titleWidth } from "../apps/preview/lib/fold.ts";
 import { Viewer } from "../apps/preview/lib/viewer.ts";
-import { InfoSheet } from "../apps/preview/lib/views/sheets.tsx";
-import { EmptyView, RECENT_FOLDER_WIDTH } from "../apps/preview/lib/views/states.tsx";
+import { EmptyView, RECENTS, shortFolder } from "../apps/preview/lib/views/states.tsx";
 import { STRIP } from "../apps/preview/lib/views/strip.tsx";
 import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
+import { InfoSheet } from "../src/shared/file-browser/file-sheets.tsx";
 import { settle } from "./support/time.ts";
 
 // Preview's chrome as the layout audit found it: the strip gives a narrow window to the picture, the name gives
@@ -105,8 +104,10 @@ test("the name gives way before a tool folds, and “…” lists what folded in
   await settle();
   for (const id of ["previous", "next", "zoom-out", "zoom-in", "fit", "actual", "rotate-left", "rotate-right", "info", "more"])
     expect(root.nodeId(id)).toBeDefined();
-  const title = find(tree(), root.nodeId("title"));
-  expect(Number(title?.props.maxWidth)).toBeLessThan(titleWidth(name));
+  // The name is the kit's WindowTitle (VS-2, VS-8), the tools after it; it gives way inside it, not before a tool.
+  const title = find(tree(), root.nodeId("window-title"));
+  expect(JSON.stringify(title)).toContain(name);
+  expect(JSON.stringify(title)).toContain(`"id":"${root.nodeId("rotate-left")}"`);
   // Narrower: tools fold; "…" lists them, then a line, then the file's commands.
   emit({ type: "resize", nodeId: node("toolbar-room"), bounds: { x: 218, y: 0, width: 400, height: 38 } });
   await settle();
@@ -138,12 +139,15 @@ test("an Info row's value grows the row: it takes a share of the row from a zero
   root.unmount();
 });
 
-test("a recent row keeps its folder: the name gives way, the folder never shrinks to nothing", async () => {
-  const path = join(dir, "Alex Kim - sunset over the Tagus river from Miradouro da Graça.jpg");
+test("a recent row keeps its folder: the name is the pick row's, the folder a short detail it never loses", async () => {
+  const name = "Alex Kim - sunset over the Tagus river from Miradouro da Graça.jpg";
+  const path = join(dir, name);
   const { root, tree } = mount(() => <EmptyView recents={[{ path, openedMs: 0 }]} onOpen={() => {}} onRecent={() => {}} />);
   await settle();
-  const folder = find(tree(), root.nodeId("recent-folder:Alex Kim - sunset over the Tagus river from Miradouro da Graça.jpg"));
-  expect(folder?.props.shrink).toBe(false);
-  expect(folder?.props.maxWidth).toBe(RECENT_FOLDER_WIDTH);
+  const row = find(tree(), root.nodeId(`recent:${name}`));
+  expect(JSON.stringify(row)).toContain(shortFolder(path));
+  expect(shortFolder(path).length).toBeLessThanOrEqual(RECENTS.folderChars + 2);
+  expect(shortFolder("/home/alexk/Pictures/a.png", "/home/alexk")).toBe("~/Pictures");
+  expect(shortFolder("/home/alexk/Pictures/Trips/2026/Lisbon trip/a.png", "/home/alexk")).toBe("…/Lisbon trip");
   root.unmount();
 });

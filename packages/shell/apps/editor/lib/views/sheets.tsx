@@ -1,14 +1,14 @@
 /**
- * Text Editor's sheets: Revert To… (the file's earlier versions,
- * versions.ts), the question when the file changed on disk meanwhile, Go to
- * Line, and Find and Replace. Drawn inside the window by the kit's Sheet; the
- * questions in the one alert frame (UI-5). Open and Save As are Files'
+ * Text Editor's sheets: Revert To… (the file's earlier versions, as pick
+ * rows, versions.ts), the question when the file changed on disk meanwhile,
+ * Go to line, and Find and replace. The questions are the one alert frame
+ * (UI-5), the forms the kit's FormSheet (UI-15). Open and Save As are Files'
  * chooser (src/shared/file-browser/).
  */
 
-import { AlertSheet, Button, RESTART, rowLook, SelectionBar, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
+import { AlertSheet, FormSheet, PickList, PickRow, RESTART, SPACE, TextField, TYPE, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { Conflict } from "../state.ts";
 import { type Version, versionKindLabel, versionWhen } from "../versions.ts";
 
@@ -26,6 +26,13 @@ export type SheetState =
  * the list, how the picked one differs from the text now. Reverting is one
  * Undo step, so it doesn't warn.
  */
+/** The versions list's height before it scrolls, and a field's label column in Find and replace. */
+const VERSIONS_HEIGHT = 220;
+const LABEL_WIDTH = 64;
+/** The form sheets' widths. */
+const GO_TO_LINE_WIDTH = 300;
+const REPLACE_WIDTH = 400;
+
 export function VersionsSheet({
   name,
   versions,
@@ -58,38 +65,25 @@ export function VersionsSheet({
         { label: "Revert", testID: "versions:revert", kind: "primary", disabled: !version, onPress: () => version && onRevert(version) },
       ]}
     >
-      <View focusGroup selectsOnFocus testID="versions:list" style={{ flexDirection: "column", gap: 1, maxHeight: 220, overflow: "scroll" }}>
-        {versions.map((each, index) => {
-          const look = rowLook(colors, index === picked);
-          const kind = versionKindLabel(each.kind);
-          return (
-            <View
-              key={`${each.time}-${each.kind}`}
-              testID={`versions:${index}`}
-              focusable
-              accessibilityRole="option"
-              accessibilityState={{ selected: index === picked }}
-              onPress={() => setPicked(index)}
-              style={{
-                position: "relative",
-                flexDirection: "row",
-                alignItems: "center",
-                height: 28,
-                paddingHorizontal: 10,
-                borderRadius: 6,
-                backgroundColor: look.ground,
-                hoverBackgroundColor: look.hover,
-              }}
-            >
-              {index === picked && <SelectionBar rowHeight={28} />}
-              <Text style={{ fontSize: 13, color: look.ink }}>{versionWhen(each.time, now)}</Text>
-              <View style={{ flex: 1 }} />
-              {kind !== null && <Text style={{ fontSize: 12, color: look.quiet }}>{kind}</Text>}
-            </View>
-          );
-        })}
+      <View style={{ maxHeight: VERSIONS_HEIGHT, overflow: "scroll" }}>
+        {/* Pick rows (UI-13): ↑ ↓ choose, and a press on the chosen one (or Return) reverts to it. */}
+        <PickList testID="versions:list">
+          {versions.map((each, index) => {
+            const kind = versionKindLabel(each.kind);
+            return (
+              <PickRow
+                key={`${each.time}-${each.kind}`}
+                testID={`versions:${index}`}
+                label={versionWhen(each.time, now)}
+                {...(kind !== null ? { detail: kind } : {})}
+                chosen={index === picked}
+                onPress={() => (index === picked ? onRevert(each) : setPicked(index))}
+              />
+            );
+          })}
+        </PickList>
       </View>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
         {version ? describe(version) : "No earlier versions yet: one is kept the first time the file is saved over."}
       </Text>
     </AlertSheet>
@@ -120,7 +114,7 @@ export function ConflictSheet({
     <AlertSheet
       testID="conflict"
       width={440}
-      question={changed ? `“${name}” was changed by another app.` : `“${name}” isn't where it was any more.`}
+      question={changed ? `“${name}” was changed by another app.` : `“${name}” isn’t where it was any more.`}
       message={
         changed
           ? "Keep your version, or use the one on disk? Edit › Undo brings yours back after using the one on disk."
@@ -131,15 +125,15 @@ export function ConflictSheet({
       buttons={[
         ...(closing ? [{ label: "Cancel", testID: "conflict:cancel", cancel: true, onPress: onCancel }] : []),
         changed
-          ? { label: "Use the One on Disk", testID: "conflict:disk", onPress: onUseDisk }
-          : { label: "Save As…", testID: "conflict:save-as", onPress: onSaveAs },
-        { label: changed ? "Keep Mine" : "Save It There", testID: "conflict:mine", kind: "primary", onPress: onKeepMine },
+          ? { label: "Use the one on disk", testID: "conflict:disk", onPress: onUseDisk }
+          : { label: "Save as…", testID: "conflict:save-as", onPress: onSaveAs },
+        { label: changed ? "Keep mine" : "Save it there", testID: "conflict:mine", kind: "primary", onPress: onKeepMine },
       ]}
     />
   );
 }
 
-/** Go to Line: a line number, the text's last line at most. */
+/** Go to line: a line number, the text's last line at most. A form sheet (UI-15); its field takes Return and Esc. */
 export function GoToLineSheet({ lines, onGo, onCancel }: { lines: number; onGo: (line: number) => void; onCancel: () => void }) {
   const colors = useColors();
   const [input, setInput] = useState("");
@@ -149,15 +143,32 @@ export function GoToLineSheet({ lines, onGo, onCancel }: { lines: number; onGo: 
     if (line !== null && valid) onGo(Math.min(line, lines));
   };
   return (
-    <Sheet testID="go-to-line" width={300} onCancel={onCancel}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Go to Line</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{`A line from 1 to ${lines.toLocaleString("en-US")}.`}</Text>
+    <FormSheet
+      testID="go-to-line"
+      title="Go to line"
+      width={GO_TO_LINE_WIDTH}
+      keys={false}
+      buttons={[
+        { label: "Cancel", testID: "go-to-line:cancel", cancel: true, onPress: onCancel },
+        { label: "Go", testID: "go-to-line:ok", kind: "primary", disabled: !valid, onPress: go },
+      ]}
+    >
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{`A line from 1 to ${lines.toLocaleString("en-US")}.`}</Text>
       <TextField testID="go-to-line:line" value={input} onChangeText={setInput} autoFocus onSubmit={go} onKeyPress={(key) => key === "Escape" && onCancel()} />
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="go-to-line:cancel" onPress={onCancel} />
-        <Button label="Go" testID="go-to-line:ok" primary disabled={!valid} onPress={go} />
+    </FormSheet>
+  );
+}
+
+/** A labelled field in Find and replace: its label in the column before it. */
+function Labelled({ label, children }: { label: string; children: ReactNode }) {
+  const colors = useColors();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap }}>
+      <View style={{ width: LABEL_WIDTH }}>
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, textAlign: "right" }}>{label}</Text>
       </View>
-    </Sheet>
+      {children}
+    </View>
   );
 }
 
@@ -191,12 +202,18 @@ export function ReplaceSheet({
     if (key === "Escape") onCancel();
   };
   return (
-    <Sheet testID="replace" width={400} onCancel={onCancel}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Find and Replace</Text>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <View style={{ width: 64 }}>
-          <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "right" }}>Find</Text>
-        </View>
+    <FormSheet
+      testID="replace"
+      title="Find and replace"
+      width={REPLACE_WIDTH}
+      keys={false}
+      footer={<Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{status}</Text>}
+      buttons={[
+        { label: "Done", testID: "replace:done", cancel: true, onPress: onCancel },
+        { label: "Replace all", testID: "replace:all", kind: "primary", disabled: query === "" || matches === 0, onPress: replace },
+      ]}
+    >
+      <Labelled label="Find">
         <TextField
           testID="replace:find"
           value={query}
@@ -207,11 +224,8 @@ export function ReplaceSheet({
           }}
           onKeyPress={escape}
         />
-      </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <View style={{ width: 64 }}>
-          <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "right" }}>Replace</Text>
-        </View>
+      </Labelled>
+      <Labelled label="Replace">
         <TextField
           testID="replace:with"
           value={replacement}
@@ -222,13 +236,7 @@ export function ReplaceSheet({
           onSubmit={replace}
           onKeyPress={escape}
         />
-      </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>{status}</Text>
-        <View style={{ flex: 1 }} />
-        <Button label="Done" testID="replace:done" onPress={onCancel} />
-        <Button label="Replace All" testID="replace:all" primary disabled={query === "" || matches === 0} onPress={replace} />
-      </View>
-    </Sheet>
+      </Labelled>
+    </FormSheet>
   );
 }

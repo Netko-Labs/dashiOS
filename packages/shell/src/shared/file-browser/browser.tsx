@@ -9,12 +9,13 @@
  * does beyond moving (`onKey`): Files opens and trashes, a chooser answers.
  */
 
-import { Button, EmptyState, glyphs, Loading, useColors, useShownAfter } from "@dashi/ui";
+import { Button, EmptyState, ErrorState, Loading, NoResults, RADIUS, SPACE, useColors, useShownAfter } from "@dashi/ui";
 import { View, type WindowKeyInfo } from "@mirinjs/metal";
 import { useContext, useSyncExternalStore } from "react";
 import { Surface } from "../metal/index.ts";
 import { useFiles, useFilesState } from "./context.ts";
-import { useDropTarget } from "./drop.ts";
+import { dropLook, useDropTarget } from "./drop.ts";
+import { sidebarGlyph } from "./glyphs.ts";
 import { type BrowserKey, browserKey } from "./keys.ts";
 import { marqueeOf } from "./lib/marquee/of.ts";
 import { reveal } from "./lib/marquee/reveal.ts";
@@ -23,37 +24,42 @@ import { ListView } from "./lib/views/list.tsx";
 import { folderAt } from "./location.ts";
 import type { FilesStore } from "./store.ts";
 
-function Empty({ store }: { store: FilesStore }) {
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  // A folder that takes a moment shows the spinner after 200 ms (PA-5).
+/**
+ * What the listing says when it has nothing to show (PA-5 to PA-7, PA-17): a
+ * folder still loading or a search still running is the spinner after 200
+ * ms; a folder that can't be shown is an error state (ume) with its way on;
+ * a search that found nothing is "No results"; an empty place names itself,
+ * with what the person can do there.
+ */
+function ListingState() {
+  const { store, ops } = useFiles();
+  const state = useFilesState();
   if (state.loading) return <Loading testID="empty" />;
   if (state.error) {
     return (
-      <EmptyState
+      <ErrorState
         testID="empty"
-        title="This folder can’t be shown"
+        title="This folder can’t be shown."
         message={state.error}
-        glyph={glyphs.WARNING}
-        action={<Button label="Go to Home" testID="empty:home" onPress={() => store.go(folderAt(store.env.home))} />}
+        actions={<Button label="Go to Home" testID="empty:home" onPress={() => store.go(folderAt(store.env.home))} />}
       />
     );
   }
-  if (state.found !== null)
-    return state.searching ? (
-      <EmptyState testID="empty" title="Searching…" />
-    ) : (
-      <EmptyState testID="empty" title="No results" message={`Nothing named “${state.query.trim()}”.`} glyph={glyphs.SEARCH} />
-    );
-  if (state.location.kind === "trash") return <EmptyState testID="empty" title="The Trash is empty" />;
-  if (state.location.kind === "recents") return <EmptyState testID="empty" title="No recent files" message="Files you open will show up here." />;
+  if (state.found !== null) return state.searching ? <Loading testID="empty" label="Searching…" /> : <NoResults testID="empty" query={state.query} />;
+  if (state.location.kind === "trash") return <EmptyState testID="empty" glyph={sidebarGlyph("trash")} title="The Trash is empty" />;
+  if (state.location.kind === "recents") {
+    return <EmptyState testID="empty" glyph={sidebarGlyph("recents")} title="No recent files" message="Files you open will show up here." />;
+  }
   // A chooser that shows only some things (folders, a kind of file): this folder has none of them, but it isn't empty.
   const keptOut = store.keptOut();
-  if (keptOut) return <EmptyState testID="empty" title={keptOut} />;
+  if (keptOut) return <EmptyState testID="empty" glyph={sidebarGlyph("folder")} title={keptOut} />;
+  const hidden = !state.showHidden && state.items.some((item) => item.hidden);
   return (
     <EmptyState
       testID="empty"
+      glyph={sidebarGlyph("folder")}
       title="This folder is empty"
-      message={state.showHidden || !state.items.some((item) => item.hidden) ? undefined : "Hidden files are not shown."}
+      message={hidden ? "Hidden files are not shown." : ops === null ? undefined : "Drop files here, or press ⇧❖N for a new folder."}
     />
   );
 }
@@ -118,9 +124,9 @@ function MarqueeRect({ store }: { store: FilesStore }) {
         width: rect.width,
         height: rect.height,
         backgroundColor: colors.selectionWash,
-        borderWidth: 1,
+        borderWidth: SPACE.px,
         borderColor: colors.selection,
-        borderRadius: 2,
+        borderRadius: RADIUS.thumb,
       }}
     />
   );
@@ -140,7 +146,7 @@ export function Listing({ onBackgroundMenu }: ListingProps) {
   // The last place's items stay up while this one loads, then give way to "Loading…".
   const waited = useShownAfter(store.stale);
   const items = waited ? [] : store.visible();
-  const empty = <Empty store={store} />;
+  const empty = <ListingState />;
   const marquee = marqueeOf(store);
   // The window says whether its host tells where the listing is scrolled; without that nothing is dragged out.
   marquee.surface = useContext(Surface);
@@ -156,7 +162,7 @@ export function Listing({ onBackgroundMenu }: ListingProps) {
         actions.refocus();
       }}
       {...(onBackgroundMenu ? { onContextMenu: onBackgroundMenu } : {})}
-      style={{ flex: 1, minHeight: 0, ...(drop.over ? { borderWidth: 2, borderColor: colors.selection, borderRadius: 4 } : {}) }}
+      style={{ flex: 1, minHeight: 0, ...dropLook(colors, drop.over, RADIUS.check) }}
     >
       {state.view === "icons" ? <Grid items={items} empty={empty} /> : <ListView items={items} empty={empty} />}
       <MarqueeRect store={store} />

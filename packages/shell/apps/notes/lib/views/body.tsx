@@ -10,8 +10,8 @@
  * When the body is not being edited, every block is drawn.
  */
 
-import { useColors } from "@dashi/ui";
-import { TextInput, View } from "@mirinjs/metal";
+import { EditableText, SPACE, useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Lines, revealedLines } from "../blocks.ts";
 import { findMatches } from "../find.ts";
@@ -140,7 +140,7 @@ export function Page(props: PageProps) {
           onMeasured();
         }}
       />
-      <TextInput
+      <EditableText
         key={props.fieldKey}
         testID="body"
         multiline
@@ -171,12 +171,9 @@ export function Page(props: PageProps) {
         onShiftTab={() => readOnly || outdent(body, selection, onChange, onSelection)}
         style={{
           width: "100%",
-          height: Math.max(props.minHeight, Math.ceil(measured) + 4),
+          height: Math.max(props.minHeight, Math.ceil(measured) + SPACE.xs),
           fontSize: BODY_SIZE,
           padding: 0,
-          color: colors.text,
-          placeholderColor: colors.textDisabled,
-          backgroundColor: "#00000000",
         }}
       />
     </View>

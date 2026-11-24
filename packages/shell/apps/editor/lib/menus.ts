@@ -125,7 +125,7 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
         { id: "paste", label: "Paste", shortcut: "❖V" },
         { id: "select-all", label: "Select All", shortcut: "❖A" },
         { type: "separator" },
-        { id: "find", label: "Find…", shortcut: "❖F" },
+        { id: "find", label: "Find", shortcut: "❖F" },
         { id: "find-next", label: "Find Next", shortcut: "❖G", enabled: context.hasMatches },
         { id: "find-previous", label: "Find Previous", shortcut: "⇧❖G", enabled: context.hasMatches },
         { id: "replace", label: "Find and Replace…" },

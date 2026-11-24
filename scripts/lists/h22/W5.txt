@@ -1,23 +1,2 @@
 # H22 (scripts/check-design-kit.ts): controls drawn outside @dashi/ui, per file. Shrink-only: move each
 # onto the kit's control (UI-1, UI-8 to UI-15), then `bun scripts/check-design-kit.ts --shrink`.
-1	packages/shell/apps/calculator/lib/display.tsx
-1	packages/shell/apps/calculator/lib/keypad.tsx
-1	packages/shell/apps/calculator/lib/tape.tsx
-1	packages/shell/apps/editor/lib/views/content.tsx
-1	packages/shell/apps/editor/lib/views/text-area.tsx
-3	packages/shell/apps/files/lib/omnibox/omnibox-editor.tsx
-1	packages/shell/apps/files/lib/omnibox/omnibox-field.tsx
-1	packages/shell/apps/files/lib/views/footer.tsx
-1	packages/shell/apps/notes/lib/views/body.tsx
-1	packages/shell/apps/notes/lib/views/note-page.tsx
-2	packages/shell/apps/notes/lib/views/sidebar.tsx
-1	packages/shell/apps/preview/lib/views/sheets.tsx
-1	packages/shell/apps/preview/lib/views/states.tsx
-1	packages/shell/apps/preview/lib/views/toolbar.tsx
-1	packages/shell/apps/terminal/lib/views/grid.tsx
-3	packages/shell/apps/terminal/lib/views/tab-strip.tsx
-1	packages/shell/src/shared/file-browser/chooser-view.tsx
-1	packages/shell/src/shared/file-browser/lib/views/grid.tsx
-2	packages/shell/src/shared/file-browser/lib/views/rename-field.tsx
-2	packages/shell/src/shared/file-browser/sidebar.tsx
-2	packages/shell/src/shared/file-browser/toolbar.tsx

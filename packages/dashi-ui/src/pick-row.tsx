@@ -25,12 +25,14 @@ export interface PickRowProps {
   icon?: string;
   /** A glyph instead of an icon. */
   glyph?: string;
+  /** An icon the caller draws (an app's, with its fallback), in the icon's 20 square. */
+  picture?: ReactNode;
   /** Muted words at the row's right: "Default", a size, a date. */
   detail?: string;
   disabled?: boolean;
 }
 
-export function PickRow({ label, chosen, onPress, testID, icon, glyph, detail, disabled }: PickRowProps) {
+export function PickRow({ label, chosen, onPress, testID, icon, glyph, picture, detail, disabled }: PickRowProps) {
   const colors = useColors();
   const look = rowLook(colors, chosen);
   return (
@@ -57,8 +59,9 @@ export function PickRow({ label, chosen, onPress, testID, icon, glyph, detail, d
       }}
     >
       {chosen && <SelectionBar rowHeight={PICK_ROW.height} />}
-      {icon !== undefined && <Image source={icon} style={{ width: PICK_ROW.icon, height: PICK_ROW.icon }} />}
-      {icon === undefined && glyph !== undefined && <Svg markup={glyph} size={PICK_ROW.glyph} color={look.glyph} />}
+      {picture !== undefined && <View style={{ width: PICK_ROW.icon, height: PICK_ROW.icon, flexShrink: 0 }}>{picture}</View>}
+      {picture === undefined && icon !== undefined && <Image source={icon} style={{ width: PICK_ROW.icon, height: PICK_ROW.icon }} />}
+      {picture === undefined && icon === undefined && glyph !== undefined && <Svg markup={glyph} size={PICK_ROW.glyph} color={look.glyph} />}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: chosen ? WEIGHT.semibold : WEIGHT.regular, color: look.ink }}>
           {label}

@@ -17,6 +17,9 @@ import { FdConnection, MessageType, type Received, variant } from "../../../src/
 import { requestPath } from "../../../src/shared/portal/index.ts";
 import { runTool } from "./tools.ts";
 
+/** How long CUPS may take (ms): timers, not motion. */
+const TIMERS = { ask: 5000, submit: 30_000 } as const;
+
 const PORTAL = "org.freedesktop.portal.Desktop";
 const PORTAL_PATH = "/org/freedesktop/portal/desktop";
 const PRINT = "org.freedesktop.portal.Print";
@@ -103,7 +106,7 @@ export async function printWithPortal(
 
 /** CUPS's default printer (`lpstat -d`), or null when there is none or no CUPS. */
 export async function defaultPrinter(): Promise<string | null> {
-  const result = await runTool(["lpstat", "-d"], { timeoutMs: 5000 });
+  const result = await runTool(["lpstat", "-d"], { timeoutMs: TIMERS.ask });
   return result.ok ? parseDefaultPrinter(result.stdout) : null;
 }
 
@@ -116,6 +119,6 @@ export function parseDefaultPrinter(stdout: string): string | null {
 /** Print `pdf` on `printer` through CUPS (`lp`); whether CUPS took the job. */
 export async function printWithCups(pdf: string, title: string, printer: string): Promise<boolean> {
   if (!pdf.startsWith("/")) return false;
-  const result = await runTool(["lp", "-d", printer, "-t", title.slice(0, 200), "--", pdf], { timeoutMs: 30_000 });
+  const result = await runTool(["lp", "-d", printer, "-t", title.slice(0, 200), "--", pdf], { timeoutMs: TIMERS.submit });
   return result.ok;
 }

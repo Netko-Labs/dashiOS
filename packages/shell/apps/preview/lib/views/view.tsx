@@ -19,6 +19,7 @@ import { useDropArea } from "../drop.ts";
 import { useActions } from "../hooks/use-actions.ts";
 import { useChrome } from "../hooks/use-chrome.ts";
 import { useKeys } from "../hooks/use-keys.ts";
+import { useNotices } from "../hooks/use-notice.ts";
 import { useToolbar } from "../hooks/use-toolbar.ts";
 import { useZoom } from "../hooks/use-zoom.ts";
 import { type KeyAction, keyAction } from "../keys.ts";
@@ -26,11 +27,14 @@ import { previewMenus } from "../menus.ts";
 import { usePictureView } from "../picture-view.ts";
 import type { Viewer } from "../viewer.ts";
 import { PreviewContent } from "./content.tsx";
+import { noticeView } from "./notice.tsx";
 import { windowOverlay } from "./overlay.tsx";
 import { hasStrip, PreviewSidebar } from "./sidebar.tsx";
 import { ToolbarRow } from "./toolbar.tsx";
 
 export const PREVIEW_SIZE = { width: 1000, height: 700 } as const;
+/** A drop target's edge (CO-9). */
+const DROP_EDGE = 2;
 /** The least the window gets: a picture, the name, Previous and Next, and "…" still fit (fold.ts). */
 export const PREVIEW_MIN_SIZE = { width: 360, height: 280 } as const;
 
@@ -48,8 +52,27 @@ function WindowKeys({ isPdf, onKey }: { isPdf: boolean; onKey: (action: KeyActio
   );
 }
 
-export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer; clipboard?: Clipboard; cacheDir?: string }) {
+/** What a drop would open into lights as the one drop look (CO-9): the wash under a 2 px edge, at the area's own square corners. */
+function DropTarget() {
   const colors = useColors();
+  return (
+    <View
+      testID="drop-target"
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.selectionWash,
+        borderWidth: DROP_EDGE,
+        borderColor: colors.selection,
+      }}
+    />
+  );
+}
+
+export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer; clipboard?: Clipboard; cacheDir?: string }) {
   const surface = useSurface();
   const [board] = useState<Clipboard>(() => clipboard ?? systemClipboard());
   const snap = useSyncExternalStore(viewer.subscribe, viewer.getSnapshot);
@@ -59,8 +82,9 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
   const doc = useDocument(viewer, snap.pdf, snap.turns, snap.path);
   const hasPicture = snap.picture !== null || (snap.pdf !== null && snap.phase === "ready");
   const { zoom, label: zoomLabel } = useZoom(snap.pdf, snap.picture, doc, pictureView);
-  const commands = useActions({ viewer, board, cacheDir, snap, doc, zoom, hasPicture, chrome });
-  const onKey = useKeys({ doc, step: commands.step, trash: commands.actions.trash });
+  const notices = useNotices();
+  const commands = useActions({ viewer, board, cacheDir, snap, doc, zoom, hasPicture, chrome, say: notices.say });
+  const onKey = useKeys({ doc, step: commands.step });
   const toolbar = useToolbar({ snap, page: doc.page, zoomLabel, zoom, commands, hasPicture, isPdf, chrome });
 
   // The menu bar's menus (src/app-menus/), with the keys they show.
@@ -100,6 +124,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
       sidebar={sidebarShown ? <PreviewSidebar snap={snap} doc={doc} viewer={viewer} width={chrome.sidebarWidth} /> : undefined}
       sidebarWidth={chrome.sidebarWidth}
       overlay={overlay}
+      notice={noticeView(notices)}
     >
       {chrome.sheet === null && chrome.menu === null && <WindowKeys isPdf={isPdf} onKey={onKey} />}
       <View
@@ -118,12 +143,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
           open={commands.actions.open}
           openRecent={commands.actions.openRecent}
         />
-        {drop.over && (
-          <View
-            testID="drop-target"
-            style={{ position: "absolute", left: 4, top: 4, right: 4, bottom: 4, borderWidth: 2, borderColor: colors.selection, borderRadius: 8 }}
-          />
-        )}
+        {drop.over && <DropTarget />}
       </View>
     </AppWindow>
   );

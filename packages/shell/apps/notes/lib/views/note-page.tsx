@@ -3,8 +3,8 @@
  * and its title.
  */
 
-import { type Palette, useColors } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { EditableText, type Palette, SPACE, TYPE } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { TITLE_SIZE } from "../sizes.ts";
 
@@ -15,7 +15,7 @@ export const GUTTER = 28;
 export function MetaLine({ text, colors }: { text: string; colors: Palette }) {
   return (
     <View testID="meta" style={{ flexShrink: 0 }}>
-      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted, textAlign: "center" }}>
         {text}
       </Text>
     </View>
@@ -41,10 +41,9 @@ export function Title({
   /** The title has the caret (a click, a key): the body is not being edited. */
   onCaret?: () => void;
 }) {
-  const colors = useColors();
   const [measured, setMeasured] = useState(0);
   const [refused, setRefused] = useState(0);
-  const height = Math.max(TITLE_SIZE + 12, Math.ceil(measured) + 4);
+  const height = Math.max(TITLE_SIZE + SPACE.inset, Math.ceil(measured) + SPACE.xs);
   return (
     <View style={{ position: "relative", flexShrink: 0, width: "100%", height }}>
       <View
@@ -54,7 +53,7 @@ export function Title({
       >
         <Text style={{ fontSize: TITLE_SIZE }}>{value === "" ? " " : value}</Text>
       </View>
-      <TextInput
+      <EditableText
         key={fieldKey}
         testID="title"
         multiline
@@ -74,9 +73,6 @@ export function Title({
           height,
           fontSize: TITLE_SIZE,
           padding: 0,
-          color: colors.text,
-          placeholderColor: colors.textDisabled,
-          backgroundColor: "#00000000",
         }}
       />
     </View>

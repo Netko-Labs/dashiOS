@@ -26,7 +26,8 @@ import { StoreSelection } from "./lib/store/store-selection.ts";
 import { StoreView } from "./lib/store/store-view.ts";
 import type { Location } from "./location.ts";
 import { DEFAULT_PREFS } from "./prefs.ts";
-import { type FilesState, initialState, NOTICE_FADE_MS, type SearchScope, type StoreHost, type StoreOptions, type ViewMode } from "./store-state.ts";
+import type { FilesState, SearchScope, StoreHost, StoreOptions, ViewMode } from "./store-state.ts";
+import { initialState, NOTICE_FADE_MS, VOLUMES_EVERY_MS } from "./store-state.ts";
 
 export class FilesStore implements StoreHost {
   private state: FilesState;
@@ -79,7 +80,7 @@ export class FilesStore implements StoreHost {
   start(): void {
     void this.loader.load();
     void this.refreshVolumes();
-    this.volumeTimer = setInterval(() => void this.refreshVolumes(), 4000);
+    this.volumeTimer = setInterval(() => void this.refreshVolumes(), VOLUMES_EVERY_MS);
   }
 
   stop(): void {

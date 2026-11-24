@@ -203,7 +203,7 @@ describe("a detail's Markdown table", () => {
     await launcher.type("");
     expect(launcher.has("launcher:detail:table")).toBe(true);
     // A detail longer than its room clips: the table keeps its height (it shrank to its borders in the VM).
-    expect(launcher.tree()).toMatch(/"id":"[^"]+","direction":"column"(,"width":\d+)?,"shrink":false[^}]*"cornerRadius":6/);
+    expect(launcher.tree()).toMatch(/"id":"[^"]+","direction":"column"(,"width":\d+)?,"shrink":false[^}]*"cornerRadius":5/);
     const drawn = launcher.tree();
     expect(drawn).toContain('"lint"');
     expect(drawn).toContain('"tests"');

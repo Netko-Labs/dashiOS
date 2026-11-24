@@ -93,7 +93,7 @@ test.skipIf(!hasTools)("a PDF is one surface: it opens to its width, scrolls wit
   await until(() => viewer.getSnapshot().pdf?.renders.has(1) === true);
   await settle();
   expect(root.nodeId("page:1")).toBeDefined();
-  expect(text("position")).toBe("1 / 3");
+  expect(text("position")).toBe("1 of 3");
   // To the width: the widest page fills it, less its margins.
   const scale = fitWidthScale(viewer.getSnapshot().pdf?.sizes ?? [], area.width);
   expect(text("zoom-level")).toBe(`${Math.round((scale / (96 / 72)) * 100)}%`);
@@ -106,20 +106,20 @@ test.skipIf(!hasTools)("a PDF is one surface: it opens to its width, scrolls wit
   if (!second) throw new Error("no second page");
   emit({ type: "wheel", nodeId: node("document"), dx: 0, dy: -(second.top + MARGIN) / 24 });
   await settle();
-  expect(text("position")).toBe("2 / 3");
+  expect(text("position")).toBe("2 of 3");
   await until(() => viewer.getSnapshot().pdf?.renders.has(2) === true);
 
   // → goes to the next page, Home to the top.
   emit({ type: "windowkey", nodeId: node("keys"), key: "right", ctrl: false, alt: false, shift: false, meta: false, repeat: false });
   await settle();
-  expect(text("position")).toBe("3 / 3");
+  expect(text("position")).toBe("3 of 3");
   emit({ type: "windowkey", nodeId: node("keys"), key: "home", ctrl: false, alt: false, shift: false, meta: false, repeat: false });
   await settle();
-  expect(text("position")).toBe("1 / 3");
+  expect(text("position")).toBe("1 of 3");
   // A click in the strip goes to that page.
   emit({ type: "press", nodeId: node("strip:2") });
   await settle();
-  expect(text("position")).toBe("2 / 3");
+  expect(text("position")).toBe("2 of 3");
 
   // Rotated, every page turns and the rotation is kept with the file.
   await viewer.rotate(1);

@@ -25,7 +25,7 @@ import { useNoteActions } from "../hooks/use-note-actions.ts";
 import { useNotesData } from "../hooks/use-notes-data.ts";
 import { useNotesMenus } from "../hooks/use-notes-menus.ts";
 import { useOverlays } from "../hooks/use-overlays.ts";
-import { notesLayout, RAIL_WIDTH } from "../layout.ts";
+import { notesLayout } from "../layout.ts";
 import type { NotesModel } from "../model.ts";
 import { NotesContent, type NotesHost, noticeFor } from "./content.tsx";
 import { notesOverlay } from "./overlay.tsx";
@@ -42,7 +42,7 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
   const overlays = useOverlays();
   const focus = useFocus();
   const actions = useNoteActions({ model, data, overlays, focusBody: focus.focusBody });
-  useNotesMenus({ model, data, overlays, focus, actions, press: host.press });
+  useNotesMenus({ model, data, overlays, focus, actions, press: host.press, ...(host.typing ? { typing: host.typing } : {}) });
   const { state } = data;
 
   // One chrome row: the count follows the title on its line (and the sidebar's badges), the words follow the note's date.
@@ -55,9 +55,9 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
       <AppWindow
         title={data.title}
         detail={noteCount(data.rows.length)}
-        toolbar={<NotesToolbar model={model} data={data} overlays={overlays} focus={focus} actions={actions} compact={layout.compact} />}
+        toolbar={<NotesToolbar model={model} data={data} overlays={overlays} focus={focus} actions={actions} />}
         overlay={notesOverlay(model, overlays)}
-        {...(layout.rail ? { sidebarWidth: RAIL_WIDTH } : {})}
+        rail={layout.rail}
         sidebar={
           <Sidebar
             rail={layout.rail}

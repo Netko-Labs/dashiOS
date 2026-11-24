@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { Omnibox } from "../apps/files/lib/omnibox/omnibox.tsx";
 import { Files, type FilesContext } from "../src/shared/file-browser/context.ts";
+import { Omnibox } from "../src/shared/file-browser/omnibox-view.tsx";
 import { settle } from "./support/time.ts";
 
 // Files' path bar is the toolbar's first Tab stop at rest (KB-1): Space or
@@ -33,8 +33,10 @@ test("the omnibox at rest is a Tab stop, and pressing it starts a search", async
     transport,
   );
   await settle();
-  const tree = JSON.parse(trees.at(-1) ?? "{}") as { props: Record<string, unknown> };
-  expect(tree.props).toMatchObject({ id: root.nodeId("omnibox"), focusable: true, onPress: true });
+  // The omnibox sits in a row of its own that centres it; the box is that row's one child.
+  const tree = JSON.parse(trees.at(-1) ?? "{}") as { props: Record<string, unknown>; children: Array<{ props: Record<string, unknown> }> };
+  expect(tree.props).toMatchObject({ align: "center" });
+  expect(tree.children[0]?.props).toMatchObject({ id: root.nodeId("omnibox"), focusable: true, onPress: true });
   // Space or Return on the focused box is a press with no modifiers.
   const nodeId = root.nodeId("omnibox") ?? "";
   for (const listener of listeners) listener({ type: "press", nodeId });

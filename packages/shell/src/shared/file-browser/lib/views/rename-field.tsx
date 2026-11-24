@@ -6,8 +6,7 @@
  * ❖X, ❖V and ❖Z are the field's while it has the keyboard (KB-6).
  */
 
-import { useColors, useSurface } from "@dashi/ui";
-import { TextInput } from "@mirinjs/metal";
+import { EditableText } from "@dashi/ui";
 import { useState } from "react";
 import { type FileItem, splitName } from "../../../files/index.ts";
 import { useFiles } from "../../context.ts";
@@ -17,15 +16,15 @@ export function stemSelection(item: Pick<FileItem, "name" | "kind">): { start: n
   return { start: 0, end: item.kind === "folder" ? item.name.length : splitName(item.name).stem.length };
 }
 
-export function RenameField({ item, width }: { item: FileItem; width?: number }) {
-  const colors = useColors();
-  const surface = useSurface();
+/** The name being edited in place: the kit's inline editable text (the card in the ring's edge). */
+export function RenameInPlace({ item, width }: { item: FileItem; width?: number }) {
   const { store, actions } = useFiles();
   const [text, setText] = useState(item.name);
   const [selection] = useState(() => stemSelection(item));
   return (
-    <TextInput
+    <EditableText
       testID={`rename:${item.path}`}
+      look="inline"
       value={text}
       autoFocus
       selection={selection}
@@ -44,17 +43,7 @@ export function RenameField({ item, width }: { item: FileItem; width?: number })
         actions.refocus();
       }}
       accessibilityLabel={`Rename “${item.name}”`}
-      style={{
-        ...(width !== undefined ? { width } : { flex: 1 }),
-        height: 20,
-        padding: 2,
-        fontSize: 12,
-        borderRadius: 4,
-        color: colors.text,
-        backgroundColor: surface.card,
-        borderColor: colors.focusRing,
-        focusBorderColor: colors.focusRing,
-      }}
+      style={width !== undefined ? { width } : { flex: 1 }}
     />
   );
 }

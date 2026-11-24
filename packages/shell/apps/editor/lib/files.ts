@@ -42,7 +42,7 @@ const errorCode = (error: unknown): unknown => (isRecord(error) ? error.code : u
 const reason = (error: unknown): string => {
   const code = errorCode(error);
   if (code === "ENOENT") return "There is no such file.";
-  if (code === "EACCES" || code === "EPERM") return "You don't have permission to open it.";
+  if (code === "EACCES" || code === "EPERM") return "You don’t have permission to open it.";
   if (code === "EISDIR") return "It is a folder.";
   return error instanceof Error ? error.message : String(error);
 };
@@ -51,10 +51,10 @@ export function readDocument(path: string): ReadResult {
   try {
     const stat = statSync(path);
     if (stat.isDirectory()) return { ok: false, message: "It is a folder." };
-    if (!stat.isFile()) return { ok: false, message: "It isn't a regular file." };
+    if (!stat.isFile()) return { ok: false, message: "It isn’t a regular file." };
     if (stat.size > MAX_BYTES) return { ok: false, message: `It is larger than ${MAX_BYTES / 1024 / 1024} MB, too large to edit here.` };
     const decoded = decodeText(new Uint8Array(readFileSync(path)));
-    return decoded ? { ok: true, decoded, stamp: { mtimeMs: stat.mtimeMs, size: stat.size } } : { ok: false, message: "It doesn't look like a text file." };
+    return decoded ? { ok: true, decoded, stamp: { mtimeMs: stat.mtimeMs, size: stat.size } } : { ok: false, message: "It doesn’t look like a text file." };
   } catch (error) {
     return { ok: false, message: reason(error) };
   }
@@ -96,7 +96,7 @@ export function writeDocument(path: string, bytes: Uint8Array): string | null {
       // Never made.
     }
     const code = errorCode(error);
-    if (code === "ENOENT" || code === "ENOTDIR") return "That folder doesn't exist.";
+    if (code === "ENOENT" || code === "ENOTDIR") return "That folder doesn’t exist.";
     if (code !== "EACCES" && code !== "EPERM" && code !== "EROFS") return reason(error);
   }
   try {
@@ -110,6 +110,6 @@ export function writeDocument(path: string, bytes: Uint8Array): string | null {
     return null;
   } catch (error) {
     const code = errorCode(error);
-    return code === "EACCES" || code === "EPERM" ? "You don't have permission to save it there." : code === "EROFS" ? "That disk is read-only." : reason(error);
+    return code === "EACCES" || code === "EPERM" ? "You don’t have permission to save it there." : code === "EROFS" ? "That disk is read-only." : reason(error);
   }
 }

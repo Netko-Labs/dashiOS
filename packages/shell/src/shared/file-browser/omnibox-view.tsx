@@ -11,15 +11,18 @@
  * switch). Escape gives the crumbs back.
  */
 
-import { rowLook, SelectionBar, useColors } from "@dashi/ui";
+import { MENU, rowLook, SEARCH_FIELD, SelectionBar, SHADOW, SPACE, TYPE, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useFilesState } from "../../../../src/shared/file-browser/context.ts";
-import { sidebarGlyph } from "../../../../src/shared/file-browser/glyphs.ts";
-import type { Location } from "../../../../src/shared/file-browser/location.ts";
-import { displayPath } from "../../../../src/shared/file-browser/omnibox.ts";
-import { Crumbs } from "./crumbs.tsx";
-import { Editor } from "./omnibox-editor.tsx";
+import { useFilesState } from "./context.ts";
+import { sidebarGlyph } from "./glyphs.ts";
+import { Crumbs } from "./lib/omnibox/crumbs.tsx";
+import { Editor } from "./lib/omnibox/editor.tsx";
+import type { Location } from "./location.ts";
+import { displayPath } from "./omnibox.ts";
 import type { OmniboxProps, Suggestions } from "./omnibox-props.ts";
+
+/** The list is at least this wide under a narrow field. */
+const SUGGESTIONS_LEAST = 260;
 
 /** What the box holds when editing starts: the folder's path, ready for a name after it. */
 export function editText(location: Location, home: string): string {
@@ -30,12 +33,20 @@ export function editText(location: Location, home: string): string {
 
 export function Omnibox(props: OmniboxProps) {
   const state = useFilesState();
-  if (props.editing === null && state.query === "") return <Crumbs onEdit={props.onEdit} />;
-  // A new edit starts from its own text; a search left standing shows its query.
-  return <Editor key={`${props.session ?? 0}:${props.editing ?? "query"}`} {...props} />;
+  // Its own row in the toolbar's, so the field ("fill", stretched across) stays centred on the row's height.
+  return (
+    <View style={{ flex: 1, minWidth: SEARCH_FIELD.least, flexDirection: "row", alignItems: "center" }}>
+      {props.editing === null && state.query === "" ? (
+        <Crumbs onEdit={props.onEdit} />
+      ) : (
+        // A new edit starts from its own text; a search left standing shows its query.
+        <Editor key={`${props.session ?? 0}:${props.editing ?? "query"}`} {...props} />
+      )}
+    </View>
+  );
 }
 
-/** The folders a typed path could go on to, under the field. */
+/** The folders a typed path could go on to, under the field: a menu (LA-4), its rows the selection look while picked. */
 export function SuggestionList({ suggestions, home }: { suggestions: Suggestions; home: string }) {
   const colors = useColors();
   const { bounds, items, highlighted, pick } = suggestions;
@@ -46,14 +57,14 @@ export function SuggestionList({ suggestions, home }: { suggestions: Suggestions
       style={{
         position: "absolute",
         left: bounds.x,
-        top: bounds.y + bounds.height + 4,
-        width: Math.max(bounds.width, 260),
-        padding: 5,
-        borderRadius: 9,
+        top: bounds.y + bounds.height + SPACE.xs,
+        width: Math.max(bounds.width, SUGGESTIONS_LEAST),
+        padding: MENU.padding,
+        borderRadius: MENU.radius,
         backgroundColor: colors.menu,
-        borderWidth: 1,
-        borderColor: colors.separator,
-        shadow: "md",
+        borderWidth: MENU.edge,
+        borderColor: colors.menuEdge,
+        shadow: SHADOW.xl,
       }}
     >
       {items.map((item, index) => {
@@ -64,19 +75,19 @@ export function SuggestionList({ suggestions, home }: { suggestions: Suggestions
             testID={`omnibox:suggestion:${index}`}
             onPress={() => pick(index)}
             style={{
-              height: 26,
-              paddingHorizontal: 9,
-              borderRadius: 5,
+              height: MENU.row,
+              paddingHorizontal: MENU.inset,
+              borderRadius: MENU.rowRadius,
               flexDirection: "row",
               alignItems: "center",
-              gap: 8,
+              gap: SPACE.m,
               backgroundColor: look.ground,
               hoverBackgroundColor: look.hover,
             }}
           >
-            {index === highlighted && <SelectionBar rowHeight={26} />}
-            <Svg markup={sidebarGlyph("folder")} size={13} color={look.glyph} />
-            <Text numberOfLines={1} style={{ fontSize: 12.5, color: look.ink }}>
+            {index === highlighted && <SelectionBar rowHeight={MENU.row} />}
+            <Svg markup={sidebarGlyph("folder")} size={TYPE.body.size} color={look.glyph} />
+            <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: look.ink }}>
               {item.replace(/\/$/, "").replace(home, "~")}
             </Text>
           </View>

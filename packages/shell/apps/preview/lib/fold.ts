@@ -16,10 +16,11 @@
  * then does a tool fold.
  */
 
+import { SPACE, TITLE_KEEP, TYPE, titleRoom } from "@dashi/ui";
 import { fitDetail, textWidth } from "./detail.ts";
 
 /** The toolbar's labels are 12 px (toolbar.tsx). */
-const LABEL_SIZE = 12;
+const LABEL_SIZE = TYPE.secondary.size;
 
 export type ToolId = "move" | "zoom" | "fit" | "actual" | "turn" | "info";
 
@@ -30,7 +31,13 @@ export const TOOLS: readonly ToolId[] = ["move", "zoom", "fit", "actual", "turn"
 export const FOLD_ORDER: readonly ToolId[] = ["actual", "fit", "info", "turn", "zoom", "move"];
 
 /** The toolbar's measures (@dashi/ui window.tsx): a glyph button, the row's gap, a divider with its margins, the labels' least widths. */
-export const MEASURES = { button: 32, gap: 10, divider: 7, position: 44, zoomLevel: 46 } as const;
+/** A divider between groups: a hairline 18 tall, 2 each side. */
+export const DIVIDER = { width: 1, height: 18, margin: SPACE.xxs } as const;
+
+export const MEASURES = { button: 32, gap: SPACE.gap, divider: DIVIDER.width + 2 * DIVIDER.margin, position: 44, zoomLevel: 46 } as const;
+
+/** The busy spinner beside the tools. */
+export const SPINNER_SIZE = 16;
 
 /** Tools drawn between the same dividers. */
 const GROUP: Readonly<Record<ToolId, number>> = { move: 0, zoom: 1, fit: 1, actual: 1, turn: 2, info: 3 };
@@ -91,14 +98,14 @@ export function dividerBefore(shown: readonly ToolId[], tool: ToolId): boolean {
   return previous !== undefined && GROUP[previous] !== GROUP[tool];
 }
 
-/** The title's type (@dashi/ui window.tsx): 13 px bold. Bold runs a little wider than textWidth's estimate. */
-const TITLE_SIZE = 13;
+/** The title's type (@dashi/ui WindowTitle): 13 px bold. Bold runs a little wider than textWidth's estimate. */
+const TITLE_SIZE = TYPE.body.size;
 const BOLD = 1.06;
-/** The widest the name gets (@dashi/ui window.tsx TITLE_MAX), and the least it keeps before a tool folds. */
+/** The widest the name gets (@dashi/ui window-title.tsx TITLE_MAX), and the least it keeps before a tool folds (its TITLE_KEEP). */
 export const TITLE_MAX = 320;
-export const TITLE_FLOOR = 120;
-/** The spinner beside the words while Preview is busy. */
-const SPINNER = 16;
+export const TITLE_FLOOR = TITLE_KEEP;
+/** WindowTitle's room between the name's row and the tools after it. */
+export const TITLE_GAP = SPACE.m;
 
 /** About how wide the window's name is drawn, whole. */
 export const titleWidth = (title: string): number => Math.ceil(textWidth(title, TITLE_SIZE) * BOLD);
@@ -124,11 +131,12 @@ export function planToolbar(
   const { gap } = MEASURES;
   const want = title === null ? 0 : Math.min(titleWidth(title), TITLE_MAX);
   if (room === null) return { ...foldTools(null, widths), title: want, detail: null };
-  const named = want > 0 ? gap : 0;
-  const spinner = busy ? SPINNER + gap : 0;
-  const floor = Math.min(want, TITLE_FLOOR);
+  const named = want > 0 ? TITLE_GAP : 0;
+  const spinner = busy ? SPINNER_SIZE + gap : 0;
+  // WindowTitle keeps its row at least this wide (titleRoom), whatever the title.
+  const floor = want > 0 ? Math.min(titleRoom(want), TITLE_FLOOR) : 0;
   const fold = foldTools(room - floor - named - spinner, widths);
   const name = Math.max(0, Math.min(want, room - fold.width - named - spinner));
-  const words = fitDetail(detail, room - name - named - spinner - fold.width - gap);
+  const words = fitDetail(detail, room - name - named - spinner - fold.width);
   return { ...fold, title: name, detail: words };
 }

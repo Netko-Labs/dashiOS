@@ -6,8 +6,8 @@
  * (⇧-click and ❖-click select several: no select mode.)
  */
 
-import { MORE, ToolbarButton, useColors, useSurface } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
+import { MORE, Segmented, SPACE, ToolbarButton } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useFiles, useFilesOps, useFilesState } from "./context.ts";
 import { BACK, FOLDER_PLUS, FORWARD, GRID, LIST, sidebarGlyph } from "./glyphs.ts";
 
@@ -15,49 +15,23 @@ export function Leading() {
   const { store } = useFiles();
   const state = useFilesState();
   return (
-    <View style={{ flexDirection: "row", gap: 2, flexShrink: 0 }}>
+    <View style={{ flexDirection: "row", gap: SPACE.xxs, flexShrink: 0 }}>
       <ToolbarButton glyph={BACK} tooltip="Back" testID="back" disabled={!state.canBack} onPress={() => store.goBack()} />
       <ToolbarButton glyph={FORWARD} tooltip="Forward" testID="forward" disabled={!state.canForward} onPress={() => store.goForward()} />
     </View>
   );
 }
 
-export function ViewSwitch() {
-  const colors = useColors();
-  const surface = useSurface();
+const VIEWS = [
+  { value: "icons" as const, label: "Icons", glyph: GRID },
+  { value: "list" as const, label: "List", glyph: LIST },
+];
+
+/** Icons or List: the kit's Segmented with glyph segments, each named (UI-2). */
+export function ViewPicker() {
   const { store } = useFiles();
   const { view } = useFilesState();
-  const segment = (value: "icons" | "list", glyph: string) => (
-    <View
-      testID={`view:${value}`}
-      focusable
-      accessibilityRole="tab"
-      accessibilityLabel={value === "icons" ? "Icons" : "List"}
-      accessibilityState={{ selected: view === value }}
-      onPress={() => store.setView(value)}
-      style={{
-        width: 34,
-        borderRadius: 6,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: view === value ? surface.card : "#00000000",
-        ...(view === value ? { shadow: "xs" as const } : {}),
-      }}
-    >
-      <Svg markup={glyph} size={15} color={view === value ? colors.text : colors.textMuted} />
-    </View>
-  );
-  return (
-    <View
-      testID="view"
-      focusGroup
-      accessibilityRole="tablist"
-      style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button }}
-    >
-      {segment("icons", GRID)}
-      {segment("list", LIST)}
-    </View>
-  );
+  return <Segmented testID="view" options={VIEWS} value={view} onChange={(next) => store.setView(next)} />;
 }
 
 export function Controls({
@@ -79,7 +53,7 @@ export function Controls({
   const state = useFilesState();
   return (
     <>
-      <ViewSwitch />
+      <ViewPicker />
       {compact ? null : state.location.kind === "trash" ? (
         <ToolbarButton
           glyph={sidebarGlyph("trash")}

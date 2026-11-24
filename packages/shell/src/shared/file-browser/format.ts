@@ -77,3 +77,13 @@ export function permissionString(mode: number): string {
 export function octal(mode: number): string {
   return (mode & 0o7777).toString(8).padStart(4, "0");
 }
+
+/** "12 items, 41.3 GB available", or "3 of 12 selected, 4.2 MB". */
+export function statusLine(total: number, selected: readonly { size: number; kind: string }[], free: number | null): string {
+  if (selected.length > 0) {
+    const bytes = selected.filter((item) => item.kind === "file").reduce((sum, item) => sum + item.size, 0);
+    const size = selected.some((item) => item.kind === "file") ? `, ${formatSize(bytes)}` : "";
+    return `${selected.length} of ${formatCount(total)} selected${size}`;
+  }
+  return free === null ? formatCount(total) : `${formatCount(total)}, ${formatSize(free)} available`;
+}

@@ -7,7 +7,7 @@
  * answers them all the same way.
  */
 
-import { AlertSheet, Switch, useColors } from "@dashi/ui";
+import { AlertSheet, SPACE, Switch, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Answer, Conflict, Side } from "../../../../src/shared/file-browser/conflicts.ts";
@@ -41,13 +41,13 @@ function SideCard({ title, side, testID }: { title: string; side: Side; testID: 
   const colors = useColors();
   const { caption, date } = sideLines(title, side);
   return (
-    <View testID={testID} style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View testID={testID} style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
       <FileIcon item={{ kind: side.folder ? "folder" : "file", mime: side.mime, path: side.path, name: baseName(side.path) }} size={32} />
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
           {caption}
         </Text>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>
           {date}
         </Text>
       </View>
@@ -69,18 +69,20 @@ export function ConflictSheet({ conflict, folderName, onAnswer }: { conflict: Co
       message={conflictMessage(conflict)}
       buttons={[
         { label: "Skip", testID: "conflict:skip", onPress: answer("skip"), cancel: true },
-        { label: "Keep Both", testID: "conflict:keep", onPress: answer("keep-both"), isDefault: true },
+        { label: "Keep both", testID: "conflict:keep", onPress: answer("keep-both"), isDefault: true },
         { label: "Replace", testID: "conflict:replace", onPress: answer("replace"), kind: "danger" },
       ]}
     >
-      <View style={{ flexDirection: "row", gap: 12 }}>
+      <View style={{ flexDirection: "row", gap: SPACE.inset }}>
         <SideCard title="There now" side={conflict.existing} testID="conflict:existing" />
         <SideCard title={conflict.mode === "copy" ? "Copying" : "Moving"} side={conflict.incoming} testID="conflict:incoming" />
       </View>
       {conflict.remaining > 0 && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
           <Switch testID="conflict:all" on={all} onChange={setAll} />
-          <Text style={{ fontSize: 12, color: colors.text }}>{`Do the same for the other ${conflict.remaining === 1 ? "one" : conflict.remaining}`}</Text>
+          <Text
+            style={{ fontSize: TYPE.secondary.size, color: colors.text }}
+          >{`Do the same for the other ${conflict.remaining === 1 ? "one" : conflict.remaining}`}</Text>
         </View>
       )}
     </AlertSheet>

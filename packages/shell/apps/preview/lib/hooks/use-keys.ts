@@ -1,14 +1,14 @@
 /**
  * What a key does in the window (keys.ts names the keys): the arrows and
- * Page keys scroll a PDF or step through the folder, Delete asks to trash the
- * file, Escape lets go of a selection. The window's key sink hands each
+ * Page keys scroll a PDF or step through the folder, Escape lets go of a
+ * selection. The window's key sink hands each
  * action here.
  */
 
 import { type DocumentView, LINE_PX } from "../document.ts";
 import type { KeyAction } from "../keys.ts";
 
-export function useKeys({ doc, step, trash }: { doc: DocumentView; step: (delta: 1 | -1) => void; trash: () => void }): (action: KeyAction) => void {
+export function useKeys({ doc, step }: { doc: DocumentView; step: (delta: 1 | -1) => void }): (action: KeyAction) => void {
   return (action) => {
     switch (action.kind) {
       case "scroll":
@@ -17,9 +17,6 @@ export function useKeys({ doc, step, trash }: { doc: DocumentView; step: (delta:
         return doc.scrollToTop(action.direction < 0 ? 0 : Number.MAX_SAFE_INTEGER);
       case "step":
         return step(action.direction);
-      case "trash":
-        trash();
-        return;
       case "unselect":
         return doc.select(null);
     }

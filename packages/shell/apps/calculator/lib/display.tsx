@@ -5,8 +5,8 @@
  * under the window controls (`titleInset`).
  */
 
-import { useColors } from "@dashi/ui";
-import { Text, TextInput, type TextInputStyle, View } from "@mirinjs/metal";
+import { EditableText, type EditableTextStyle, SPACE, TYPE, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import type { Dispatch } from "react";
 import { type copyNumber, fitFontSize } from "./format.ts";
 import { DISPLAY, GAP, LINE_LARGEST, LINE_SMALLEST } from "./layout.ts";
@@ -16,10 +16,12 @@ import type { CalcAction } from "./state.ts";
 import type { MenuAt } from "./tape.tsx";
 import type { ResultWords } from "./words.ts";
 
-const CLEAR = "#00000000";
-/** The words under the line: 17 px, down to 11 when they need the room. */
-const WORDS_LARGEST = 17;
-const WORDS_SMALLEST = 11;
+/** The words under the line: 17 px, down to 11 when they need the room, on their one 22 row. */
+const WORDS_LARGEST = TYPE.field.size;
+const WORDS_SMALLEST = TYPE.caption.size;
+const WORDS_LINE = TYPE.field.line;
+/** The line's height for its type: a quarter over its size. */
+const LINE_LEADING = 1.25;
 
 export interface CalculatorDisplayProps {
   line: Line;
@@ -45,18 +47,15 @@ export interface CalculatorDisplayProps {
 }
 
 /** The line's look: all the room, the text at its right edge, so it ends where the result and the keys do, and a long line scrolls to the caret. */
-function lineStyle(fontSize: number, colors: ReturnType<typeof useColors>): TextInputStyle {
+function lineStyle(fontSize: number, colors: ReturnType<typeof useColors>): EditableTextStyle {
   return {
     width: "100%",
     textAlign: "right",
-    height: Math.round(fontSize * 1.25),
+    height: Math.round(fontSize * LINE_LEADING),
     fontSize,
     padding: 0,
     color: colors.text,
     placeholderColor: colors.text,
-    backgroundColor: CLEAR,
-    borderColor: CLEAR,
-    focusBorderColor: CLEAR,
   };
 }
 
@@ -69,9 +68,9 @@ function Words({ words, room }: { words: ResultWords; room: number }) {
       testID="result"
       accessibilityLiveRegion="polite"
       accessibilityLabel={words.text}
-      style={{ height: 22, flexDirection: "row", justifyContent: "flex-end" }}
+      style={{ height: WORDS_LINE, flexDirection: "row", justifyContent: "flex-end" }}
     >
-      <Text numberOfLines={1} style={{ fontSize, lineHeight: 22, color: words.tone === "error" ? colors.ume : colors.textMuted, textAlign: "right" }}>
+      <Text numberOfLines={1} style={{ fontSize, lineHeight: WORDS_LINE, color: words.tone === "error" ? colors.ume : colors.textMuted, textAlign: "right" }}>
         {words.text}
       </Text>
     </View>
@@ -116,14 +115,14 @@ export function CalculatorDisplay({
         flexDirection: "column",
         justifyContent: "flex-end",
         alignItems: "flex-end",
-        gap: 2,
+        gap: SPACE.xxs,
         paddingLeft: keysInset,
         paddingRight: keysInset,
         paddingTop: titleInset,
         paddingBottom: GAP,
       }}
     >
-      <TextInput
+      <EditableText
         key={fieldKey}
         testID="line"
         value={line.text}

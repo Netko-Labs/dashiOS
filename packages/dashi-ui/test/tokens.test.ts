@@ -13,6 +13,7 @@ import {
   FILE_TINTS,
   INK_TILE,
   LIGHT_CONTROLS,
+  LIGHT_SURFACE,
   lightColors,
   MOTION,
   ON_AGENT,
@@ -96,7 +97,10 @@ describe("the sets moved into the theme hold their contrast", () => {
         if (!(side[mode] as readonly number[]).includes(index)) expect(contrastRatio(colour, set.ground)).toBeGreaterThanOrEqual(4.5);
       });
       expect(contrastRatio(set.ink, set.ground)).toBeGreaterThanOrEqual(7);
+      // R5: the cursor is the grid's ink, never the accent.
+      expect(set.cursor).toBe(set.ink);
     }
+    expect(TERMINAL.light.ground).toBe(LIGHT_SURFACE.window);
   });
   test("the persona's colours carry white words, and the capsule's own inks read", () => {
     for (const colour of PERSONA_COLORS) {

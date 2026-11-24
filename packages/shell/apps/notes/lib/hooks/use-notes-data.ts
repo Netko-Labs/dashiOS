@@ -29,11 +29,14 @@ export interface NotesData {
   now: number;
 }
 
+/** A timer: the list's dates move on once a minute. */
+const NOW_EVERY_MS = 60_000;
+
 export function useNotesData(model: NotesModel): NotesData {
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 60_000);
+    const tick = setInterval(() => setNow(Date.now()), NOW_EVERY_MS);
     return () => clearInterval(tick);
   }, []);
 

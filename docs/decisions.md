@@ -8067,3 +8067,162 @@ short words, as the rulebook is written.
   question in place has an ume Forget; Force Quit's list rows are 30 (the pick row's height).
 - **Why:** each follows a rule already written (TY-1, CO-1, RA-2, DE-1, UI-11, UI-13, UI-6).
 - **Undo:** per line.
+
+### D650. Three kit pieces for the apps: words edited in place, title tabs, keypad keys
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; H22, UI-1).
+- **Question:** H22 leaves no bare `TextInput` and no role-drawn control outside `@dashi/ui`. Text
+  Editor's page, a note's body and title, Calculator's line and a rename in place are `TextInput`s
+  with no box; Terminal's tabs and Calculator's keys are buttons drawn by hand. The kit had nothing
+  for any of them.
+- **Choice:** the kit gains `EditableText` (`plain`: no ground, no edge; `inline`: the rename look,
+  the card inside the ring's edge at radius 4), `TitleTab` and `TitleTabMore` (VS-4's tabs, role
+  `tab`, the attention dot an indicator) and `KeypadKey` (digit, quiet and strong tones; = is the
+  primary's ink; every label 400, TY-2; a card's radius 10, since a key is a tile of its keypad,
+  not 12, a window's). Each has a test and a page in the Components app ("Tabs, keys and text").
+- **Why:** a control has one home (UI-1); the apps keep their layout and lose their copies.
+- **Cost:** three components with one user each today.
+- **Undo:** move them back into Terminal, Calculator and the editors, and list them on H22.
+- **After the 0.10 merge:** W6's `TextArea` (a boxed many-line field) and `InlineField` (one line
+  in place, no `selection`) don't cover a document's page (line numbers, highlights, a tab that
+  types, a kept caret), so the editors keep `EditableText`; its `inline` look and `InlineField` do
+  overlap for a rename, and can fold into one once `InlineField` takes a `selection`.
+
+### D651. One Get Info and one Open With, in the file browser, for Files, Preview and the chooser
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; PA-18, PA-14, UI-13, UI-15).
+- **Question:** Files and Preview each drew their own Info and Open With, with different widths,
+  rows, headings and ways of writing the same file.
+- **Choice:** `src/shared/file-browser/file-sheets.tsx`: Info is a `FormSheet` with the name as
+  its heading and a Group of wrapping rows, Done; Open With is "Open “name” with", pick rows with
+  the default chosen first and tagged "Default", Cancel and Open. A press on another row chooses
+  it; a press or Return on the chosen row, or Open, opens with it (D607). Files and Preview write
+  sizes, dates and places with `format.ts` ("58 KB", "Yesterday at 11:32 PM", `~/Pictures`). The
+  kit's `PickRow` takes a `picture` (an app's icon with its fallback). Preview loads the two small
+  files at start (entry-weight updated).
+- **Why:** one sheet per job (UI-1); the same file reads the same everywhere (PA-14).
+- **Cost:** Preview's sizes lose their decimal under 100 KB; one click on Open With chooses rather
+  than opens.
+- **Undo:** the two apps' own sheets from git.
+
+### D652. Files' omnibox is a SearchField with crumbs, and the chooser's row too
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; UI-11, VS-8, R7, AA-3, AA-36).
+- **Question:** the omnibox was a hand-made field (radius 8, its own clear button); the chooser
+  had a folder pop-up and a second search field instead, so the same place was reached two ways.
+- **Choice:** the kit's `SearchField` takes `fill`, `glyph`, `accessory`, `onClear` and `rest`
+  (something else in its box at rest: the crumbs, one Tab stop that a press turns into text). The
+  omnibox moves to `src/shared/file-browser/` (`omnibox-view.tsx`, `lib/omnibox/`) and is the
+  chooser's title slot too, in its window and its sheet; the pop-up and the second field go. The
+  chooser starts with the listing on the keyboard (a save's name field still takes it), and a
+  typed path that leads nowhere is said over the listing in ume (PA-6). Its suggestions are
+  `MENU`'s rows, `menuEdge`, shadow xl (LA-4).
+- **Why:** one browser, one field, one look (R7, UI-11).
+- **Cost:** opening a chooser no longer puts the caret in a search field: a press, or typing a
+  name ahead, does.
+- **Undo:** the chooser's `ChooserTools` from git; the omnibox back under `apps/files`.
+
+### D653. The chooser's sheet hangs on the kit's Sheet, with a window's toolbar and one sidebar width
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; AB-22).
+- **Question:** the chooser sheet drew its own scrim (15 % in Dark too), a 44 header with a
+  SemiBold title, and a 170 sidebar where the window form had 180.
+- **Choice:** the kit's `Sheet` gains `height`, `bare` (the window's ground, no padding) and
+  `label` (its name for screen readers); the chooser sheet is one, its toolbar row 38 as a
+  window's, and both forms keep `CHOOSER_SHEET.sidebar` 180.
+- **Why:** one scrim and one sheet frame (Sheet, CO-5); a chooser is a window in a sheet.
+- **Cost:** none seen.
+- **Undo:** the chooser's own frame from git.
+
+### D654. Every window states its least size
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; LA-3, AA-11, AB-25).
+- **Question:** the kit's `minSize` was optional, and Files, Terminal, the Store, the Installer,
+  dashi-dialog and the gallery stated none.
+- **Choice:** `minSize` is required in `apps/kit/run.tsx`. Files 420 × 300 (its compact toolbar,
+  the rail), Terminal 360 × 200. So that the branch builds, W6's apps get first values: the Store
+  520 × 360 (Activity Monitor's), the Installer and dashi-dialog their own size (fixed flows); the
+  gallery 640 × 420. W6 measures the Store's and the portal's.
+- **Why:** LA-3 asks every window for one; a type that can be left out gets left out.
+- **Cost:** one line in three W6 files, which W6 may change.
+- **Undo:** `minSize?` again.
+
+### D655. The listing's states and one drop look
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; PA-5 to PA-7, PA-17, CO-9, AA-23, AA-28).
+- **Question:** the browser drew a folder it couldn't show as an empty state, "Searching…" as a
+  title, its own "No results", and four drop looks.
+- **Choice:** a folder that can't be shown is `ErrorState` ("This folder can’t be shown.", Go to
+  Home); searching is `Loading` after 200 ms; nothing found is `NoResults`; an empty folder has
+  its glyph and "Drop files here, or press ⇧❖N for a new folder." where it can take them.
+  `dropLook()` (drop.ts) is the one drop look: `selectionWash` under a 2 px `selection` edge at
+  the target's radius, for the listing, a tile, a sidebar place and a crumb. Small calls: a job's
+  Cancel and a drive's Eject are the kit's `GlyphButton` (W3's, quiet; Eject in `SidebarItem`'s accessory); the
+  alias arrow is a mark (`LinkMark`), not a badge; an unknown file's extension label is part of
+  its icon's drawing, scaled with it, not a size on TY-1; Files' menu-bar keys and its context
+  menus read one table (`apps/files/lib/shortcuts.ts`), and Show in Folder is in the File menu.
+- **Why:** each state has one look (PA-5 to PA-7); one drop look (CO-9).
+- **Cost:** a cut item is drawn at 50 % (was 45 %), a hidden one at 60 % (was 65 %).
+- **Undo:** per state, from git.
+
+### D656. Terminal: ink for the cursor and the bell, a notice for a lost shell
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; R5, CO-9, VS-3, PA-6, AA-1, AA-22).
+- **Question:** the cursor and the bell were kombu, the selection the accent at 25/40 %, the Light
+  ground `#FBFAF7` under a `#F5F5F7` toolbar, the lost shell a hand-drawn card, a missing engine an
+  empty state naming a package.
+- **Choice:** `TERMINAL`'s cursor is its ink and the Light ground `surface.window`; the grid draws
+  the cursor and the bell's edge in its own ink (the program's if it set one) and the selection in
+  `textSelection`. A lost shell is the window's Notice, "The shell stopped." with Restart (Return
+  still restarts); no dashi-term is an `ErrorState` that names Terminal, not a package. The
+  margin's marks are hit areas with no radius; the size pill is 24 tall, `pill(24)`.
+- **Why:** the accent means chosen or on (CO-10); one caret look (CO-9); one notice look (VS-3).
+- **Cost:** a person who liked the green cursor loses it (a program can still set its own).
+- **Undo:** the kombu cursor back in `theme/sets.ts`.
+
+### D657. Calculator's tape: a head in the controls' row, rows the selection look, its commands in Edit
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; VS-9, PA-8, UI-16, UI-17).
+- **Question:** the tape had a worded Clear in a row of its own, rows drawn as buttons, and its
+  commands only in its context menu.
+- **Choice:** the head is "Tape" 13 Bold and Clear Tape, a glyph `ToolbarButton`, in the 38
+  controls' row; rows are options of a listbox in the selection look (a press still uses the
+  result); Edit gains Use Result, Edit Sum and Copy Sum, for the entry last pressed or
+  right-clicked, disabled until there is one (Clear Tape forgets it). The tape menu's Copy Result
+  shows no key: Edit's ⇧❖C copies the line's, not the entry's. The empty tape is the panel
+  `EmptyState`.
+- **Why:** VS-9 and PA-8; a key shown must be the key that does it.
+- **Cost:** none seen.
+- **Undo:** from git.
+
+### D658. Notes and Text Editor: glyph toolbars, the kit's rows and sheets, ❖⌫ in a field
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; UI-16, UI-15, AA-25, AA-35).
+- **Question:** small calls while moving Notes and Text Editor onto the kit.
+- **Choice:** Recently Deleted's toolbar is glyphs at every width, Delete all with a glyph of its
+  own (a can with a second edge); Notes' New folder row is a `SidebarItem` that is never chosen;
+  Delete Note is ❖⌫, which while a field has the keyboard deletes to the line's start there
+  instead (KB-6); Text Editor's counts readout is `Counts`, a reading on an opaque ground, not a
+  chip; Go to line and Find and replace are `FormSheet`s with `keys={false}` (their fields take
+  Return and Esc); confirms read "Delete “X”?" / "… You can’t undo this." / Delete; Notes' keys
+  come from one table (`NOTE_KEYS`) for the menu bar and its context menus.
+- **Why:** UI-16 (two buttons never share a glyph), UI-15, UI-17, PA-1.
+- **Cost:** Recently Deleted no longer spells its buttons out in a wide window.
+- **Undo:** per item, from git.
+
+### D659. Preview: Move to Trash at once, failures as notices, the chooser as a sheet
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; PA-1, PA-2, VS-3, VS-8, R7, AA-8, AA-9, AA-32).
+- **Question:** Preview asked before moving to the Trash (on ⌫), told failures in one-button
+  sheets, drew its own title row, and opened the portal's chooser window for Open and Export.
+- **Choice:** ❖⌫ moves to the Trash at once and says so in a Notice with Undo (it puts the file
+  back and opens it); a bare ⌫ does nothing. One notice at a time: an error stays until
+  dismissed, a note fades after 5 s, Undo stays until used or replaced. The name and size are
+  `WindowTitle`'s, the place "3 of 12" for pictures and pages alike. Open… and Export use Files'
+  chooser as a sheet, loaded on first use so Preview's start stays small. The error view reads
+  "“name” can’t be shown." with Open with… and Open another…; a recent row's folder is shortened
+  ("…/last") since a pick row has no column for its detail.
+- **Why:** moving to the Trash can be undone, so it never asks (PA-1); sheets are for questions.
+- **Cost:** a stray ⌫ no longer offers to trash; the chooser is Files' even on a desktop that has
+  another portal.
+- **Undo:** per item, from git.
