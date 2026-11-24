@@ -99,17 +99,25 @@ export async function screensChanged(context: ScreensContext, before: readonly O
   const came = screensMissing(after, before);
   if (gone.length === 0 && came.length === 0) return;
   const windows = await context.compositor.windows();
+  let back = 0;
+  let moved = 0;
   for (const window of windows) {
     const displaced = context.displaced.get(window.id);
     const screen = displaced && came.find((output) => keyOf(output) === displaced.screen);
     if (!displaced || !screen) continue;
     context.displaced.delete(window.id);
     await bringBack(context, window, displaced, screen);
+    back++;
   }
   for (const window of windows) {
     const at = whereItIs(window);
     const screen = at && holdingScreen(at, gone);
     const target = screen && nearestScreen(screen, after);
-    if (at && screen && target) await moveOff(context, window, at, screen, target);
+    if (!at || !screen || !target) continue;
+    await moveOff(context, window, at, screen, target);
+    moved++;
   }
+  // One line per change, so a report from real hardware says what happened (decisions.md D9).
+  const names = (outputs: readonly Output[]) => outputs.map((output) => output.name).join(", ") || "none";
+  console.error(`dashi-shell: screens: gone ${names(gone)}, came ${names(came)}; ${moved} windows moved off, ${back} back (${context.displaced.size} away from their screen)`);
 }

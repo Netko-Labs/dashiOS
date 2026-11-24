@@ -6647,7 +6647,9 @@ short words, as the rulebook is written.
   remembered as displaced. When that screen comes back (by identity), each
   displaced window still as it was moved goes back: a drag, a resize, a tile,
   Fill, Center, Back or Move to by the person forgets it
-  (`arrange/lib/screens-gone.ts`).
+  (`arrange/lib/screens-gone.ts`). Each change logs one line ("screens: gone
+  eDP-1, came none; 5 windows moved off, 0 back"), so a report from the
+  laptop says what happened.
 - **Cost:** a window the app moved by itself meanwhile still goes back.
 - **Undo:** drop `screensChanged` from `Arranger.refresh`; `fitWindows` alone
   is what was.
