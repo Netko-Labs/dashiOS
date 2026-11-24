@@ -1,6 +1,8 @@
 /**
  * The portal's AppChooser (org.freedesktop.impl.portal.AppChooser): Open
- * With, as a short list (choices.ts), with "Always use for …" and "Other…".
+ * With, as a short list of the kit's pick rows (choices.ts), with "Always use
+ * for ‹kind›" (the type's name from the MIME database, VO-11) and More apps
+ * (VO-8: the rest shows in place).
  *
  *   ChooseApplication(o handle, s app_id, s parent_window, as choices,
  *                     a{sv} options) → (u response, a{sv} results{choice s})
@@ -10,18 +12,17 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { glyphs, rowLook, SelectionBar, useColors } from "@dashi/ui";
-import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { Checkbox, glyphs, MoreButton, PickList, PickRow, SPACE, TYPE, useColors } from "@dashi/ui";
+import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
-import { AppIcon } from "../../../../src/shared/apps/index.ts";
 import type { InterfaceSpec } from "../../../../src/shared/dbus/index.ts";
-import { exec } from "../../../../src/shared/files/index.ts";
+import { exec, mimeKind } from "../../../../src/shared/files/index.ts";
 import { appInfo } from "../apps.ts";
 import { handlePath, type Requests, Response, type ResponseCode } from "../request.ts";
-import { CheckBox, PortalFrame } from "../ui/frame.tsx";
+import { PortalFrame } from "../ui/frame.tsx";
 import { results } from "../vardict.ts";
 import type { ShowDialog } from "../windows.ts";
-import { type AppChooserRequest, alwaysUse, orderChoices, parseAppChooser, parseGioDefault, SHORT_LIST, subjectOf } from "./choices.ts";
+import { type AppChooserRequest, alwaysLabel, alwaysUse, orderChoices, parseAppChooser, parseGioDefault, SHORT_LIST, subjectOf } from "./choices.ts";
 
 export const APP_CHOOSER = "org.freedesktop.impl.portal.AppChooser";
 
@@ -110,38 +111,20 @@ export function saveAlways(mime: string, id: string, home: string = homedir()): 
 }
 
 function AppRow({ id, chosen, isDefault, onPress }: { id: string; chosen: boolean; isDefault: boolean; onPress: () => void }) {
-  const colors = useColors();
   const app = appInfo(id);
-  const look = rowLook(colors, chosen);
   return (
-    <View
+    <PickRow
       testID={`chooser:app:${id}`}
+      label={app.name}
+      chosen={chosen}
       onPress={onPress}
-      style={{
-        height: 34,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        paddingHorizontal: 8,
-        borderRadius: 7,
-        backgroundColor: look.ground,
-        hoverBackgroundColor: look.hover,
-      }}
-    >
-      {chosen && <SelectionBar rowHeight={34} />}
-      {app.icon ? <AppIcon source={app.icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyphs.INFO} size={18} color={look.glyph} />}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: look.ink }}>
-          {app.name}
-        </Text>
-      </View>
-      {isDefault && <Text style={{ fontSize: 12, color: look.quiet }}>default</Text>}
-    </View>
+      {...(app.icon ? { icon: app.icon } : { glyph: glyphs.INFO })}
+      {...(isDefault ? { detail: "Default" } : {})}
+    />
   );
 }
 
-function AppChooserSheet({
+function OpenWith({
   request,
   list,
   defaultId,
@@ -170,24 +153,26 @@ function AppChooserSheet({
       ]}
       footer={
         request.contentType ? (
-          <CheckBox testID="chooser:always" label={`Always use for ${request.contentType}`} checked={always} onChange={setAlways} />
+          <Checkbox testID="chooser:always" label={alwaysLabel(mimeKind(request.contentType))} checked={always} onChange={setAlways} />
         ) : undefined
       }
     >
-      <ScrollView style={{ flex: 1, flexDirection: "column", gap: 2, minHeight: 0 }}>
-        {shown.map((id) => (
-          <AppRow
-            key={id}
-            id={id}
-            chosen={chosen === id}
-            isDefault={id === defaultId}
-            onPress={() => (chosen === id ? answer({ id, always }) : setChosen(id))}
-          />
-        ))}
-        {ids.length === 0 && <Text style={{ fontSize: 13, color: colors.textMuted }}>No app here opens this. Software may have one.</Text>}
-        {!all && ids.length > SHORT_LIST && (
-          <View testID="chooser:other" onPress={() => setAll(true)} style={{ height: 30, justifyContent: "center", paddingHorizontal: 8 }}>
-            <Text style={{ fontSize: 13, color: colors.text }}>Other…</Text>
+      <ScrollView style={{ flex: 1, flexDirection: "column", gap: SPACE.xxs, minHeight: 0 }}>
+        <PickList testID="chooser:apps">
+          {shown.map((id) => (
+            <AppRow
+              key={id}
+              id={id}
+              chosen={chosen === id}
+              isDefault={id === defaultId}
+              onPress={() => (chosen === id ? answer({ id, always }) : setChosen(id))}
+            />
+          ))}
+        </PickList>
+        {ids.length === 0 && <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted }}>No app here opens this. The Store may have one.</Text>}
+        {ids.length > SHORT_LIST && (
+          <View style={{ flexShrink: 0, alignItems: "flex-start" }}>
+            <MoreButton testID="chooser:other" open={all} more="More apps" less="Fewer apps" onPress={() => setAll(!all)} />
           </View>
         )}
       </ScrollView>
@@ -195,12 +180,17 @@ function AppChooserSheet({
   );
 }
 
+/** Open With's size: the Always box's words beside Cancel and Open. */
+const OPEN_WITH = { width: 460, height: 320 } as const;
+/** The least it takes (LA-3): three app rows, and Cancel and Open in one row beside the Always box, its words cut short. */
+const OPEN_WITH_LEAST = { width: 360, height: 240 } as const;
+
 export function chooseOnScreen(show: ShowDialog, defaultFor: (mime: string) => Promise<string | null> = gioDefault): ChooseApp {
   return async (request, list, signal) => {
     const defaultId = request.contentType ? await defaultFor(request.contentType).catch(() => null) : null;
     const choice = await show<AppChoice | null>(
-      { parent: request.parent, title: "Open With", width: 400, height: 320 },
-      (answer) => <AppChooserSheet request={request} list={list} defaultId={defaultId} answer={answer} />,
+      { parent: request.parent, title: "Open With", width: OPEN_WITH.width, height: OPEN_WITH.height, least: OPEN_WITH_LEAST },
+      (answer) => <OpenWith request={request} list={list} defaultId={defaultId} answer={answer} />,
       signal,
       null,
     );

@@ -32,7 +32,7 @@ import { useRegionPrefs } from "../prefs.ts";
 import { CalendarContent } from "./content.tsx";
 import { calendarOverlay } from "./overlay.tsx";
 import { SidebarPane } from "./sidebar-pane.tsx";
-import { CalendarToolbar, headingOf, ToolbarCenter } from "./toolbar.tsx";
+import { CalendarToolbar, FindSlot, headingOf } from "./toolbar.tsx";
 
 // Where the calendar's tests and other files looked for it.
 
@@ -69,12 +69,13 @@ export function CalendarWindow({ model, chooser }: { model: CalendarModel; choos
 
   return (
     <AppWindow
-      title={heading.title}
+      title={chrome.compact ? heading.short : heading.title}
       toolbar={<CalendarToolbar model={model} state={state} chrome={chrome} find={find} newEvent={grid.newEvent} />}
       overlay={calendarOverlay({ model, state, prefs, firstDay, area, windowWidth, colorOf, overlays, edits, files, find, grid })}
       notice={notice}
-      titleSlot={<ToolbarCenter heading={heading} chrome={chrome} find={find} />}
+      {...(find.search ? { titleSlot: <FindSlot find={find} /> } : {})}
       sidebarWidth={chrome.sidebarWidth}
+      rail={chrome.rail}
       sidebar={
         <SidebarPane
           model={model}
@@ -82,7 +83,6 @@ export function CalendarWindow({ model, chooser }: { model: CalendarModel; choos
           chrome={chrome}
           prefs={prefs}
           firstDay={firstDay}
-          days={days}
           destination={destination}
           choose={choose}
           files={files}

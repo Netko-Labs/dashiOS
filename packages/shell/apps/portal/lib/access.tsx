@@ -14,7 +14,7 @@
  *   results: choices a(ss); response 0 granted, 1 denied
  */
 
-import { AlertWindow, alertWindowHeight, Button, glyphs } from "@dashi/ui";
+import { AlertWindow, alertWindowHeight, Button, CHECKBOX, Checkbox, glyphs, SPACE } from "@dashi/ui";
 import { useState } from "react";
 import type { InterfaceSpec } from "../../../src/shared/dbus/index.ts";
 import type { Choice } from "../../../src/shared/files/index.ts";
@@ -23,7 +23,6 @@ import { paneTitle } from "../../../src/shared/settings/index.ts";
 import { type AppInfo, appInfo } from "./apps.ts";
 import { parseChoices } from "./file-chooser/options.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
-import { CheckBox } from "./ui/frame.tsx";
 import { CAMERA } from "./ui/glyphs.ts";
 import { cleanString, results, str, vardict } from "./vardict.ts";
 import type { ShowDialog } from "./windows.ts";
@@ -107,7 +106,10 @@ const checkBoxes = (request: AccessRequest): Choice[] => request.choices.filter(
 export const ACCESS_WIDTH = 440;
 export function accessHeight(request: AccessRequest, app: AppInfo): number {
   const boxes = checkBoxes(request).length;
-  return alertWindowHeight({ question: request.title, message: accessDetail(request, app), extra: boxes > 0 ? boxes * 16 + (boxes - 1) * 8 : 0 }, ACCESS_WIDTH);
+  return alertWindowHeight(
+    { question: request.title, message: accessDetail(request, app), extra: boxes > 0 ? boxes * CHECKBOX.height + (boxes - 1) * SPACE.m : 0 },
+    ACCESS_WIDTH,
+  );
 }
 
 function AccessSheet({ request, app, answer, open }: { request: AccessRequest; app: AppInfo; answer: (value: AccessAnswer | null) => void; open: OpenLink }) {
@@ -133,7 +135,7 @@ function AccessSheet({ request, app, answer, open }: { request: AccessRequest; a
     >
       {boxes.length > 0
         ? boxes.map((choice) => (
-            <CheckBox
+            <Checkbox
               key={choice.id}
               testID={`access:choice:${choice.id}`}
               label={choice.label}
@@ -151,7 +153,14 @@ export function askOnScreen(show: ShowDialog, open: OpenLink = (url) => openLink
   return (request, signal) => {
     const app = appInfo(request.appId);
     return show<AccessAnswer | null>(
-      { parent: request.parent, title: request.title, width: ACCESS_WIDTH, height: accessHeight(request, app) },
+      // An alert is as tall as its words: it opens at its least.
+      {
+        parent: request.parent,
+        title: request.title,
+        width: ACCESS_WIDTH,
+        height: accessHeight(request, app),
+        least: { width: ACCESS_WIDTH, height: accessHeight(request, app) },
+      },
       (answer) => <AccessSheet request={request} app={app} answer={answer} open={open} />,
       signal,
       null,

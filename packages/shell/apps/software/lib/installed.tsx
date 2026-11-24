@@ -5,7 +5,7 @@
  * state chip, with its ×.
  */
 
-import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
+import { Button, EmptyState, ErrorState, Group, Loading, NoResults, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { formatBytes, type InstalledApp } from "../../../src/shared/software/index.ts";
@@ -30,7 +30,14 @@ export function InstalledRow({ app }: { app: InstalledApp }) {
   return (
     <View
       testID={`installed:${app.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.inset,
+        minHeight: ROW.minHeight,
+        paddingHorizontal: SPACE.inset,
+        paddingVertical: SPACE.m,
+      }}
     >
       <View
         testID={`installed:${app.id}:open-page`}
@@ -38,14 +45,14 @@ export function InstalledRow({ app }: { app: InstalledApp }) {
         accessibilityRole="button"
         accessibilityLabel={app.name}
         onPress={() => actions.openApp(app.id)}
-        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}
       >
         <AppIcon file={icon.file} url={icon.url} name={app.name} size={ROW.icon} />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
             {app.name}
           </Text>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {detail}
           </Text>
         </View>
@@ -57,7 +64,7 @@ export function InstalledRow({ app }: { app: InstalledApp }) {
           onCancel={() => actions.cancel(status.operation.key)}
         />
       ) : (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, flexShrink: 0 }}>
           {status.kind === "update" && <Button label="Update" testID={`update:${app.id}`} primary onPress={() => actions.update(app, app.name)} />}
           <Button label="Open" testID={`open:${app.id}`} onPress={() => actions.launch(app.id)} />
           <Button label="Remove…" testID={`remove:${app.id}`} onPress={() => actions.remove(app)} />
@@ -96,23 +103,22 @@ export function Installed({ query }: { query: string }) {
   const counts = addOnCounts(applets, needle);
   const appletCount = counts.extensions + counts.applets + counts.widgets;
   if (apps.length === 0 && appletCount === 0 && !hasPackages) {
+    if (needle !== "") return <NoResults query={query} />;
+    if (!state.hasFlatpak || state.installedError) {
+      return (
+        <ErrorState
+          testID="installed-empty"
+          title={state.hasFlatpak ? "Your apps couldn’t be listed" : "Flatpak isn’t installed"}
+          message={state.installedError ?? "The Store installs Flathub’s apps with Flatpak. Install the flatpak package, then open the Store again."}
+        />
+      );
+    }
     return (
-      <EmptyState
-        testID="installed-empty"
-        glyph={state.hasFlatpak ? INSTALLED : glyphs.WARNING}
-        title={needle !== "" ? "No results" : state.hasFlatpak ? "No apps installed yet" : "Flatpak isn’t installed"}
-        message={
-          needle !== ""
-            ? `Nothing you have matches “${query.trim()}”.`
-            : state.hasFlatpak
-              ? (state.installedError ?? "Apps and applets you get from Discover show up here.")
-              : "The Store installs Flathub’s apps with Flatpak. Install the flatpak package, then open the Store again."
-        }
-      />
+      <EmptyState testID="installed-empty" glyph={INSTALLED} title="No apps installed yet" message="Apps and applets you get from Discover show up here." />
     );
   }
   return (
-    <ScrollView testID="installed" style={{ flex: 1, flexDirection: "column", gap: 12, padding: 22 }}>
+    <ScrollView testID="installed" style={{ flex: 1, flexDirection: "column", gap: SPACE.inset, padding: SPACE.sheet }}>
       {apps.length > 0 && appletCount > 0 && <SectionHeader title="Apps" />}
       {apps.length > 0 && (
         <Group testID="installed-list">
@@ -124,7 +130,7 @@ export function Installed({ query }: { query: string }) {
       <InstalledPackages needle={needle} />
       {ADD_ON_KINDS.map((kind) =>
         counts[kind] > 0 ? (
-          <View key={kind} style={{ flexDirection: "column", gap: 12 }}>
+          <View key={kind} style={{ flexDirection: "column", gap: SPACE.inset }}>
             <SectionHeader title={ADD_ON_HEADINGS[kind]} />
             <InstalledApplets needle={needle} kind={kind} />
           </View>

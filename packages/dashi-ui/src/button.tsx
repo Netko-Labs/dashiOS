@@ -102,7 +102,12 @@ function WindowButton({
     >
       <Text
         numberOfLines={1}
-        style={{ fontSize: small ? TYPE.secondary.size : TYPE.body.size, fontWeight: small ? WEIGHT.semibold : look.weight, color: look.ink }}
+        style={{
+          fontSize: small ? TYPE.secondary.size : TYPE.body.size,
+          fontWeight: small ? WEIGHT.semibold : look.weight,
+          color: look.ink,
+          textAlign: "center",
+        }}
       >
         {label}
       </Text>
@@ -158,7 +163,10 @@ function PanelButton({
         focusRingColor: colors.focus,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: small ? TYPE.secondary.size : TYPE.panel.body.size, fontWeight: WEIGHT.semibold, color: ink }}>
+      <Text
+        numberOfLines={1}
+        style={{ fontSize: small ? TYPE.secondary.size : TYPE.panel.body.size, fontWeight: WEIGHT.semibold, color: ink, textAlign: "center" }}
+      >
         {label}
       </Text>
     </View>

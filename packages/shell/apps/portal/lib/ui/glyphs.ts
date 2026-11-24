@@ -20,3 +20,5 @@ export const PRINTER = svg(stroke("M4.4 6V2h7.2v4M4.4 11.4H3c-.6 0-1-.4-1-1V7c0-
 export const PERSON = svg(
   `<circle cx="8" cy="5.4" r="2.8" fill="none" stroke="#000" stroke-width="1.4"/>${stroke("M2.6 14c.6-2.8 2.8-4.4 5.4-4.4s4.8 1.6 5.4 4.4")}`,
 );
+/** The Dock: a shelf with its icons, for "Add to Dock". */
+export const DOCK = svg(stroke("M2 12.6h12M3.4 10.2V6.6c0-.4.3-.6.6-.6h2.2c.3 0 .6.2.6.6v3.6M9.2 10.2V4.6c0-.4.3-.6.6-.6H12c.3 0 .6.2.6.6v5.6"));

@@ -5,15 +5,16 @@
  * the dialog, as Zenity does.
  */
 
-import { ProgressBar, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { ProgressBar, TYPE, useColors } from "@dashi/ui";
+import { Text } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { type Answer, DialogFrame, standardButtons } from "./frame.tsx";
 import { applyProgressLine, endProgress, initialProgress, type ProgressState, timeRemaining } from "./progress.ts";
+import { Prompt } from "./prompt.tsx";
 import type { ProgressSpec } from "./spec.ts";
 import { readStdinLines } from "./stdin.ts";
 
-export function ProgressDialog({ spec, answer }: { spec: ProgressSpec; answer: Answer }) {
+export function ProgressView({ spec, answer }: { spec: ProgressSpec; answer: Answer }) {
   const colors = useColors();
   const [state, setState] = useState<ProgressState>(() => initialProgress(spec.percentage, spec.text, spec.pulsate));
   const started = useRef(Date.now());
@@ -50,14 +51,10 @@ export function ProgressDialog({ spec, answer }: { spec: ProgressSpec; answer: A
   const remaining = spec.timeRemaining ? timeRemaining(Date.now() - started.current, state.percentage) : null;
   return (
     <DialogFrame title={spec.title} buttons={buttons} onCancel={spec.noCancel ? () => {} : cancel}>
-      {state.text !== "" && (
-        <View testID="dialog:text">
-          <Text style={{ fontSize: 13, color: colors.text, lineHeight: 17 }}>{state.text}</Text>
-        </View>
-      )}
+      <Prompt text={state.text} />
       <ProgressBar testID="dialog:bar" size="regular" value={state.pulsate ? null : state.percentage / 100} />
       {spec.timeRemaining && (
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
           {remaining ?? " "}
         </Text>
       )}

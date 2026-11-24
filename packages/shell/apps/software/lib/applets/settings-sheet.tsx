@@ -8,13 +8,15 @@
  */
 
 import { appletDataRoot, describePermission, type InstalledApplet, type Manifest, type Preference, type PreferenceValue } from "@dashi/applet";
-import { Button, Choices, Group, Row, Sheet, Switch, TextField, useColors } from "@dashi/ui";
+import { Button, Choices, FormSheet, Group, Row, SPACE, Switch, TextField, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
 import { ExtensionAccounts, PreferenceStore } from "../../../../src/shared/extension-settings/index.ts";
 import { AccountSetting } from "./settings-account.tsx";
 
 const SHEET_WIDTH = 520;
+/** A preference's field at the row's end. */
+const FIELD_WIDTH = 220;
 
 function PreferenceSetting({
   manifest,
@@ -42,8 +44,8 @@ function PreferenceSetting({
     );
   if (preference.type === "secret" && typed === null)
     return (
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{value ? "Kept in your keyring" : "Not set"}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
+        <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{value ? "Kept in your keyring" : "Not set"}</Text>
         <Button label={value ? "Change…" : "Set…"} testID={`${id}:change`} onPress={() => setTyped("")} />
         {value !== undefined && <Button label="Forget" testID={`${id}:forget`} onPress={() => keep("")} />}
       </View>
@@ -52,7 +54,7 @@ function PreferenceSetting({
   return (
     <TextField
       testID={id}
-      width={220}
+      width={FIELD_WIDTH}
       value={shown}
       secure={preference.type === "secret"}
       placeholder={preference.description ?? `${manifest.name}: ${preference.title}`}
@@ -82,11 +84,13 @@ export function ExtensionSettingsSheet({ applet, openUrl, onClose }: { applet: I
   const commands = manifest.commands.map((command) => command.title);
   const reach = manifest.permissions.map(describePermission);
   return (
-    <Sheet testID="extension-settings" width={SHEET_WIDTH} onCancel={onClose}>
-      <View style={{ flexDirection: "column", gap: 1 }}>
-        <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{manifest.name}</Text>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{`Settings · version ${manifest.version}`}</Text>
-      </View>
+    <FormSheet
+      testID="extension-settings"
+      width={SHEET_WIDTH}
+      title={`${manifest.name} settings`}
+      buttons={[{ label: "Done", testID: "extension-settings:done", kind: "primary", cancel: true, onPress: onClose }]}
+    >
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{`Version ${manifest.version}`}</Text>
       <Group testID="extension-settings:rows">
         {rows.map((row) => (
           <Row key={row.id} label="Account" testID={`settings:account:${row.id}`} stack>
@@ -111,10 +115,7 @@ export function ExtensionSettingsSheet({ applet, openUrl, onClose }: { applet: I
         {commands.length > 0 && <Row label="Commands" detail={commands.join(" · ")} testID="settings:commands" />}
         <Row label="It can" detail={reach.length > 0 ? reach.join(" · ") : "Nothing beyond its own folder"} testID="settings:reach" wraps />
       </Group>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 4 }}>
-        <Button label="Done" testID="extension-settings:done" primary onPress={onClose} />
-      </View>
-    </Sheet>
+    </FormSheet>
   );
 }
 

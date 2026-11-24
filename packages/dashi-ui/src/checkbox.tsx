@@ -11,10 +11,10 @@ import { Svg, Text, View } from "@mirinjs/metal";
 import type { Look } from "./button.tsx";
 import { useControlState } from "./control-state.tsx";
 import { CHECK } from "./glyphs.ts";
-import { CLEAR, onOf, RADIUS, SPACE, TYPE, useColors, useSurface } from "./theme/index.ts";
+import { CLEAR, onOf, pill, RADIUS, SPACE, TYPE, useColors, useSurface } from "./theme/index.ts";
 
 /** Its measures (design.html "Checkbox"): the box, the tick, the edge, the room before the words, a row's height. */
-export const CHECKBOX = { box: 16, tick: 12, edge: 1.5, gap: SPACE.m, height: 26 } as const;
+export const CHECKBOX = { box: 16, tick: 12, edge: 1.5, gap: SPACE.m, height: 26, dot: 6 } as const;
 
 export interface CheckboxProps {
   label: string;
@@ -25,9 +25,11 @@ export interface CheckboxProps {
   /** Keyboard focus is on it (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;
   look?: Look;
+  /** The box alone on screen, its label only for screen readers: a row that names it already (Calendar's "Show ‹name›"). */
+  hideLabel?: boolean;
 }
 
-export function Checkbox({ label, checked, onChange, testID, disabled, focused, look = "window" }: CheckboxProps) {
+export function Checkbox({ label, checked, onChange, testID, disabled, focused, look = "window", hideLabel = false }: CheckboxProps) {
   const colors = useColors();
   const surface = useSurface();
   const state = useControlState({ disabled, focused });
@@ -47,6 +49,9 @@ export function Checkbox({ label, checked, onChange, testID, disabled, focused, 
         flexDirection: "row",
         alignItems: "center",
         alignSelf: "flex-start",
+        // Short of room its words end in an ellipsis, never run under what is beside it.
+        flexShrink: 1,
+        minWidth: 0,
         gap: CHECKBOX.gap,
         minHeight: CHECKBOX.height,
         borderRadius: RADIUS.row,
@@ -70,9 +75,48 @@ export function Checkbox({ label, checked, onChange, testID, disabled, focused, 
       >
         {checked && <Svg markup={CHECK} size={CHECKBOX.tick} color={onInk} />}
       </View>
-      <Text numberOfLines={1} style={{ fontSize: look === "panel" ? TYPE.panel.body.size : TYPE.body.size, color: colors.text }}>
-        {label}
-      </Text>
+      {!hideLabel && (
+        <View style={{ flexShrink: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: look === "panel" ? TYPE.panel.body.size : TYPE.body.size, color: colors.text }}>
+            {label}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/**
+ * The box alone, for a list whose row is the control (dashi-dialog's
+ * `--checklist`): a press or Space on the row ticks it, and the row carries
+ * the role and the name, so the mark takes neither the keyboard nor a role of
+ * its own. `round` is a pick-one list's (`--radiolist`): a circle with a dot.
+ */
+export function CheckMark({ checked, round = false, testID }: { checked: boolean; round?: boolean; testID: string }) {
+  const colors = useColors();
+  const surface = useSurface();
+  const { on, onInk } = onOf(colors);
+  return (
+    <View
+      testID={testID}
+      style={{
+        width: CHECKBOX.box,
+        height: CHECKBOX.box,
+        flexShrink: 0,
+        borderRadius: round ? pill(CHECKBOX.box) : RADIUS.check,
+        borderWidth: checked ? 0 : CHECKBOX.edge,
+        borderColor: checked ? CLEAR : colors.controlEdge,
+        backgroundColor: checked ? on : surface.field,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {checked &&
+        (round ? (
+          <View style={{ width: CHECKBOX.dot, height: CHECKBOX.dot, borderRadius: pill(CHECKBOX.dot), backgroundColor: onInk }} />
+        ) : (
+          <Svg markup={CHECK} size={CHECKBOX.tick} color={onInk} />
+        ))}
     </View>
   );
 }

@@ -16,7 +16,7 @@ export {
 export { ALERT_WINDOW, type AlertContent, alertButtonsWidth, alertWindowHeight, alertWordsWidth, wrappedLines } from "./alert-size.ts";
 export { BUTTON, Button, type ButtonProps, type ButtonSize, type Look } from "./button.tsx";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
-export { CHECKBOX, Checkbox, type CheckboxProps } from "./checkbox.tsx";
+export { CHECKBOX, Checkbox, type CheckboxProps, CheckMark } from "./checkbox.tsx";
 export { CHIP, Chip, type ChipTone, chipColors } from "./chip.tsx";
 export { type Choice, Choices } from "./choices.tsx";
 export { type Confirm, type ConfirmRequest, ConfirmSheet, type ConfirmSheetProps, confirmKeyAction, useConfirm } from "./confirm.tsx";
@@ -52,6 +52,7 @@ export {
   WARNING,
 } from "./glyphs.ts";
 export { CLOCK_DAY, ClockHead, type ClockHeadProps, clockFace, clockParts, InksClock, type InksClockProps } from "./inks-clock.tsx";
+export { InlineField, type InlineFieldProps } from "./inline-field.tsx";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { KeyedText, type KeyedTextStyle, keyGlyphSize, namesKeys } from "./keyed-text.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
@@ -133,6 +134,7 @@ export { Table, type TableProps } from "./table.tsx";
 export type { Column } from "./table-parts.tsx";
 export { holdOrder, moveSelection, nextSort, type SortableColumn, type SortState, sortRows } from "./table-sort.ts";
 export { hostTextAntialiasing, type TextAntialiasing } from "./text-antialiasing.ts";
+export { TEXT_AREA, TextArea, type TextAreaProps } from "./text-area.tsx";
 export { TEXT_FIELD, TextField, type TextFieldProps } from "./text-field.tsx";
 export { TextLink } from "./text-link.tsx";
 export {

@@ -50,12 +50,12 @@ export function suggestHostname(user: string): string {
 /** What is wrong with the account, in words for the page, or null when it is ready. */
 export function accountProblem(account: Account): string | null {
   if (!account.fullName.trim()) return "Enter your name.";
-  if (account.fullName.includes(":")) return "A name can't contain a colon.";
+  if (account.fullName.includes(":")) return "A name can’t contain a colon.";
   if (!/^[a-z_][a-z0-9_-]{0,31}$/.test(account.user)) return "The account name is lowercase letters, digits, - or _, starting with a letter.";
   if (["root", "liveuser", "bin", "daemon", "nobody"].includes(account.user)) return "That account name is taken by the system.";
   if (account.password.length < MIN_PASSWORD) return `The password needs at least ${MIN_PASSWORD} characters.`;
-  if (account.password !== account.confirm) return "The passwords don't match.";
-  if (!/^[A-Za-z0-9][A-Za-z0-9-]{0,62}$/.test(account.hostname)) return "The computer's name is letters, digits, and -.";
+  if (account.password !== account.confirm) return "The passwords don’t match.";
+  if (!/^[A-Za-z0-9][A-Za-z0-9-]{0,62}$/.test(account.hostname)) return "The computer’s name is letters, digits, and -.";
   return null;
 }
 

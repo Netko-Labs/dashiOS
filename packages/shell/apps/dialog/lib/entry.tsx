@@ -5,23 +5,14 @@
  * so Enter and Esc come from them rather than the frame's KeySink.
  */
 
-import { TextField, useColors } from "@dashi/ui";
+import { SPACE, TextField, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type Answer, DialogFrame, standardButtons } from "./frame.tsx";
+import { Prompt } from "./prompt.tsx";
 import type { EntrySpec, PasswordSpec } from "./spec.ts";
 
-function Prompt({ text }: { text: string }) {
-  const colors = useColors();
-  if (text === "") return null;
-  return (
-    <View testID="dialog:text">
-      <Text style={{ fontSize: 13, color: colors.text, lineHeight: 17 }}>{text}</Text>
-    </View>
-  );
-}
-
-export function EntryDialog({ spec, answer }: { spec: EntrySpec; answer: Answer }) {
+export function EntryView({ spec, answer }: { spec: EntrySpec; answer: Answer }) {
   const [text, setText] = useState(spec.entryText);
   const ok = (value: string): void => answer(0, `${value}\n`);
   const buttons = standardButtons({ okLabel: spec.okLabel, cancelLabel: spec.cancelLabel, extraButtons: spec.extraButtons, answer, onOk: () => ok(text) });
@@ -41,7 +32,7 @@ export function EntryDialog({ spec, answer }: { spec: EntrySpec; answer: Answer 
   );
 }
 
-export function PasswordDialog({ spec, answer }: { spec: PasswordSpec; answer: Answer }) {
+export function PasswordView({ spec, answer }: { spec: PasswordSpec; answer: Answer }) {
   const colors = useColors();
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
@@ -52,7 +43,7 @@ export function PasswordDialog({ spec, answer }: { spec: PasswordSpec; answer: A
   const escape = (key: string): void => {
     if (key === "Escape") answer(1);
   };
-  const label = (text: string) => <Text style={{ fontSize: 12, color: colors.textMuted }}>{text}</Text>;
+  const label = (text: string) => <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{text}</Text>;
   const passwordField = (
     <TextField
       key={focus.field === "password" ? `password:${focus.epoch}` : "password"}
@@ -69,7 +60,7 @@ export function PasswordDialog({ spec, answer }: { spec: PasswordSpec; answer: A
     <DialogFrame title={spec.title} buttons={buttons} onCancel={() => answer(1)} keys={false}>
       <Prompt text={spec.text} />
       {spec.username ? (
-        <View style={{ flexDirection: "column", gap: 6, flexShrink: 0 }}>
+        <View style={{ flexDirection: "column", gap: SPACE.s, flexShrink: 0 }}>
           {label("Username")}
           <TextField
             key={focus.field === "user" ? `user:${focus.epoch}` : "user"}

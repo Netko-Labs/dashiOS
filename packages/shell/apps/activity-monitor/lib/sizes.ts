@@ -5,6 +5,7 @@
 
 import { TOOLBAR_MIN_WIDTH } from "./toolbar-fit.ts";
 
-export const MONITOR_SIZE = { width: 940, height: 640 } as const;
+/** Wide enough for the whole toolbar: the title, Quit…'s words, the view pop-up, the tabs and the 210 field. */
+export const MONITOR_SIZE = { width: 1000, height: 640 } as const;
 /** The least size: the toolbar's last step in one row, and the summary's one line over a few rows. */
 export const MONITOR_MIN_SIZE = { width: TOOLBAR_MIN_WIDTH, height: 360 } as const;

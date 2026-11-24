@@ -5,7 +5,7 @@
  * opens the sheet, ⌫ deletes, Esc closes; pressing elsewhere closes it too.
  */
 
-import { Button, useColors, useSurface } from "@dashi/ui";
+import { Button, MENU, pill, RADIUS, SHADOW, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type Calendar, fromHere, hereZone, isZone, type Occurrence, zoneCity } from "../../../../src/shared/calendar/index.ts";
@@ -13,7 +13,11 @@ import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { alertLabel, repeatSummary, timeSpan, titleOf } from "../format.ts";
 
 export const POPOVER_WIDTH = 270;
-const GAP = 8;
+const GAP = SPACE.m;
+/** Its height before it is drawn: the title, the time, the buttons and the gaps, and a line for each of the rest. */
+const ESTIMATE = { base: 146, line: 17 } as const;
+/** The calendar's dot before its name. */
+const DOT = 9;
 
 /** Where the popover goes: beside the event, on whichever side has room, kept inside `area`. */
 export function popoverOrigin(event: Bounds, area: Bounds, height: number): { x: number; y: number } {
@@ -70,9 +74,9 @@ export function EventPopover({ occurrence, calendar, anchor, area, prefs, onEdit
   );
   // Placed by its drawn height once it has one (an estimate first), so a short window never cuts its buttons.
   const [drawn, setDrawn] = useState<number | null>(null);
-  const at = popoverOrigin(anchor, area, drawn ?? 146 + lines.length * 17);
+  const at = popoverOrigin(anchor, area, drawn ?? ESTIMATE.base + lines.length * ESTIMATE.line);
   const line = (text: string, key: string) => (
-    <Text key={key} numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+    <Text key={key} numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
       {text}
     </Text>
   );
@@ -91,33 +95,33 @@ export function EventPopover({ occurrence, calendar, anchor, area, prefs, onEdit
         top: at.y,
         width: POPOVER_WIDTH,
         flexDirection: "column",
-        gap: 4,
-        padding: 14,
-        borderRadius: 12,
+        gap: SPACE.xs,
+        padding: SPACE.button,
+        borderRadius: RADIUS.sheet,
         backgroundColor: surface.card,
-        borderWidth: 1,
-        borderColor: colors.separator,
-        shadow: "xl",
+        borderWidth: MENU.edge,
+        borderColor: colors.menuEdge,
+        shadow: SHADOW.xl,
         focusRingColor: colors.focusRing,
       }}
     >
       <PopoverKeys onEdit={onEdit} onDelete={onDelete} onClose={onClose} />
-      <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: "semibold", color: colors.text }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.bold, color: colors.text }}>
         {titleOf(event)}
       </Text>
-      <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>
         {timeSpan(event, occurrence.start, occurrence.end, prefs)}
       </Text>
       {lines.map((each, index) => line(each, String(index)))}
       {calendar && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-          <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: calendar.color }} />
-          <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, marginTop: SPACE.xxs }}>
+          <View style={{ width: DOT, height: DOT, borderRadius: pill(DOT), backgroundColor: calendar.color }} />
+          <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
             {calendar.name}
           </Text>
         </View>
       )}
-      <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+      <View style={{ flexDirection: "row", gap: SPACE.m, marginTop: SPACE.m }}>
         <Button label="Delete" testID="popover:delete" danger onPress={onDelete} />
         <View style={{ flex: 1 }} />
         <Button label="Edit…" testID="popover:edit" primary onPress={onEdit} />

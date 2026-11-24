@@ -23,6 +23,9 @@ import {
 import { run as defaultRun, type Runner, type RunResult } from "./lib/run.ts";
 import type { FlatpakUpdate, InstalledApp } from "./types.ts";
 
+/** How long each package tool may run before it is stopped (ms): a list, an update check, a PackageKit refresh. */
+const TIMERS = { list: 60_000, updates: 120_000, refresh: 180_000 } as const;
+
 export interface Progress {
   /** 0 to 1, or null while it is not known (shown as busy). */
   fraction: number | null;
@@ -85,7 +88,7 @@ export class Software {
   /** Every flatpak app installed, for the user and the system. */
   async installed(): Promise<InstalledApp[]> {
     this.need("flatpak");
-    const result = await this.run(cmd.list(), { timeoutMs: 60_000 });
+    const result = await this.run(cmd.list(), { timeoutMs: TIMERS.list });
     if (result.code !== 0) throw new Error(failureMessage(result.output));
     return parseList(result.output);
   }
@@ -95,7 +98,7 @@ export class Software {
     this.need("flatpak");
     const each = await Promise.all(
       (["user", "system"] as const).map(async (installation) => {
-        const result = await this.run(cmd.updatesAvailable(installation), { timeoutMs: 120_000 });
+        const result = await this.run(cmd.updatesAvailable(installation), { timeoutMs: TIMERS.updates });
         return result.code === 0
           ? { ok: true as const, updates: parseUpdates(result.output, installation) }
           : { ok: false as const, message: failureMessage(result.output) };
@@ -109,8 +112,8 @@ export class Software {
   /** The system's pending updates; `refresh` first asks PackageKit to look for new ones (polkit may ask). */
   async systemUpdates(refresh = false): Promise<SystemUpdates> {
     this.need("pkcon");
-    if (refresh) await this.run(cmd.pkconRefresh(), { timeoutMs: 180_000 });
-    const result = await this.run(cmd.pkconGetUpdates(), { timeoutMs: 180_000 });
+    if (refresh) await this.run(cmd.pkconRefresh(), { timeoutMs: TIMERS.refresh });
+    const result = await this.run(cmd.pkconGetUpdates(), { timeoutMs: TIMERS.refresh });
     if (pkconNothingToDo(result.code, result.output)) return { updates: [], restartCauses: [] };
     if (result.code !== 0 || pkconError(result.output) !== null) throw new Error(systemFailure(result.output));
     const updates = parseUpdateList(result.output);
@@ -120,7 +123,7 @@ export class Software {
   /** Whether the system needs a restart to finish earlier updates (null when it can't tell). */
   async needsRestart(): Promise<boolean | null> {
     if (this.which("dnf") === null) return null;
-    const result = await this.run(cmd.needsRestarting(), { timeoutMs: 120_000 });
+    const result = await this.run(cmd.needsRestarting(), { timeoutMs: TIMERS.updates });
     return restartNeeded(result.code, result.output);
   }
 
@@ -129,7 +132,7 @@ export class Software {
     this.need("flatpak");
     if (!isAppId(id)) return { ok: false, message: "That is not an application id." };
     onProgress({ fraction: null, label: "Preparing" });
-    const remote = await this.run(cmd.remoteAdd(), { signal, timeoutMs: 60_000 });
+    const remote = await this.run(cmd.remoteAdd(), { signal, timeoutMs: TIMERS.list });
     if (signal?.aborted) return { ok: false, cancelled: true, message: "Cancelled." };
     if (remote.code !== 0) return { ok: false, message: `Flathub could not be added: ${failureMessage(remote.output)}` };
     return this.flatpak((progress) => cmd.install(id, progress), onProgress, signal);

@@ -43,7 +43,7 @@ interface InstallOps {
 function ended(latest: Progress, code: number | null, ops: InstallOps): void {
   if (latest.ok === true && code === 0) return ops.setPage("done");
   if (!latest.failed) {
-    const message = code === null ? "The installer couldn't start (pkexec or dashi-install is missing)." : "The installer stopped without saying why.";
+    const message = code === null ? "The installer couldn’t start (pkexec or dashi-install is missing)." : "The installer stopped without saying why.";
     ops.setProgress({ ...latest, failed: { step: latest.step ?? "check", message } });
   }
   ops.setPage("failed");

@@ -6,7 +6,7 @@
  * command-line tools whose package name matches.
  */
 
-import { EmptyState, glyphs, Loading } from "@dashi/ui";
+import { Loading, NoResults, SPACE } from "@dashi/ui";
 import { ScrollView } from "@mirinjs/metal";
 import { AppletGroup, useAppletState } from "./applets/rows.tsx";
 import { inMenuBar, isExtension } from "./applets/words.ts";
@@ -32,17 +32,10 @@ export function SearchPage({ query }: { query: string }) {
   if (data === null) return <Loading label="Reading the catalog…" />;
   const { apps, tools } = index.search(query);
   if (apps.length === 0 && tools.length === 0 && addOns.applets.length === 0 && addOns.extensions.length === 0) {
-    return (
-      <EmptyState
-        testID="no-results"
-        glyph={glyphs.SEARCH}
-        title="No results"
-        message={`Nothing in Flathub, Fedora, Terra, your other sources or Dashi’s add-ons matches “${query}”. Check the spelling or try fewer words.`}
-      />
-    );
+    return <NoResults query={query} hint="Search looks in Flathub, Fedora, Terra, your other sources and Dashi’s add-ons." />;
   }
   return (
-    <ScrollView testID="search-results" style={{ flex: 1, flexDirection: "column", gap: 14, padding: 22 }}>
+    <ScrollView testID="search-results" style={{ flex: 1, flexDirection: "column", gap: SPACE.button, padding: SPACE.sheet }}>
       {apps.length > 0 && (
         <SectionHeader
           title={`Apps for “${query}”`}

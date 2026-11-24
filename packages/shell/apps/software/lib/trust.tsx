@@ -5,16 +5,16 @@
  * its newest version, and how many people use it (trust-words.ts says them).
  */
 
-import { MoreButton, useColors, useSurface } from "@dashi/ui";
+import { MoreButton, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { ReviewedSeal, VerifiedBadge } from "./marks.tsx";
+import { ReviewedSeal, VerifiedMark } from "./marks.tsx";
 import type { TrustFacts } from "./trust-words.ts";
 
 const SHOWN_NOTES = 2;
 
 /** A fact's first line, its label's and its value's alike, so the two share a baseline whatever their size. */
-const FACT_LINE = 17;
+const FACT_LINE = TYPE.body.line;
 
 function Fact({ label, children, testID, last }: { label: string; children: ReactNode; testID: string; last?: boolean }) {
   const colors = useColors();
@@ -24,16 +24,16 @@ function Fact({ label, children, testID, last }: { label: string; children: Reac
       style={{
         flexDirection: "row",
         alignItems: "flex-start",
-        gap: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
+        gap: SPACE.inset,
+        paddingHorizontal: SPACE.button,
+        paddingVertical: SPACE.gap,
         ...(last ? {} : { borderBottomWidth: 1, borderColor: colors.separator }),
       }}
     >
       <View style={{ width: 108, flexShrink: 0 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: FACT_LINE }}>{label}</Text>
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, lineHeight: FACT_LINE }}>{label}</Text>
       </View>
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>{children}</View>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.xxs }}>{children}</View>
     </View>
   );
 }
@@ -46,12 +46,19 @@ function Fact({ label, children, testID, last }: { label: string; children: Reac
 export function ReachLines({ lines, strong = [] }: { lines: readonly string[]; strong?: readonly string[] }) {
   const colors = useColors();
   return (
-    <View style={{ flexShrink: 0, flexDirection: "column", gap: 4 }}>
+    <View style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.xs }}>
       {lines.map((line) => (
-        <View key={line} style={{ flexDirection: "row", gap: 7, alignItems: "flex-start" }}>
-          <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: 17 }}>•</Text>
+        <View key={line} style={{ flexDirection: "row", gap: SPACE.s, alignItems: "flex-start" }}>
+          <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted, lineHeight: TYPE.body.line }}>•</Text>
           <View style={{ flexShrink: 1 }}>
-            <Text style={{ fontSize: 13, color: colors.text, lineHeight: 17, ...(strong.includes(line) ? { fontWeight: "semibold" as const } : {}) }}>
+            <Text
+              style={{
+                fontSize: TYPE.body.size,
+                color: colors.text,
+                lineHeight: TYPE.body.line,
+                ...(strong.includes(line) ? { fontWeight: WEIGHT.semibold } : {}),
+              }}
+            >
               {line}
             </Text>
           </View>
@@ -69,7 +76,7 @@ function Notes({ notes }: { notes: readonly string[] }) {
     <>
       {shown.map((note, index) => (
         // Paragraphs never reorder.
-        <Text key={index} style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>
+        <Text key={index} style={{ fontSize: TYPE.body.size, color: colors.text, lineHeight: TYPE.body.line }}>
           {note}
         </Text>
       ))}
@@ -78,38 +85,42 @@ function Notes({ notes }: { notes: readonly string[] }) {
   );
 }
 
+/** Who made it, the mark that vouches for that, and its signature. */
+function Maker({ facts }: { facts: TrustFacts }) {
+  const colors = useColors();
+  return (
+    <>
+      <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text, lineHeight: FACT_LINE }}>{facts.maker.name}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
+        {facts.maker.mark === "verified" && <VerifiedMark size={TYPE.secondary.size} />}
+        {facts.maker.mark === "reviewed" && <ReviewedSeal size={TYPE.secondary.size} />}
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{facts.maker.line}</Text>
+      </View>
+      {facts.signed !== null && <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{facts.signed}</Text>}
+    </>
+  );
+}
+
 export function TrustCard({ facts, strong = [] }: { facts: TrustFacts; strong?: readonly string[] }) {
   const colors = useColors();
   const surface = useSurface();
   const rows: Array<{ key: string; label: string; body: ReactNode }> = [
-    {
-      key: "maker",
-      label: "Made by",
-      body: (
-        <>
-          <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text, lineHeight: FACT_LINE }}>{facts.maker.name}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-            {facts.maker.mark === "verified" && <VerifiedBadge size={12} />}
-            {facts.maker.mark === "reviewed" && <ReviewedSeal size={12} />}
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>{facts.maker.line}</Text>
-          </View>
-          {facts.signed !== null && <Text style={{ fontSize: 12, color: colors.textMuted }}>{facts.signed}</Text>}
-        </>
-      ),
-    },
+    { key: "maker", label: "Made by", body: <Maker facts={facts} /> },
     {
       key: "reach",
       label: "It can",
       body: !facts.reach.known ? (
-        <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: FACT_LINE }}>Flathub doesn’t say what it can reach.</Text>
+        <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted, lineHeight: FACT_LINE }}>Flathub doesn’t say what it can reach.</Text>
       ) : (
         <>
           {facts.reach.lines.length === 0 ? (
-            <Text style={{ fontSize: 13, color: colors.text, lineHeight: FACT_LINE }}>Nothing beyond its own window</Text>
+            <Text style={{ fontSize: TYPE.body.size, color: colors.text, lineHeight: FACT_LINE }}>Nothing beyond its own window</Text>
           ) : (
             <ReachLines lines={facts.reach.lines} strong={strong} />
           )}
-          {facts.reach.cannot !== null && <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{facts.reach.cannot}</Text>}
+          {facts.reach.cannot !== null && (
+            <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, lineHeight: TYPE.secondary.line }}>{facts.reach.cannot}</Text>
+          )}
         </>
       ),
     },
@@ -121,9 +132,9 @@ export function TrustCard({ facts, strong = [] }: { facts: TrustFacts; strong?: 
       label: "What’s new",
       body: (
         <>
-          {heading !== "" && <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: FACT_LINE }}>{heading}</Text>}
+          {heading !== "" && <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, lineHeight: FACT_LINE }}>{heading}</Text>}
           {notes.length === 0 ? (
-            <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: FACT_LINE }}>No notes for this version.</Text>
+            <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted, lineHeight: FACT_LINE }}>No notes for this version.</Text>
           ) : (
             <Notes notes={notes} />
           )}
@@ -132,11 +143,22 @@ export function TrustCard({ facts, strong = [] }: { facts: TrustFacts; strong?: 
     });
   }
   if (facts.users !== null)
-    rows.push({ key: "users", label: "Used by", body: <Text style={{ fontSize: 13, color: colors.text, lineHeight: FACT_LINE }}>{facts.users}</Text> });
+    rows.push({
+      key: "users",
+      label: "Used by",
+      body: <Text style={{ fontSize: TYPE.body.size, color: colors.text, lineHeight: FACT_LINE }}>{facts.users}</Text>,
+    });
   return (
     <View
       testID="trust-card"
-      style={{ flexShrink: 0, flexDirection: "column", borderRadius: 10, backgroundColor: surface.card, borderWidth: 1, borderColor: colors.separator }}
+      style={{
+        flexShrink: 0,
+        flexDirection: "column",
+        borderRadius: RADIUS.card,
+        backgroundColor: surface.card,
+        borderWidth: 1,
+        borderColor: colors.separator,
+      }}
     >
       {rows.map((row, index) => (
         <Fact key={row.key} testID={`trust:${row.key}`} label={row.label} last={index === rows.length - 1}>

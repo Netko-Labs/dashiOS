@@ -13,7 +13,7 @@ import type { ViewChoices } from "../menus.ts";
 import { TABS } from "../menus.ts";
 import type { Tab } from "../monitor.ts";
 import { TOOLBAR, type ToolbarFit, tabsWidth } from "../toolbar-fit.ts";
-import { ViewButton } from "./view-menus.tsx";
+import { ViewPicker } from "./view-menus.tsx";
 
 export interface MonitorToolbarProps {
   fit: ToolbarFit;
@@ -21,6 +21,7 @@ export interface MonitorToolbarProps {
   onTab: (tab: Tab) => void;
   view: ViewChoices;
   onViewMenu: (x: number, y: number) => void;
+  onView: (patch: Partial<ViewChoices>) => void;
   /** What Quit… would quit, and why it can't (its tooltip); null with nothing selected. */
   quit: { name: string; refusal: string | null } | null;
   onQuit: () => void;
@@ -51,6 +52,7 @@ export function MonitorBar({ model }: { model: MonitorModel }) {
       onTab={chooseTab}
       view={view}
       onViewMenu={(x, y) => sheets.setMenu({ kind: "view", x, y })}
+      onView={(patch) => model.setView({ ...view, ...patch })}
       quit={selectedLine ? { name: selectedLine.name, refusal: sheets.refusal } : null}
       onQuit={() => sheets.quit()}
       search={{
@@ -71,7 +73,7 @@ export function MonitorBar({ model }: { model: MonitorModel }) {
   );
 }
 
-export function MonitorToolbar({ fit, tab, onTab, view, onViewMenu, quit, onQuit, search }: MonitorToolbarProps) {
+export function MonitorToolbar({ fit, tab, onTab, view, onViewMenu, onView, quit, onQuit, search }: MonitorToolbarProps) {
   // A narrow window's field stands in the tabs' place while it has the keyboard or still filters.
   const fieldOverTabs = !fit.searchField && (search.focused || search.value !== "");
   const field = (width: number) => (
@@ -101,7 +103,7 @@ export function MonitorToolbar({ fit, tab, onTab, view, onViewMenu, quit, onQuit
         tooltip={quit ? (quit.refusal ?? `Quit ${quit.name}`) : "Select an app to quit it"}
         onPress={onQuit}
       />
-      <ViewButton view={view} compact={!fit.viewLabel} onOpen={onViewMenu} />
+      <ViewPicker view={view} compact={!fit.viewLabel} onChange={onView} onOpen={onViewMenu} />
       {fieldOverTabs ? (
         // The tabs' slot and the glyph's, so nothing beside them moves.
         field(tabsWidth(fit.segment) + TOOLBAR.gap + TOOLBAR.icon)
@@ -109,7 +111,7 @@ export function MonitorToolbar({ fit, tab, onTab, view, onViewMenu, quit, onQuit
         <>
           <Segmented testID="tabs" options={TABS} value={tab} onChange={onTab} segmentWidth={fit.segment} />
           {fit.searchField ? (
-            field(TOOLBAR.search)
+            field(fit.search)
           ) : (
             <ToolbarButton glyph={glyphs.SEARCH} testID="search-open" tooltip="Search processes" onPress={search.onOpen} />
           )}

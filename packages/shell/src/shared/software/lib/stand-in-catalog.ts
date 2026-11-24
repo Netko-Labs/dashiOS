@@ -8,6 +8,9 @@
 import { FIELD, RECORD } from "./rpm-query.ts";
 import type { RunOptions, RunResult } from "./run.ts";
 
+/** The stand-in's pretend work (ms). */
+const TIMERS = { stand: 40 } as const;
+
 const REPOS = [
   { id: "fedora", name: "Fedora 44 - x86_64", is_enabled: true },
   { id: "updates", name: "Fedora 44 - x86_64 - Updates", is_enabled: true },
@@ -66,7 +69,7 @@ function query(command: readonly string[]): string {
 const steps = async (options: RunOptions): Promise<void> => {
   for (let percent = 0; percent <= 100 && !options.signal?.aborted; percent += 25) {
     options.onOutput?.(`Status: \tInstalling\nPercentage:\t${percent}\n`);
-    await new Promise((resolve) => setTimeout(resolve, 40));
+    await new Promise((resolve) => setTimeout(resolve, TIMERS.stand));
   }
 };
 
