@@ -2,13 +2,12 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Appearance } from "@dashi/ui";
+import { Appearance, DARK_CONTROLS, LIGHT_CONTROLS } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import type { PaneContext } from "../src/settings-app/context.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { SettingsWindow } from "../src/settings-app/view.tsx";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
-import { DARK_CONTROLS, LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 import { Nav, PANES, SIDEBAR_PANES } from "../src/shared/settings/panes.ts";
 import { settle } from "./support/time.ts";
 

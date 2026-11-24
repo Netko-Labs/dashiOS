@@ -11,7 +11,7 @@ import { Text, View } from "@mirinjs/metal";
 import { Children, Fragment, type ReactNode } from "react";
 import { ControlName } from "./control-name.ts";
 import { Shortcut } from "./shortcut.tsx";
-import { useColors, useSurface } from "./theme/index.ts";
+import { CLEAR, useColors, useSurface } from "./theme/index.ts";
 
 /**
  * A sentence pulled 8 closer to the group above it. It keeps the default
@@ -73,7 +73,7 @@ export function Group({
       }}
     >
       {/* Always there, so lighting the card never remounts its rows. */}
-      <View style={{ flexDirection: "column", backgroundColor: wash ?? "#00000000" }}>
+      <View style={{ flexDirection: "column", backgroundColor: wash ?? CLEAR }}>
         {rows.map((row, index) => (
           // The rows of a group never reorder.
           <Fragment key={index}>

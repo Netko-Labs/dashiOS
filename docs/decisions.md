@@ -6916,3 +6916,65 @@ short words, as the rulebook is written.
   screen a frame is on (tiles, Fill, Center, Back, fitting, placing, Move to)
   follows.
 - **Undo:** `screens[0]` back as `screenFor`'s fallback.
+### D600. The measures are tokens in @dashi/ui's theme, named by role, with Metal's own words
+
+- **Date:** 2026-11-24. The `design-kit` agent's (W1a of the 0.10 design plan).
+- **Question:** the 0.10 audit found 3,526 design values written as numbers in 403 files: only
+  colours were tokens. The plan's `tokens.md` names the sets; how are they written?
+- **Choice:** `packages/dashi-ui/src/theme/measures.ts` holds `TYPE` (each role a `{ size, line }`:
+  the app row, the panel row, the named figure and clock, the Inks), `WEIGHT` (Metal's names, the
+  display weights under `WEIGHT.display`), `SPACE`, `RADIUS` and `pill(h)`, `SHADOW` (sm, xl, lg),
+  `OPACITY`, `MOTION`, `DELAY` and `CURVE` (the curves as functions of t, the Dock's spring among
+  them). `useType()` (`theme/type.ts`) is `TYPE` at the person's text size, rounded to the half
+  point so the panel row's halves stay halves; the launcher's own measures move onto it with W3.
+  Names are `tokens.md`'s exactly, so design.html (W0) and the code agree.
+- **Why:** one place per measure, and a check (H21) can tell a token from a literal.
+- **Cost:** nothing changes on screen yet: the swaps are each workstream's.
+- **Undo:** the file is additive; delete it and its exports.
+
+### D601. The sets that lived in modules live in the theme; the modules keep their names
+
+- **Date:** 2026-11-24. The `design-kit` agent's.
+- **Question:** CO-5 says no hex outside the theme, but Control Center's controls, Terminal, the
+  file icons, the persona, the capsule and GTK kept their own tables. Move every user to new
+  names, or move the tables?
+- **Choice:** the tables moved (`theme/controls.ts`, `theme/sets.ts`, `theme/gtk.ts`, and the new
+  single colours in `theme/colors.ts`: `CLEAR`, `HIT_AREA`, `KNOB`, `ON_DANGER`, `ON_AGENT`,
+  `ON_TINT`, `AMBER`, `CAPTURE_AREA`, `LOCK_GLASS`, `LOGIN`, `MEDIA_SCRIM`, `INK_TILE`, and
+  `SCRIM`, which left `sheet.tsx`). Each module still decides how to use its set and keeps its own
+  name for it as a constant of its own (`LIGHT_TERMINAL = TERMINAL.light`), so no caller moved and
+  nothing re-exports (H19). `tokens.test.ts` holds every set's contrast. The single colours are
+  there for W2 to W7 to swap in; only W1's own files use them so far.
+- **Why:** the tables are design data, and design data is the theme's; the callers are each
+  workstream's to change.
+- **Cost:** two names for each set until its module's next change uses the theme's directly.
+- **Undo:** copy a table back into its module.
+
+### D602. One "on": Control Center's Kombu greens go
+
+- **Date:** 2026-11-24. The `design-kit` agent's (plan R2, CO-1).
+- **Question:** Control Center and Settings painted "on" in their own Kombu greens (`#2F6F5B` in
+  Light, `#86D3B6` under `#0B2A20` in Dark), while every other switch used the guard's `selection`.
+- **Choice:** the panel look's `on` and `onInk` are `onOf(palette)`: the guard's `selection` under
+  `onAccent`, with the person's accent drawn in by `paletteFor`, as every kit draws it. In Dark,
+  Kombu's on is now `#357A64` under white, 3.6:1 on Control Center's off tile `#141417` (a fill
+  reads at 3:1) and white on it 5.1:1.
+- **Why:** a picked accent already reached both kits this way; only Kombu disagreed.
+- **Cost:** Dark's on tiles are deeper than before.
+- **Undo:** `LIGHT_CONTROLS` and `DARK_CONTROLS` in `theme/controls.ts` take literal greens again.
+
+### D603. The design checks keep one list per workstream, owned by path
+
+- **Date:** 2026-11-24. The `design-kit` agent's.
+- **Question:** H21 to H24 start from today's offenders, and seven workstreams empty them in
+  parallel. One list per check would be edited by every branch at once.
+- **Choice:** each check splits its offences by the workstream that owns the file
+  (`scripts/design-lists.ts`, the plan's `owners.py` in TypeScript, first match wins) and holds
+  each part to `scripts/lists/<check>/<W>.txt` (`h21` for H21a, `h23`, and `h22` with W1b). The
+  lists were written once with `--seed`, which refuses to overwrite one; after that they only
+  shrink, as every list does. H23's purple-edge rule accepts a style that also sets
+  `focusBorderColor` within six lines (a field's own edge, which the plan allows).
+- **Why:** no two branches edit the same list, and a workstream sees only its own offenders.
+- **Cost:** a file that moves to another workstream's folder moves lists by hand (`--shrink` on
+  both sides).
+- **Undo:** merge the seven files into one list per check.

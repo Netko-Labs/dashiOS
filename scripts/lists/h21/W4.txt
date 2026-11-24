@@ -1,0 +1,32 @@
+# H21a (scripts/check-design-values.ts): colours outside the theme and sizes, radii, weights and
+# shadows off the scales, per file. Shrink-only: fix the code (the token is in the plan's
+# raw-values-mapped.tsv), then `bun scripts/check-design-values.ts --shrink`.
+5	packages/shell/src/appearance/lib/gtk-css.ts
+3	packages/shell/src/battery/lib/panel.tsx
+1	packages/shell/src/control-center/lib/edit.tsx
+1	packages/shell/src/settings-app/answerer-list.tsx
+3	packages/shell/src/settings-app/appearance.tsx
+4	packages/shell/src/settings-app/keyboard.tsx
+3	packages/shell/src/settings-app/lib/accent/card.tsx
+3	packages/shell/src/settings-app/lib/accent/picker.tsx
+5	packages/shell/src/settings-app/lib/accent/preview.tsx
+1	packages/shell/src/settings-app/lib/accent/swatches.tsx
+1	packages/shell/src/settings-app/lib/panes/about.tsx
+4	packages/shell/src/settings-app/lib/panes/agents-alone-parts.tsx
+2	packages/shell/src/settings-app/lib/panes/agents-alone.tsx
+3	packages/shell/src/settings-app/lib/panes/arrangement.tsx
+2	packages/shell/src/settings-app/lib/panes/battery-hero.tsx
+4	packages/shell/src/settings-app/lib/panes/battery-usage.tsx
+2	packages/shell/src/settings-app/lib/panes/clipboard-parts.tsx
+1	packages/shell/src/settings-app/lib/panes/parts.tsx
+1	packages/shell/src/settings-app/lib/panes/persona-look.tsx
+5	packages/shell/src/settings-app/lib/panes/persona-parts.tsx
+2	packages/shell/src/settings-app/lib/panes/voice-dictation-words.tsx
+2	packages/shell/src/settings-app/lib/panes/voice-fetch-parts.tsx
+3	packages/shell/src/settings-app/lib/panes/wallpaper-live.tsx
+2	packages/shell/src/settings-app/lib/panes/wallpaper.tsx
+3	packages/shell/src/settings-app/lib/sidebar-pill.tsx
+1	packages/shell/src/settings-app/lib/sidebar-search.tsx
+1	packages/shell/src/settings-app/spot.tsx
+1	packages/shell/src/settings/settings-schema.ts
+1	packages/shell/src/shared/cards/cards.tsx

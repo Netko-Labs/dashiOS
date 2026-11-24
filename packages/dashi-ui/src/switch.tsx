@@ -9,7 +9,7 @@ import { View } from "@mirinjs/metal";
 import { useContext } from "react";
 import { ControlName } from "./control-name.ts";
 import { useControlState } from "./control-state.tsx";
-import { useColors } from "./theme/index.ts";
+import { KNOB, useColors } from "./theme/index.ts";
 
 export interface SwitchProps {
   on: boolean;
@@ -52,7 +52,7 @@ export function Switch({ on, testID, onChange, disabled, focused, focusable = tr
         focusRingColor: colors.focusRing,
       }}
     >
-      <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#ffffff", shadow: "sm" }} />
+      <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: KNOB, shadow: "sm" }} />
     </View>
   );
 }

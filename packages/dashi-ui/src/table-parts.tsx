@@ -5,7 +5,7 @@ import { type ReactNode, useState } from "react";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
 import { SelectionBar } from "./selection.tsx";
 import { nextSort, type SortableColumn, type SortState } from "./table-sort.ts";
-import { useColors, useSurface } from "./theme/index.ts";
+import { CLEAR, useColors, useSurface } from "./theme/index.ts";
 
 export interface Column<T> extends SortableColumn<T> {
   title: string;
@@ -132,7 +132,7 @@ export function TableRow<T>({ row, columns, testID, striped, chosen, muted, heig
         flexShrink: 0,
         flexDirection: "row",
         borderRadius: 5,
-        backgroundColor: chosen ? colors.selectionWash : striped ? surface.stripe : "#00000000",
+        backgroundColor: chosen ? colors.selectionWash : striped ? surface.stripe : CLEAR,
         ...(dropOver ? { borderWidth: 2, borderColor: colors.selection } : {}),
       }}
     >

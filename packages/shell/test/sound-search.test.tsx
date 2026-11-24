@@ -5,11 +5,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { LIGHT_CONTROLS } from "@dashi/ui";
 import { type NativeTransport, render, View } from "@mirinjs/metal";
 import { appRows, appSpot, findSettings } from "../src/settings-app/lib/find.ts";
 import { AppsCard } from "../src/settings-app/lib/panes/sound-apps.tsx";
 import { RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
-import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 import { catalogFrom } from "../src/shared/processes/index.ts";
 import { AppMixer, fixedGraph, parseGraph, type Stream, useAppNames } from "../src/sound/apps/index.ts";
 import { heldControl } from "../src/sound/apps/lib/commands.ts";

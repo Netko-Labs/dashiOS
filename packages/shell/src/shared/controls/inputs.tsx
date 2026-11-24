@@ -8,7 +8,7 @@
  * disabled, the whole control is at 40%.
  */
 
-import { CHEVRON_DOWN, ControlName, DISABLED_OPACITY, useColors } from "@dashi/ui";
+import { CHEVRON_DOWN, CLEAR, ControlName, DISABLED_OPACITY, useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
 import { useSpring } from "./motion.ts";
@@ -51,7 +51,7 @@ export function ControlSwitch({ on, testID, onChange, disabled, focusable = true
         flexDirection: "row",
         alignItems: "center",
         justifyContent: on ? "flex-end" : "flex-start",
-        backgroundColor: on ? colors.on : "#00000000",
+        backgroundColor: on ? colors.on : CLEAR,
         borderWidth: on ? 0 : 2,
         borderColor: colors.muted,
         opacity: disabled ? DISABLED_OPACITY : 1,
@@ -83,7 +83,7 @@ function SegmentPill({ label, chosen, testID, onPress, tight }: { label: string;
         borderRadius: radius,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: chosen ? colors.on : "#00000000",
+        backgroundColor: chosen ? colors.on : CLEAR,
         hoverBackgroundColor: chosen ? colors.on : colors.knobOff,
       }}
     >
@@ -130,8 +130,8 @@ function MoreSegment({ testID, more, disabled }: { testID: string; more: MorePil
         alignItems: "center",
         justifyContent: "center",
         gap: 3,
-        backgroundColor: more.open ? colors.knobOff : "#00000000",
-        hoverBackgroundColor: disabled ? "#00000000" : colors.knobOff,
+        backgroundColor: more.open ? colors.knobOff : CLEAR,
+        hoverBackgroundColor: disabled ? CLEAR : colors.knobOff,
       }}
     >
       <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.offInk }}>
@@ -241,7 +241,7 @@ export function PillButton({
         borderRadius: height / 2,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: tone === "ink" ? colors.text : "#00000000",
+        backgroundColor: tone === "ink" ? colors.text : CLEAR,
         hoverBackgroundColor: tone === "ink" ? (disabled ? colors.text : primaryHover) : colors.knobOff,
         borderWidth: tone === "ink" ? 0 : 1.5,
         borderColor: colors.line,

@@ -6,8 +6,11 @@
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import type { Choice } from "./choices.tsx";
 import { useControlState } from "./control-state.tsx";
-import { CLEAR, SEARCH } from "./glyphs.ts";
-import { useColors, useSurface } from "./theme/index.ts";
+import { CLEAR as CLEAR_GLYPH, SEARCH } from "./glyphs.ts";
+import { CLEAR, SHADOW, useColors, useSurface } from "./theme/index.ts";
+
+/** The segmented control's own radii (UI-2): its track 8, a segment one step in at 6. */
+const SEGMENTED_LOOK = { trackRadius: 8, segmentRadius: 6 } as const;
 
 /** macOS's segmented control: a sunk track, the chosen segment raised on it. */
 export function Segmented<T extends string | number>({
@@ -38,7 +41,16 @@ export function Segmented<T extends string | number>({
       focusGroup
       accessibilityRole="tablist"
       data-focused={state.focused}
-      style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button, opacity: state.opacity }}
+      style={{
+        flexDirection: "row",
+        flexShrink: 0,
+        height: 26,
+        padding: 2,
+        gap: 2,
+        borderRadius: SEGMENTED_LOOK.trackRadius,
+        backgroundColor: colors.button,
+        opacity: state.opacity,
+      }}
     >
       {options.map((option) => (
         <Segment
@@ -59,7 +71,7 @@ function Segment({ label, chosen, width, testID, onPress }: { label: string; cho
   const colors = useColors();
   const surface = useSurface();
   const state = useControlState({ disabled: onPress === undefined });
-  const rest = chosen ? surface.card : "#00000000";
+  const rest = chosen ? surface.card : CLEAR;
   return (
     <View
       testID={testID}
@@ -70,12 +82,12 @@ function Segment({ label, chosen, width, testID, onPress }: { label: string; cho
       onPointer={state.onPointer}
       style={{
         ...(width !== undefined ? { width } : { paddingHorizontal: 12 }),
-        borderRadius: 6,
+        borderRadius: SEGMENTED_LOOK.segmentRadius,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: state.pressed && !chosen ? colors.pressed : rest,
         hoverBackgroundColor: onPress === undefined || chosen ? rest : state.pressed ? colors.pressed : colors.button,
-        ...(chosen ? { shadow: "xs" as const } : {}),
+        ...(chosen ? { shadow: SHADOW.sm } : {}),
         focusRingColor: colors.focusRing,
       }}
     >
@@ -192,7 +204,7 @@ export function SearchField({
           if (key === "Escape" && value !== "" && variant === "search") onChangeText("");
           else onKeyPress?.(key);
         }}
-        style={{ flex: 1, height: 24, padding: 2, fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
+        style={{ flex: 1, height: 24, padding: 2, fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: CLEAR }}
       />
       {status ? (
         <View testID={`${testID}:status`} style={{ flexShrink: 0 }}>
@@ -209,7 +221,7 @@ export function SearchField({
           onPress={() => onChangeText("")}
           style={{ width: 18, height: 18, alignItems: "center", justifyContent: "center" }}
         >
-          <Svg markup={CLEAR} size={13} color={colors.textMuted} />
+          <Svg markup={CLEAR_GLYPH} size={13} color={colors.textMuted} />
         </View>
       )}
     </View>

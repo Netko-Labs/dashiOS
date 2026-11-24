@@ -1,0 +1,7 @@
+# H21a (scripts/check-design-values.ts): colours outside the theme and sizes, radii, weights and
+# shadows off the scales, per file. Shrink-only: fix the code (the token is in the plan's
+# raw-values-mapped.tsv), then `bun scripts/check-design-values.ts --shrink`.
+10	packages/dashi-ui/src/login-screen.tsx
+6	packages/greeter/src/view.tsx
+5	packages/shell/src/widgets/glance.tsx
+2	packages/shell/src/widgets/lock.tsx

@@ -10,7 +10,7 @@
 
 import { TextInputDefaults, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { useColors } from "./theme/index.ts";
+import { CLEAR, useColors } from "./theme/index.ts";
 import type { Palette } from "./theme/palette.ts";
 
 /** The bar: 3 wide, 20 tall on a 40 px launcher row, a little shorter on shorter rows. */
@@ -48,8 +48,6 @@ export interface RowLook {
   quiet: string;
   glyph: string;
 }
-
-const CLEAR = "#00000000";
 
 /** How a list, table or sidebar row is colored: on the wash every word is ink; at rest, glyphs are muted (CO-2). */
 export function rowLook(colors: Palette, selected: boolean): RowLook {

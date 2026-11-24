@@ -16,7 +16,7 @@
 
 import { type PressInfo, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { useColors, useSurface } from "./theme/index.ts";
+import { CLEAR, useColors, useSurface } from "./theme/index.ts";
 import { TooltipLayer, useTooltip } from "./tooltip.tsx";
 import { WindowTitle } from "./window-title.tsx";
 
@@ -228,8 +228,8 @@ export function ToolbarButton({
         borderRadius: 7,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: active && !disabled ? colors.button : "#00000000",
-        hoverBackgroundColor: disabled ? "#00000000" : colors.button,
+        backgroundColor: active && !disabled ? colors.button : CLEAR,
+        hoverBackgroundColor: disabled ? CLEAR : colors.button,
         focusRingColor: colors.focusRing,
       }}
     >

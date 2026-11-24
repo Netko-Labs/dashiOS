@@ -1,0 +1,20 @@
+# H21a (scripts/check-design-values.ts): colours outside the theme and sizes, radii, weights and
+# shadows off the scales, per file. Shrink-only: fix the code (the token is in the plan's
+# raw-values-mapped.tsv), then `bun scripts/check-design-values.ts --shrink`.
+1	packages/shell/src/accounts/lib/sheet.tsx
+4	packages/shell/src/agent-sheets/lib/question-sheet.tsx
+3	packages/shell/src/agent-sheets/lib/sign-in-sheet.tsx
+3	packages/shell/src/approval-sheet.tsx
+2	packages/shell/src/bluetooth/lib/sheet.tsx
+1	packages/shell/src/bluetooth/page.tsx
+1	packages/shell/src/confirm-sheet.tsx
+2	packages/shell/src/consent-scopes.tsx
+4	packages/shell/src/consent.tsx
+1	packages/shell/src/display-config/keep.tsx
+3	packages/shell/src/force-quit/lib/view.tsx
+1	packages/shell/src/polkit/lib/sheet.tsx
+4	packages/shell/src/region/lib/pick.tsx
+2	packages/shell/src/share-picker/lib/panel.tsx
+1	packages/shell/src/shared/applet-store/consent-sheet.tsx
+1	packages/shell/src/sheet.tsx
+1	packages/shell/src/wifi/lib/password.tsx

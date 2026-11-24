@@ -4,6 +4,8 @@
  * its 41 px being 28 points.
  */
 
+import { AMBER as AMBER_SET, CAPSULE as CAPSULE_INKS } from "@dashi/ui";
+
 /** The one line. */
 export const CAPSULE = {
   height: 31,
@@ -42,7 +44,7 @@ export const CARD = {
   focusRim: 3,
   /** The ink line outside that outline (it shows the outline on a white window). */
   focusLine: 1.5,
-  focusInk: "#1d1d1f",
+  focusInk: CAPSULE_INKS.ink,
   paddingX: 12,
   paddingTop: 9,
   paddingBottom: 10,
@@ -82,15 +84,16 @@ export const SEAT = {
 /** The layer surface: the screen's width, this tall, see-through; the pointer is taken only on what is drawn. */
 export const SURFACE_HEIGHT = 340;
 
-export const INK = "#1d1d1f";
-export const AMBER = "#f0b93c";
+export const INK = CAPSULE_INKS.ink;
+export const AMBER = AMBER_SET.fill;
 /** The amber on a light capsule (dictation's in Dark). */
-export const AMBER_DEEP = "#86600a";
-const PAPER = "#f4f4f6";
-const DASHI_FILL = "#4a33b0";
-const DASHI_SOFT = "#d9d2fb";
-const DASHI_INK = "#2f2080";
-const DEFAULT_PURPLE = "#6e56cf";
+export const AMBER_DEEP = AMBER_SET.deep;
+const PAPER = CAPSULE_INKS.paper;
+const DASHI_FILL = CAPSULE_INKS.dashiFill;
+const DASHI_SOFT = CAPSULE_INKS.dashiSoft;
+const DASHI_INK = CAPSULE_INKS.dashiInk;
+const DEFAULT_PURPLE = CAPSULE_INKS.defaultPurple;
+const WHITE = CAPSULE_INKS.white;
 
 export interface CapsuleColours {
   fill: string;
@@ -128,8 +131,17 @@ export function dashiFill(colour: string): string {
 /** Dictation's capsule: ink in Light, paper in Dark. It types your words. */
 export function inkColours(dark: boolean): CapsuleColours {
   return dark
-    ? { fill: PAPER, text: INK, soft: "#1d1d1fa8", rim: INK, primary: INK, onPrimary: "#ffffff", ok: "#2f7a3a", amber: AMBER_DEEP }
-    : { fill: INK, text: "#ffffff", soft: "#ffffffa8", rim: "#c9c6d2", primary: "#ffffff", onPrimary: INK, ok: "#8fe0a2", amber: AMBER };
+    ? { fill: PAPER, text: INK, soft: CAPSULE_INKS.softOnPaper, rim: INK, primary: INK, onPrimary: WHITE, ok: CAPSULE_INKS.okOnPaper, amber: AMBER_DEEP }
+    : {
+        fill: INK,
+        text: WHITE,
+        soft: CAPSULE_INKS.softOnInk,
+        rim: CAPSULE_INKS.rimOnInk,
+        primary: WHITE,
+        onPrimary: INK,
+        ok: CAPSULE_INKS.okOnInk,
+        amber: AMBER,
+      };
 }
 
 /** Dashi's capsule: its colour in both modes. It does things. */
@@ -138,12 +150,12 @@ export function dashiColours(colour: string): CapsuleColours {
   const own = fill === DASHI_FILL;
   return {
     fill,
-    text: "#ffffff",
-    soft: own ? DASHI_SOFT : "#ffffffd0",
-    rim: "#ffffff",
-    primary: "#ffffff",
+    text: WHITE,
+    soft: own ? DASHI_SOFT : CAPSULE_INKS.softOnFill,
+    rim: WHITE,
+    primary: WHITE,
     onPrimary: own ? DASHI_INK : fill,
-    ok: "#ffffff",
+    ok: WHITE,
     amber: AMBER,
   };
 }

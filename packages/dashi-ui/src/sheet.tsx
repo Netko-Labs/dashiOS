@@ -8,7 +8,7 @@
 import { View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { KeySink } from "./key-sink.tsx";
-import { useColors, useDark, useSurface } from "./theme/index.ts";
+import { SCRIM, useColors, useDark, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
 
 export interface SheetProps {
@@ -21,11 +21,6 @@ export interface SheetProps {
   onConfirm?: () => void;
 }
 
-/**
- * What a sheet's scrim lays over the window: black, deeper in Dark, where the
- * ground is near black or black and a light wash would show nothing.
- */
-export const SCRIM = { light: "#00000026", dark: "#0000008c" } as const;
 /** The least room a sheet keeps from the window's sides and foot. */
 export const SHEET_MARGIN = 16;
 

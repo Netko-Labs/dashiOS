@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { contrastRatio, darkColors, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, TRUE_BLACK } from "@dashi/ui";
+import { contrastRatio, DARK_CONTROLS, darkColors, LIGHT_CONTROLS, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, lightColors, TRUE_BLACK } from "@dashi/ui";
 import { DARK_TERMINAL } from "../apps/terminal/lib/palette.ts";
 import { BATTERY_PANEL } from "../src/battery/lib/panel.tsx";
 import { GRID } from "../src/control-center/layout.ts";
 import { gtkColors } from "../src/shared/appearance/gtk-colors.ts";
-import { DARK_CONTROLS, LIGHT_CONTROLS, panelEdge } from "../src/shared/controls/palette.ts";
+import { panelEdge } from "../src/shared/controls/palette.ts";
 
 // Dark is true black everywhere Dashi draws (docs/design.html, "Tokens"):
 // Control Center, Settings, GTK's colors, Terminal, the login screen and the
@@ -36,8 +36,11 @@ describe("Control Center's and Settings' controls on true black", () => {
     });
   }
 
-  test("green keeps its ink and the fill its words", () => {
-    expect(DARK_CONTROLS.on).toBe("#86d3b6");
+  test("on is the one on (R2): the guard's selection under onAccent, a fill even on an off tile", () => {
+    expect(DARK_CONTROLS.on).toBe(darkColors.selection);
+    expect(DARK_CONTROLS.onInk).toBe(darkColors.onAccent);
+    expect(LIGHT_CONTROLS.on).toBe(lightColors.selection);
+    expect(contrastRatio(DARK_CONTROLS.on, DARK_CONTROLS.off)).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(DARK_CONTROLS.onInk, DARK_CONTROLS.on)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(DARK_CONTROLS.fillInk, DARK_CONTROLS.fill)).toBeGreaterThanOrEqual(4.5);
   });

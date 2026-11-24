@@ -13,16 +13,10 @@
  * darker, not lighter, so they stay readable.
  */
 
-import { TRUE_BLACK } from "@dashi/ui";
+import { TERMINAL, type TerminalColors } from "@dashi/ui";
 
-export interface TerminalPalette {
-  ground: string;
-  ink: string;
-  /** The cursor: kombu, deep enough in Light Mode and light enough in Dark Mode that the ground's color on it (the letter under a block cursor) is AA. */
-  cursor: string;
-  /** Black, red, green, yellow, blue, magenta, cyan, white, then the bright eight. */
-  ansi: readonly string[];
-}
+/** The colours one appearance draws with (@dashi/ui's TERMINAL set). */
+export type TerminalPalette = TerminalColors;
 
 export const ANSI_NAMES = [
   "black",
@@ -43,54 +37,10 @@ export const ANSI_NAMES = [
   "bright white",
 ] as const;
 
-export const LIGHT_TERMINAL: TerminalPalette = {
-  ground: "#fbfaf7",
-  ink: "#1d1d1f",
-  cursor: "#357a64",
-  ansi: [
-    "#1d1d1f",
-    "#b23a50",
-    "#3d7a2e",
-    "#866000",
-    "#2c5faf",
-    "#6a4fc4",
-    "#22786a",
-    "#d6d3cc",
-    "#636260",
-    "#a8304a",
-    "#336b26",
-    "#755400",
-    "#244f96",
-    "#5a40ae",
-    "#1b665a",
-    "#f3f1ec",
-  ],
-};
+export const LIGHT_TERMINAL: TerminalPalette = TERMINAL.light;
 
-/** Dark is true black: the window's ground and Dashi's 92% ink (TRUE_BLACK in @dashi/ui). */
-export const DARK_TERMINAL: TerminalPalette = {
-  ground: TRUE_BLACK.ground,
-  ink: TRUE_BLACK.ink,
-  cursor: "#5fae95",
-  ansi: [
-    "#3a3a3d",
-    "#f07a8f",
-    "#7fc46a",
-    "#e5b13f",
-    "#6fa3ef",
-    "#a897f0",
-    "#5fbfa6",
-    "#d8d8dc",
-    "#8e8e93",
-    "#ff97a8",
-    "#9cd988",
-    "#f5cd6a",
-    "#93bbf6",
-    "#c2b5f8",
-    "#86d6c0",
-    "#f5f5f7",
-  ],
-};
+/** Dark is true black: the window's ground and Dashi's 92% ink. */
+export const DARK_TERMINAL: TerminalPalette = TERMINAL.dark;
 
 export function terminalPalette(dark: boolean): TerminalPalette {
   return dark ? DARK_TERMINAL : LIGHT_TERMINAL;

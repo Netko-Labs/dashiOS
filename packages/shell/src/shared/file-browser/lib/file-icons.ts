@@ -12,57 +12,25 @@
 
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { FILE_ICONS, FILE_TINTS, type FileIconColors } from "@dashi/ui";
 import { type Category, cacheHome, categoryOf, INODE_DIRECTORY } from "../../files/index.ts";
 import { sidebarGlyph } from "../glyphs.ts";
 import type { GlyphName } from "../location.ts";
 
-/** The document categories with a glyph of their own, and the tint each wears (@dashi/ui TINTS). */
-export const CATEGORY_TINTS: Readonly<Record<Exclude<Category, "folder" | "other">, string>> = {
-  image: "#6F8A2A",
-  audio: "#C66F22",
-  video: "#3D7AB0",
-  archive: "#A06C35",
-  code: "#2B8597",
-  text: "#706C66",
-  document: "#4A6478",
-};
+/** The document categories with a glyph of their own, and the tint each wears (@dashi/ui FILE_TINTS). */
+export const CATEGORY_TINTS: Readonly<Record<Exclude<Category, "folder" | "other">, string>> = FILE_TINTS;
 
 /** The emblems a special folder can carry: the sidebar's glyph for it. */
 export type Emblem = Extract<GlyphName, "home" | "desktop" | "documents" | "downloads" | "pictures" | "music" | "videos">;
 
 export type IconKind = { folder: true; emblem?: Emblem } | { folder: false; category: Exclude<Category, "folder"> };
 
-/** Colors for one appearance. */
-export interface IconInk {
-  page: [string, string];
-  edge: string;
-  fold: string;
-  folderBack: [string, string];
-  folderFront: [string, string];
-  emblem: string;
-  /** A category's glyph drawn lighter than its tint, where the tint is too dim on this page (Dark Mode's text and documents). */
-  lift: Partial<Record<keyof typeof CATEGORY_TINTS, string>>;
-}
+/** Colors for one appearance (@dashi/ui FILE_ICONS). */
+export type IconInk = FileIconColors;
 
-export const LIGHT_INK: IconInk = {
-  page: ["#ffffff", "#f1f2f5"],
-  edge: "#1d1d1f29",
-  fold: "#dfe1e6",
-  folderBack: ["#5d93c3", "#4a82b6"],
-  folderFront: ["#8cbbe2", "#69a1d2"],
-  emblem: "#2f6493b3",
-  lift: {},
-};
+export const LIGHT_INK: IconInk = FILE_ICONS.light;
 
-export const DARK_INK: IconInk = {
-  page: ["#3d3d42", "#333337"],
-  edge: "#ffffff29",
-  fold: "#55555b",
-  folderBack: ["#45739e", "#3a6590"],
-  folderFront: ["#6f9fc9", "#5687b5"],
-  emblem: "#1f4466c7",
-  lift: { text: "#aaa59e", document: "#8aa3b8", archive: "#c08a52" },
-};
+export const DARK_INK: IconInk = FILE_ICONS.dark;
 
 /** The 16-unit glyphs drawn on a page, stroked in the category's tint. */
 const PAGE_GLYPHS: Readonly<Record<Exclude<Category, "folder" | "other">, string>> = {

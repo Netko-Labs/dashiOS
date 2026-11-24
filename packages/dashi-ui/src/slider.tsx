@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { useControlState } from "./control-state.tsx";
 import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "./slider-math.ts";
 import { StepKeys } from "./step-keys.tsx";
-import { lightColors, useColors } from "./theme/index.ts";
+import { KNOB as KNOB_INK, lightColors, useColors } from "./theme/index.ts";
 
 /** A setting's slider: the knob, and the track it runs on. */
 const KNOB = 18;
@@ -69,7 +69,7 @@ function PlainBar({ height, width, left }: { height: number; width: number; left
           backgroundColor: colors.selection,
         }}
       />
-      <View style={{ position: "absolute", left, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: "#ffffff", shadow: "sm" }} />
+      <View style={{ position: "absolute", left, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: KNOB_INK, shadow: "sm" }} />
     </>
   );
 }
@@ -84,7 +84,7 @@ function GlyphBar({ glyph, width, left }: { glyph: string; width: number; left: 
           width: left + BAR,
           height: BAR,
           borderRadius: BAR / 2,
-          backgroundColor: "#ffffff",
+          backgroundColor: KNOB_INK,
           flexDirection: "row",
           alignItems: "center",
           paddingLeft: 7,
