@@ -19,10 +19,11 @@ import { join } from "node:path";
 import { isRecord } from "@dashi/shape";
 import { ANSWERERS, AnswerError, type Answerer, type PlanTool, promptStyle, SYSTEM_PROMPT, styledPrompt, type Turn } from "../answerer.ts";
 import { oneLine } from "../plan.ts";
-import type { HarnessSpec } from "./catalog.ts";
-import type { FoundHarness } from "./detect.ts";
+import type { FoundHarness, Probe } from "./detect.ts";
 import { PlanRecorder, type PlanServer, servePlan } from "./lib/plan-server.ts";
 import { bridgeInside, harnessEnv, type Runner, type ShellPaths } from "./run.ts";
+import type { HarnessSpec } from "./spec.ts";
+import { turnVersion } from "./version.ts";
 
 /** What a harness is told, in plan mode: the answerers' words, and that its calls are only recorded. */
 export const HARNESS_PROMPT = [
@@ -64,6 +65,8 @@ export interface HarnessOptions {
   /** Whether a connection to the plan socket comes from this turn's sandbox (by the agent's pid and dashi-agent's). */
   fromTurn(peer: number | null, agent: number | null): boolean;
   serve?: typeof servePlan;
+  /** Asks the program its version (`--version`), for a harness whose command line depends on it. */
+  probe?: Probe;
   timeoutMs?: number;
   /** For tests: run the harness itself, without dashi-agent. */
   direct?: boolean;
@@ -79,9 +82,10 @@ export function harnessAnswerer(options: HarnessOptions): Answerer {
     async turn(history, turn, tools: readonly PlanTool[], signal) {
       const home = options.env.HOME;
       const runtime = options.env.XDG_RUNTIME_DIR;
-      if (!home || !runtime) throw new AnswerError("failed", `${info.name} can't start without a session.`);
+      if (!home || !runtime) throw new AnswerError("failed", `${info.name} can’t start without a session.`);
       const found = options.find();
-      if (!found) throw new AnswerError("not-installed", `${info.name} isn't installed.`);
+      if (!found) throw new AnswerError("not-installed", `${info.name} isn’t installed.`);
+      const version = await turnVersion(spec, found, options.probe);
       const kept = keptOf(history);
       const id = `${spec.id}-${process.pid}-${++turns}`;
       const recorder = new PlanRecorder(tools, `plan-${id}`);
@@ -91,7 +95,7 @@ export function harnessAnswerer(options: HarnessOptions): Answerer {
         const bridge = options.direct
           ? { command: options.shell.bun, args: [options.shell.bridge], env: { DASHI_MCP_SOCKET: server.path } }
           : bridgeInside(options.shell, runtime);
-        const command = spec.command({ prompt: turnPrompt(turn), system: harnessPrompt(), session: kept.session, mcp: bridge });
+        const command = spec.command({ prompt: turnPrompt(turn), system: harnessPrompt(), session: kept.session, mcp: bridge, version });
         const profile = {
           socket: server.path,
           readOnly: [...found.readOnly, ...[options.shell.bun, options.shell.bridge].filter((path) => path.startsWith(`${home}/`))],
@@ -125,7 +129,7 @@ export function harnessAnswerer(options: HarnessOptions): Answerer {
         // A plan cut off mid-way is not a plan.
         if (late) throw new AnswerError("no-answer", `${info.name} took too long.`);
         if (output.error && calls.length === 0) {
-          if (spec.signedOut(output.error)) throw new AnswerError("not-signed-in", `${info.name} isn't signed in.`);
+          if (spec.signedOut(output.error)) throw new AnswerError("not-signed-in", `${info.name} isn’t signed in.`);
           throw new AnswerError("failed", oneLine(`${info.name}: ${output.error}`, 120));
         }
         return { reply: { text: output.text, calls }, history: [{ session: output.session ?? kept.session } satisfies Kept] };

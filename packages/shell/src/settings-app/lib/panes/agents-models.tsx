@@ -49,7 +49,7 @@ export function modelOptions(
   return [...base, ...extra.map((id) => ({ value: id, label: id }))];
 }
 
-const ownDefault = (answerer: AnswererChoice): string => `${ANSWERERS[answerer === "none" ? "claude" : answerer].name}'s own default`;
+const ownDefault = (answerer: AnswererChoice): string => `${ANSWERERS[answerer === "none" ? "claude" : answerer].name}’s own default`;
 
 export function ModelRows({ settings, answers }: { settings: SettingsStore; answers: AnswerStatus }) {
   const { data } = useSettings(settings);

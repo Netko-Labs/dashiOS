@@ -47,13 +47,14 @@ export async function viaHarness({ options, talk, task, words, moment, run, say,
   // A session that can't be resumed (it was cleared away): the same ask again, told what was said before.
   if (end.error && talk.session !== null && end.said === "" && run.steps.length === 0 && !run.signal.aborted) end = await ask(null);
   if (run.signal.aborted) throw new DOMException("Stopped.", "AbortError");
-  if (end.missing) throw new AnswerError("not-installed", `${info.binary} isn't installed.`);
+  const name = ANSWERERS[harness].name;
+  if (end.missing) throw new AnswerError("not-installed", `${name} isn’t installed.`);
   talk.session = end.session;
   // It ended badly having done nothing: whatever it printed ("Not logged in · Please run /login") is not an answer.
   if (end.error && (end.said === "" || run.steps.length === 0)) {
     options.log?.(`assistant harness: ${end.error}`);
     throw info.signedOut(end.error)
-      ? new AnswerError("not-signed-in", `${ANSWERERS[harness].name} isn't signed in, so I can't do that yet. Sign in once in Terminal, then ask again.`)
+      ? new AnswerError("not-signed-in", `${name} isn’t signed in, so I can’t do that yet. Sign in once in Terminal, then ask again.`)
       : new AnswerError("failed", "It stopped before it answered.");
   }
   return end.said;

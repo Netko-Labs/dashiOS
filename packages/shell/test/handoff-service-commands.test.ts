@@ -28,9 +28,10 @@ describe("the harnesses' command lines for a task", () => {
     expect(command.stdin.startsWith(TASK_PROMPT)).toBe(true);
   });
 
-  test("OpenCode: run --format json, its config inline", () => {
-    const command = taskCommand("opencode", { ...turn, session: "ses_1" });
-    expect(command.args).toEqual(["run", "--format", "json", "--agent", "dashi-task", "--session", "ses_1", "--", "Book it"]);
+  test("OpenCode: run --format json, its config inline; 2.x on a private server, archived (agents-opencode.test.ts)", () => {
+    const command = taskCommand("opencode", { ...turn, session: "ses_1", version: "2.4.1" });
+    expect(command.args).toEqual(["run", "--standalone", "--archived", "--format", "json", "--agent", "dashi-task", "--session", "ses_1", "--", "Book it"]);
+    expect(taskCommand("opencode", { ...turn, version: "1.19.6" }).args).toEqual(["run", "--format", "json", "--agent", "dashi-task", "--", "Book it"]);
     expect(JSON.parse(command.env.OPENCODE_CONFIG_CONTENT ?? "{}").tools).toEqual({ "*": false, "dashi_*": true });
   });
 

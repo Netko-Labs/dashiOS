@@ -88,7 +88,7 @@ describe("the rows and their order", () => {
     expect(rows[1]?.detail).toBe("Your ChatGPT plan. Not signed in: run codex login in Terminal.");
     expect(rows.find((row) => row.value === "opencode")).toMatchObject({
       available: false,
-      detail: "Not installed. Install it with curl -fsSL https://opencode.ai/install | bash",
+      detail: "Not installed. Install it with curl -fsSL https://opencode.ai/v2/install | bash",
     });
     // Chosen before it went: it stays where it was, and can't be picked again.
     expect(answererRows([{ id: "opencode", installed: false, signedIn: null }], "opencode")[2]).toMatchObject({ value: "opencode", available: true });

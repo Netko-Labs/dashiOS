@@ -26,12 +26,15 @@ export {
   type HarnessTurn,
   harnessEnv,
   hostFiles,
+  type OpenCodeAgent,
+  opencodeCommand,
   PLAN_SERVER,
   type Probe,
   type ShellPaths,
   shellPaths,
   signedIn,
   signInCommand,
+  turnVersion,
 } from "./harness/index.ts";
 export { ago, type HistoryEntry, HistoryLog } from "./history.ts";
 export { type KeyPlace, type ModelKeys, modelKeys, type Provider, vaultTokenSource } from "./keys.ts";

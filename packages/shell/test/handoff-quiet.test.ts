@@ -27,16 +27,16 @@ test("silence reads as signed out unless it is signed in; its errors say better"
 
 test("the question names the harness, says what to type, and offers Stop", () => {
   const signedOut = quietQuestion("OpenCode", "signed-out", "opencode auth login", 30);
-  expect(signedOut.title).toBe("OpenCode isn't signed in");
-  expect(signedOut.detail).toBe("It hasn't answered in 30 seconds. Sign in to a provider in Terminal (opencode auth login), then ask again.");
+  expect(signedOut.title).toBe("OpenCode isn’t signed in");
+  expect(signedOut.detail).toBe("It hasn’t answered in 30 seconds. Sign in to a provider in Terminal (opencode auth login), then ask again.");
   expect(signedOut.choices.map((choice) => choice.label)).toEqual(["Sign In…", "Keep Waiting"]);
-  expect(signedOut.needs).toBe("isn't signed in");
+  expect(signedOut.needs).toBe("isn’t signed in");
   expect(quietQuestion("OpenCode", "quiet", "opencode auth login").choices.map((choice) => choice.id)).toEqual(["wait"]);
   expect(quietQuestion("Codex", "limit", null).choices.map((choice) => choice.id)).toEqual(["wait"]);
   expect(usesWords("codex")).toBe("your ChatGPT plan");
-  expect(usesWords("opencode")).toBe("OpenCode's configured provider");
-  expect(plainFailure("OpenCode", "AI_APICallError: 429 Too Many Requests")).toBe("OpenCode's model is at its limit. Try again later.");
-  expect(plainFailure("OpenCode", "401 Unauthorized")).toBe("OpenCode isn't signed in.");
+  expect(usesWords("opencode")).toBe("OpenCode’s configured provider");
+  expect(plainFailure("OpenCode", "AI_APICallError: 429 Too Many Requests")).toBe("OpenCode’s model is at its limit. Try again later.");
+  expect(plainFailure("OpenCode", "401 Unauthorized")).toBe("OpenCode isn’t signed in.");
   expect(plainFailure("OpenCode", "The page didn't load.")).toBe("The page didn't load.");
 });
 
@@ -85,8 +85,8 @@ test("a fake OpenCode that prints nothing: its card asks, and Sign In… opens T
   expect(handoff.runs.get("run1")?.question).toBeNull();
   await settle(60);
   const run = handoff.runs.get("run1");
-  expect(run?.question?.title).toBe("OpenCode isn't signed in");
-  expect(run && statusWords(run)).toBe("isn't signed in");
+  expect(run?.question?.title).toBe("OpenCode isn’t signed in");
+  expect(run && statusWords(run)).toBe("isn’t signed in");
   handoff.runs.answer("run1", run?.question?.id ?? "", "sign-in");
   await settle(5);
   expect(signedIn).toEqual(["opencode"]);
@@ -121,6 +121,6 @@ test("a run that speaks in time is never asked, and one that ends with a known e
   expect(handoff.runs.get("run1")?.question).toBeNull();
   watchers.get("run1:1")?.exit(1);
   expect(handoff.runs.get("run1")?.phase).toBe("failed");
-  expect(handoff.runs.get("run1")?.error).toBe("OpenCode isn't signed in.");
+  expect(handoff.runs.get("run1")?.error).toBe("OpenCode isn’t signed in.");
   handoff.close();
 });
