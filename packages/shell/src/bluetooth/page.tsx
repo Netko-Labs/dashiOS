@@ -65,9 +65,9 @@ function Row({
       trailing={
         <>
           {device.battery !== null && !busy && (
-            <View testID={`bt-battery:${device.name}`} style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+            <View testID={`bt-battery:${device.name}`} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xxs }}>
               <Svg markup={batteryGlyph(device.battery, false)} width={18} height={9} color={ink} />
-              <Text style={{ fontSize: 11, color: ink }}>{`${device.battery}%`}</Text>
+              <Text style={{ fontSize: TYPE.caption.size, color: ink }}>{`${device.battery}%`}</Text>
             </View>
           )}
           {onMore && <ToolbarButton testID={`bt-more:${device.name}`} glyph={MORE} tooltip="More" active={moreOpen} onPress={onMore} />}
@@ -116,10 +116,10 @@ function List({ state, store }: { state: BluetoothState; store: BluetoothStore }
   const choose = (device: BluetoothDevice) => void store.choose(device);
   const searching = state.discovering || state.available === null;
   return (
-    <View style={{ flexDirection: "column", gap: 6, maxHeight: LIST_HEIGHT, overflow: "scroll" }}>
+    <View style={{ flexDirection: "column", gap: SPACE.s, maxHeight: LIST_HEIGHT, overflow: "scroll" }}>
       {state.mine.length > 0 && <PageSection>My devices</PageSection>}
       {state.mine.map((device) => (
-        <View key={device.path} style={{ flexDirection: "column", gap: 6 }}>
+        <View key={device.path} style={{ flexDirection: "column", gap: SPACE.s }}>
           <Row
             device={device}
             busy={state.busy[device.path]}
@@ -146,7 +146,7 @@ function List({ state, store }: { state: BluetoothState; store: BluetoothStore }
         trailing={
           searching ? (
             <View testID="bt-searching">
-              <Text style={{ fontSize: 11, color: colors.muted }}>Searching…</Text>
+              <Text style={{ fontSize: TYPE.caption.size, color: colors.muted }}>Searching…</Text>
             </View>
           ) : (
             <Button testID="bt-search-again" label="Search again" look="panel" size="small" onPress={() => store.searchAgain()} />

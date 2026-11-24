@@ -13,6 +13,8 @@ import type { OpenOverlay } from "../overlay.tsx";
 import type { AskToKeep, KeepAsk } from "./lib/trial.ts";
 
 export const KEEP_SHEET = { width: 440, height: 190 } as const;
+/** How often the count down looks at the clock. */
+const TICK_MS = 250;
 const WIDTH = KEEP_SHEET.width - 40;
 
 /** Whole seconds left, never below zero. */
@@ -29,7 +31,7 @@ export function KeepSheet({ ask }: { ask: KeepAsk }) {
   const colors = useColors();
   const [left, setLeft] = useState(() => secondsLeft(ask.deadline, Date.now()));
   useEffect(() => {
-    const timer = setInterval(() => setLeft(secondsLeft(ask.deadline, Date.now())), 250);
+    const timer = setInterval(() => setLeft(secondsLeft(ask.deadline, Date.now())), TICK_MS);
     return () => clearInterval(timer);
   }, [ask.deadline]);
   return (

@@ -16,7 +16,7 @@ import type { ForceQuitController, ForceQuitState } from "./controller.ts";
 import { VISIBLE_ROWS } from "./model.ts";
 
 /** The window's size; the sheet is inset by a margin for its shadow. */
-export const FORCE_QUIT = { width: 400, height: 404, margin: 24 } as const;
+export const FORCE_QUIT = { width: 400, height: 404, margin: SPACE.xl } as const;
 
 const SHEET_WIDTH = FORCE_QUIT.width - FORCE_QUIT.margin * 2;
 const ROW_HEIGHT = PICK_ROW.height;
