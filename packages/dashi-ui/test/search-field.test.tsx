@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
+import { OnPanelCard } from "../src/panel/index.ts";
 import { SearchField } from "../src/search-field.tsx";
+import { DARK_CONTROLS, LIGHT_CONTROLS } from "../src/theme/index.ts";
 import { fakeHost } from "./host.ts";
 import { settle } from "./support/time.ts";
 
@@ -63,5 +65,22 @@ test("a picker's search takes its column's whole width", async () => {
   await settle();
   expect(host.last()).not.toContain('"width":210');
   expect(host.last()).toContain('"alignSelf":"stretch"');
+  root.unmount();
+});
+
+test("the panel look's field sinks to the window's colour on a card, so it never takes the card's", async () => {
+  // A card's ground is the off colour: the field there is the window's, which differs from it in both modes.
+  for (const palette of [LIGHT_CONTROLS, DARK_CONTROLS]) expect(palette.window.toLowerCase()).not.toBe(palette.off.toLowerCase());
+  const host = fakeHost();
+  const field = <SearchField testID="zones" look="panel" value="" width="fill" onChangeText={() => {}} />;
+  const bare = render(field, host.transport);
+  await settle();
+  expect(host.last().toLowerCase()).toContain(`"background":"${LIGHT_CONTROLS.off.toLowerCase()}"`);
+  bare.unmount();
+  const card = fakeHost();
+  const root = render(<OnPanelCard.Provider value={true}>{field}</OnPanelCard.Provider>, card.transport);
+  await settle();
+  expect(card.last().toLowerCase()).toContain(`"background":"${LIGHT_CONTROLS.window.toLowerCase()}"`);
+  expect(card.last().toLowerCase()).not.toContain(`"background":"${LIGHT_CONTROLS.off.toLowerCase()}"`);
   root.unmount();
 });

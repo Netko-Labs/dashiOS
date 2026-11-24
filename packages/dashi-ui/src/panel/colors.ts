@@ -4,12 +4,24 @@
  * a menu's lit row in them, and a floating panel's edge.
  */
 
+import { createContext } from "react";
 import type { MenuHighlight } from "../menu-row.tsx";
 import { type ControlPalette, controlPalette, DARK_CONTROLS, useAccent, useDark } from "../theme/index.ts";
 
 export function useControlColors(): ControlPalette {
   return controlPalette(useDark(), useAccent());
 }
+
+/**
+ * Whether a panel control sits on a card. Settings' cards (and the
+ * Installer's) are the off colour, the ground a panel field has elsewhere, so
+ * a field there would vanish into its card: the card says so, and the field
+ * sinks to the window's colour instead, as a list sunk in a card does (SE-8).
+ */
+export const OnPanelCard = createContext(false);
+
+/** A panel field's ground: the off colour on the panel or a sidebar; the window's, sunk into a card. */
+export const panelFieldGround = (palette: ControlPalette, onCard: boolean): string => (onCard ? palette.window : palette.off);
 
 /**
  * A menu's lit row in these surfaces: the chosen pill's green and its ink, so

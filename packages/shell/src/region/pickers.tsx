@@ -5,7 +5,7 @@
  * caller decides what a pick does.
  */
 
-import { PickRow, SearchField, SPACE, TYPE, WEIGHT } from "@dashi/ui";
+import { type Look, PickRow, SearchField, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { useColors } from "../settings-app/colors.ts";
@@ -22,11 +22,14 @@ export function TimezonePicker({
   current,
   height,
   onPick,
+  look = "window",
 }: {
   zones: readonly Zone[];
   current: string;
   height: number;
   onPick: (zone: string) => void;
+  /** Its search's look: Settings' (on a card) is the panel's, Setup's the window's. */
+  look?: Look;
 }) {
   const [query, setQuery] = useState("");
   const areas = zoneAreas(zones);
@@ -41,7 +44,7 @@ export function TimezonePicker({
   const shown = rows.slice(0, MAX_ROWS);
   return (
     <View testID="timezone-picker" style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.m }}>
-      <SearchField testID="timezone-search" width="fill" value={query} onChangeText={setQuery} placeholder="Search for a city or country" />
+      <SearchField testID="timezone-search" look={look} width="fill" value={query} onChangeText={setQuery} placeholder="Search for a city or country" />
       {!searching && areas.length > 0 && (
         <Choices testID="timezone-area" value={area ?? ""} options={areas.map((each) => ({ value: each, label: each }))} onChange={setArea} />
       )}
@@ -80,6 +83,7 @@ export function LocalePickers({
   height,
   onLanguage,
   onFormats,
+  look = "window",
 }: {
   locales: readonly LocaleEntry[];
   /** The system language (`LANG`), if it names a locale. */
@@ -90,6 +94,8 @@ export function LocalePickers({
   onLanguage: (locale: string) => void;
   /** undefined puts the formats back to following the language. */
   onFormats: (locale: string | undefined) => void;
+  /** Its search's look, as `TimezonePicker`'s. */
+  look?: Look;
 }) {
   const colors = useColors();
   const [query, setQuery] = useState("");
@@ -104,7 +110,7 @@ export function LocalePickers({
   const heading = (text: string) => <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{text}</Text>;
   return (
     <View testID="locale-pickers" style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.m }}>
-      <SearchField testID="locale-search" width="fill" value={query} onChangeText={setQuery} placeholder="Search languages and regions" />
+      <SearchField testID="locale-search" look={look} width="fill" value={query} onChangeText={setQuery} placeholder="Search languages and regions" />
       <View style={{ flexDirection: "row", gap: SPACE.gap }}>
         <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>
           {heading("Language")}

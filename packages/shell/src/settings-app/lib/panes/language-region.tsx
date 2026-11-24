@@ -35,6 +35,7 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
       <Group>
         <Setting id="language-region/language" detail={`Language: ${language?.label ?? state.language ?? "not set"} · Formats: ${formatsLabel}`}>
           <LocalePickers
+            look="panel"
             locales={state.locales}
             language={state.language}
             formats={chosen.formats}

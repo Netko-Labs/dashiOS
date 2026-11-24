@@ -1,6 +1,7 @@
 /**
  * The one search field (UI-11): a list's filter or a Find, at the toolbar's
- * end. 28 tall at radius 7 on the button's wash (the panel look: a 28 pill),
+ * end. 28 tall at radius 7 on the button's wash (the panel look: a 28 pill,
+ * the off colour, or the window's sunk into a Settings card),
  * a 15 magnifier over its start, its own focus edge. In a toolbar it is 210,
  * shrinking to 96 before anything else gives way (VS-7). Its placeholder
  * says what it searches ("Search apps"), becomes "Search" once the field
@@ -14,10 +15,10 @@
  */
 
 import { type Bounds, Svg, Text, TextInput, View } from "@mirinjs/metal";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useContext, useState } from "react";
 import type { Look } from "./button-measures.ts";
 import { CLEAR as CLEAR_GLYPH, SEARCH } from "./glyphs.ts";
-import { useControlColors } from "./panel/index.ts";
+import { OnPanelCard, panelFieldGround, useControlColors } from "./panel/index.ts";
 import { boxOf, RestBox } from "./search-rest.tsx";
 import { CLEAR, pill, RADIUS, SPACE, TYPE, useColors } from "./theme/index.ts";
 
@@ -91,13 +92,15 @@ export function SearchField({
 }: SearchFieldProps) {
   const colors = useColors();
   const panel = useControlColors();
+  const onCard = useContext(OnPanelCard);
   const m = SEARCH_FIELD;
   const [laid, setLaid] = useState(0);
   const [trailing, setTrailing] = useState(0);
   // Taken once, when the field is made.
   const [selected] = useState(() => (selectAll ? { start: 0, end: value.length } : null));
   const lead = m.inset + m.glyph + m.gap;
-  const ground = look === "panel" ? panel.off : colors.button;
+  // The panel look: the off colour, or the window's on a card of that colour (OnPanelCard).
+  const ground = look === "panel" ? panelFieldGround(panel, onCard) : colors.button;
   const size = look === "panel" ? TYPE.panel.body.size : TYPE.body.size;
   const words = placeholderAt(placeholder, laid);
   const radius = look === "panel" ? pill(m.height) : RADIUS.control;

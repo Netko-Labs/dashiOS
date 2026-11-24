@@ -17,6 +17,7 @@ import {
   Card,
   COLUMN_WIDTH,
   EditKeys,
+  type EditSession,
   EditWidgets,
   GalleryPanel,
   LiveCards,
@@ -33,7 +34,7 @@ import {
 import { foldGroups } from "./lib/ceiling.ts";
 import { groupByApp } from "./lib/group.ts";
 import { PaperNote } from "./lib/paper-note.tsx";
-import { type AreaPlace, areaBottom } from "./lib/place.ts";
+import { AREA, type AreaPlace, areaBottom, galleryPlace } from "./lib/place.ts";
 import { useNotifications } from "./store.ts";
 import type { HistoryEntry } from "./types.ts";
 
@@ -43,9 +44,7 @@ export interface NotificationAreaProps extends AreaPlace {
   openerOf?: (placement: Placement) => (() => void) | null;
 }
 
-const AREA = { right: 12, top: 8, gap: SPACE.gap } as const;
-
-export function NotificationArea({ store, onClose, onEscape = onClose, dockInset, hub, openerOf }: NotificationAreaProps) {
+export function NotificationArea({ store, onClose, onEscape = onClose, dockInset, screenWidth = null, hub, openerOf }: NotificationAreaProps) {
   const [editing, setEditing] = useState(false);
   const now = useMinuteClock().getTime();
   const placements = usePlacements(hub);
@@ -90,13 +89,19 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
             </View>
           </View>
         </View>
-        {editing && session.gallery.open ? (
-          <View style={{ position: "absolute", right: AREA.right + COLUMN_WIDTH + 26, top: AREA.top + 30 }}>
-            <GalleryPanel placements={placements} session={session} />
-          </View>
-        ) : null}
+        {editing && session.gallery.open ? <PlacedGallery placements={placements} session={session} screenWidth={screenWidth} /> : null}
       </WidgetEnvProvider>
     </>
+  );
+}
+
+/** The widget gallery beside the column, kept on the screen (galleryPlace). */
+function PlacedGallery({ placements, session, screenWidth }: { placements: readonly Placement[]; session: EditSession; screenWidth: number | null }) {
+  const place = galleryPlace(screenWidth);
+  return (
+    <View testID="widget-gallery-place" style={{ position: "absolute", right: place.right, top: place.top }}>
+      <GalleryPanel placements={placements} session={session} fit={{ width: place.width, list: place.list }} />
+    </View>
   );
 }
 

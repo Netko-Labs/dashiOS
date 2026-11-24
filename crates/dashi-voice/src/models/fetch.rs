@@ -119,6 +119,11 @@ fn download(wanted: &[&Wanted], tick: &mut dyn FnMut() -> bool) -> Result<bool, 
     if coming.is_empty() {
         return Ok(true);
     }
+    // Where it starts from is said before curl adds to it: what a stopped fetch left, never a
+    // size read after curl has had time to grow it (a local file can be whole by the first tick).
+    if !tick() {
+        return Ok(false);
+    }
     let mut child = curl(&coming)?;
     loop {
         if !tick() {

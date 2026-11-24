@@ -18,7 +18,20 @@ import { SIZE_ORDER, SPANS, sizeWord, span } from "./layout.ts";
 import { WidgetTile } from "./lib/views/widget.tsx";
 import type { WidgetInfo, WidgetSize } from "./types.ts";
 
-export const GALLERY = { width: 700, list: 240 } as const;
+/** Its width, its list's, and the least its list keeps on a narrow screen. */
+export const GALLERY = { width: 700, list: 240, leastList: 180 } as const;
+/** What the panel takes besides its list and its previews: its padding, the gaps either side of the divider, and the divider. */
+const FRAME = 2 * SPACE.page + 2 * SPACE.page + 1;
+/** The previews' least: the widest, Wide (four cells), and its ring. */
+const PREVIEWS_LEAST = span(SPANS.wide.cols) + SPACE.m;
+/** The narrowest the gallery gets: the least list beside a whole Wide preview. */
+export const GALLERY_LEAST = FRAME + GALLERY.leastList + PREVIEWS_LEAST;
+
+/** The gallery's width and its list's in `room` points: 700 when it fits; narrower, the list gives way first, never the previews. */
+export function galleryFit(room: number): { width: number; list: number } {
+  const width = Math.min(GALLERY.width, Math.max(room, GALLERY_LEAST));
+  return { width, list: Math.max(GALLERY.leastList, Math.min(GALLERY.list, width - FRAME - PREVIEWS_LEAST)) };
+}
 
 /** "Mini – Wide", or "Small · Wide" for two. */
 export function sizeRange(sizes: readonly WidgetSize[]): string {
@@ -87,9 +100,11 @@ export interface GalleryProps {
   sizeAt: number;
   onAdd: (info: WidgetInfo, size: WidgetSize) => void;
   mayGoOnAir?: { on: boolean; set(on: boolean): void };
+  /** Its width and its list's (`galleryFit`); 700 and 240 without. */
+  fit?: { width: number; list: number };
 }
 
-export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir }: GalleryProps) {
+export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir, fit = { width: GALLERY.width, list: GALLERY.list } }: GalleryProps) {
   const { inks } = useWidgetEnv();
   const info = infos.find((each) => each.kind === chosen) ?? null;
   const section = (title: string) => (
@@ -104,7 +119,7 @@ export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir }: 
     <View
       testID="widget-gallery"
       style={{
-        width: GALLERY.width,
+        width: fit.width,
         flexDirection: "row",
         padding: SPACE.page,
         gap: SPACE.page,
@@ -114,7 +129,7 @@ export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir }: 
         borderColor: inks.text.hairline,
       }}
     >
-      <View style={{ width: GALLERY.list, flexDirection: "column" }}>
+      <View style={{ width: fit.list, flexDirection: "column" }}>
         {section("DASHI")}
         {rows(infos.filter((each) => !each.kind.startsWith("ext:")))}
         {theirs.length > 0 ? section("FROM EXTENSIONS") : null}

@@ -255,7 +255,15 @@ export function PopoverRoot({
       {popover?.kind === "agents" && agentsPanel?.({ right: popover.right, focus: popover.focus, close: back })}
       {popover?.kind === "overflow" && overflowRow?.({ right: popover.right, keys: popover.keys, close, escape: back })}
       {popover?.kind === "notification-center" && (
-        <NotificationArea store={notifications} dockInset={dockInset(output)} onClose={close} onEscape={back} hub={widgetHub()} openerOf={openerOf} />
+        <NotificationArea
+          store={notifications}
+          dockInset={dockInset(output)}
+          screenWidth={width}
+          onClose={close}
+          onEscape={back}
+          hub={widgetHub()}
+          openerOf={openerOf}
+        />
       )}
     </View>
   );

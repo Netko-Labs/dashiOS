@@ -8294,3 +8294,21 @@ short words, as the rulebook is written.
   where it is used: 81 such uses outside the kit (most are a circle's `size / 2`), so a spacing
   written in a table under a key that is not a style's name still slips past.
 - **Undo:** drop the step from `scripts/check.ts`; the moved measures, per file, from git.
+
+### D681. A panel field on a Settings card sinks to the window's colour; the region pickers are the panel look again
+
+- **Date:** 2026-11-24. The `design-finish` agent's (W8; UI-11, SE-8, CO-8, TK-2).
+- **Question:** the panel look's `SearchField` sat on the off colour, which is also a Settings
+  card's: on a card it vanished, in Light and Dark. W2 put the time zone and language pickers on
+  the window look to get round it (D629), and Keyboard's layout search was still invisible.
+- **Choice:** a card says it is one: the kit's `OnPanelCard` context, provided by Settings'
+  `Group` (shared/cards, the Installer's too), and a panel field on it takes the window's colour
+  (`panelFieldGround`), the "field" Settings already sinks its lists into (SE-8's compact list).
+  Off a card (Settings' sidebar search, design.html's "a pill … the off color") it keeps the off
+  colour. The pickers take a `look`: Settings passes the panel look, Setup keeps the window's.
+- **Why:** a card knows what it is; every field on one gets it right without a prop at each
+  use. The window's colour differs from the card's in both modes (Light lilac `#F7F4FA` on
+  `#E4DDEE`, Dark black on the second lift), and the search and the list under it now match.
+- **Cost:** in Light the sunk field is lighter than its card, not darker (CO-8 speaks of the app
+  look); it is the same as the lists Settings sinks already.
+- **Undo:** drop the provider in `shared/cards/cards.tsx`; pass `look="window"` to the pickers.
