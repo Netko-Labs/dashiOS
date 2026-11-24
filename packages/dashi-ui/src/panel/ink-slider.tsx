@@ -2,7 +2,7 @@
  * Control Center's flat slider as a setting's slider (docs/design.html,
  * "Settings"): a 40-tall track the color of a hairline, filled with ink
  * from the left, the setting's glyph on a chip at the left and its value at
- * the right (on the ink once the fill reaches it). Press anywhere to set it,
+ * the right (all of it on the ink once the fill reaches its start). Press anywhere to set it,
  * or press and drag; `onChange` hears every move, `onCommit` the value it
  * settled on (the button lifted, or the pointer rested), so a drag is one
  * write to a settings file. Tab reaches it and the arrows step it, as
@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import { DISABLED_OPACITY } from "../control-state.tsx";
 import { fillLength, fractionOf, keyValues, levelAt, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "../slider-math.ts";
 import { StepKeys } from "../step-keys.tsx";
+import { SPACE, TYPE, WEIGHT } from "../theme/index.ts";
 import { useControlColors } from "./colors.ts";
 import { GlyphDisc, InkFill } from "./parts.tsx";
 
@@ -36,8 +37,22 @@ export interface InkSliderProps {
   disabled?: boolean;
 }
 
-/** The value at the slider's right, laid out on the whole slider's width so both copies sit at the same place. */
-function Value({ words, width, color }: { words: string; width: number; color: string }) {
+/** The value's words: 11.5 SemiBold, their right edge 14 in from the track's end. */
+const VALUE = { inset: SPACE.button } as const;
+
+/**
+ * Whether the value reads on the ink: once the fill passes where its words
+ * start. The whole value takes one colour, never two halves split at the
+ * fill's edge ("41 per s|econd", SE-A44). Pure.
+ */
+export function valueOnInk(fill: number, width: number, words: number): boolean {
+  return words > 0 && fill >= width - VALUE.inset - words;
+}
+
+/** The value at the slider's right, muted on the track or the ink's own colour once the fill reaches it. */
+function Words({ words, width, fill }: { words: string; width: number; fill: number }) {
+  const colors = useControlColors();
+  const [wide, setWide] = useState(0);
   return (
     <View
       style={{
@@ -49,26 +64,15 @@ function Value({ words, width, color }: { words: string; width: number; color: s
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "flex-end",
-        paddingRight: 14,
+        paddingRight: VALUE.inset,
       }}
     >
-      <Text style={{ fontSize: 11.5, fontWeight: "semibold", color }}>{words}</Text>
+      <View testID="ink-slider-value" style={{ flexShrink: 0 }} onLayout={(laid) => setWide((was) => (Math.abs(was - laid.width) < 0.5 ? was : laid.width))}>
+        <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: valueOnInk(fill, width, wide) ? colors.fillInk : colors.muted }}>
+          {words}
+        </Text>
+      </View>
     </View>
-  );
-}
-
-/** The value twice: muted on the track, and in the ink's own color clipped to the fill, so it reads across the edge. */
-function Words({ words, width, fill }: { words: string; width: number; fill: number }) {
-  const colors = useControlColors();
-  return (
-    <>
-      <Value words={words} width={width} color={colors.muted} />
-      {fill > 0 && (
-        <View style={{ position: "absolute", left: 0, top: 0, width: fill, height: INK_SLIDER.height, overflow: "hidden" }}>
-          <Value words={words} width={width} color={colors.fillInk} />
-        </View>
-      )}
-    </>
   );
 }
 
