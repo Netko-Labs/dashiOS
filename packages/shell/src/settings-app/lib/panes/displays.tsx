@@ -20,7 +20,7 @@ import { useCallback, useState, useSyncExternalStore } from "react";
 import { DeviceStore, useDevices } from "../../../control-center/devices.ts";
 import type { AutoRefresh, RefreshScreen } from "../../../display-config/auto-refresh.ts";
 import { mirrorSource } from "../../../display-config/mirror.ts";
-import { type Mode, type Monitor, monitorLabel, ratesOf, sizeLabel } from "../../../display-config/monitors.ts";
+import { type Mode, type Monitor, monitorLabel, rateOf, ratesOf, sizeLabel } from "../../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../../displays.ts";
 import type { Laptop } from "../../../laptop/start.ts";
 import { Button, Caption, Group, Note } from "../../../shared/cards/index.ts";
@@ -66,7 +66,7 @@ function RefreshRate({ monitor, store, refresh }: { monitor: Monitor & { mode: M
   if (rates.length <= 1) return null;
   const offered = auto?.decision.offered === true;
   const automatic = offered && auto?.choice === "automatic";
-  const current = rates.find((rate) => Math.abs(rate - mode.refreshMhz) <= 600) ?? mode.refreshMhz;
+  const current = rateOf(rates, mode.refreshMhz) ?? mode.refreshMhz;
   return (
     <Setting id="displays/refresh-rate" stack={false} detail={automatic && auto ? `Automatic: ${auto.decision.why}` : `${hertz(current)} Hz`}>
       <Choices<number | string>

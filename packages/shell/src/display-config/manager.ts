@@ -12,6 +12,7 @@
 import type { Compositor } from "../compositor/index.ts";
 import { leavesRoom } from "../displays.ts";
 import { firstTaken, nonEmpty } from "./lib/restore.ts";
+import { SeenLayouts } from "./lib/seen.ts";
 import { type AskToKeep, askToKeep, later } from "./lib/trial.ts";
 import type { LidSource } from "./lid.ts";
 import { identityOf, type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";
@@ -63,6 +64,8 @@ export class DisplayManager {
   private queue: Promise<unknown> = Promise.resolve();
   /** The set of monitors the last restore was for: a change of state alone does not restore again. */
   private restoredFor: string | null = null;
+  /** What each set ran last this session, saved or not (lib/seen.ts). */
+  private readonly seen = new SeenLayouts();
   private readonly listeners = new Set<() => void>();
   private readonly modeListeners = new Set<(change: ModeChange) => void>();
   private busy = 0;
@@ -116,13 +119,15 @@ export class DisplayManager {
       const monitors = await this.monitors();
       if (monitors.length === 0) return;
       const key = setKey(monitors);
-      if (!force && key === this.restoredFor) return;
+      if (!force && key === this.restoredFor) return this.seen.note(monitors, this.lidClosed);
       this.restoredFor = key;
-      const saved = this.options.store.get(key);
+      // Nothing saved for the set: as it last ran this session (a monitor unplugged and back).
+      const saved = this.options.store.get(key) ?? this.seen.get(key);
       const options = {
         lidClosed: this.lidClosed,
         scaleFor: this.options.scaleFor,
         lastMode: (monitor: Monitor) => this.options.store.lastMode(identityOf(monitor)),
+        previousMain: this.seen.previousMain(monitors),
       };
       const plans = [planRestore(monitors, saved, options), planRestore(monitors, saved, { ...options, defaultModes: false })];
       // Even with nothing to restore, screens that overlap or stand apart are put right.

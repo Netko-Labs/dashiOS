@@ -27,6 +27,32 @@ pub(crate) struct Picture {
     pub rgba: Vec<u8>,
 }
 
+impl Picture {
+    /// Its top-left `width` × `height` (no more than it has): a whole
+    /// screen's picture at the screen's own pixels, where its size in points
+    /// rounded up and scaled back came out a pixel over (1098 × 686 points at
+    /// 1.75 are 1922 × 1201 pixels of a 1920 × 1200 screen).
+    pub(crate) fn cropped(self, width: i32, height: i32) -> Picture {
+        let (w, h) = (width.min(self.width), height.min(self.height));
+        if w == self.width && h == self.height || w <= 0 || h <= 0 {
+            return self;
+        }
+        let (from, to) = (self.width as usize * 4, w as usize * 4);
+        let rgba = self
+            .rgba
+            .chunks_exact(from)
+            .take(h as usize)
+            .flat_map(|row| &row[..to])
+            .copied()
+            .collect();
+        Picture {
+            width: w,
+            height: h,
+            rgba,
+        }
+    }
+}
+
 /// Render `view` offscreen and read it back.
 pub(crate) fn render_view<R>(
     state: &mut Dashi,
@@ -246,5 +272,22 @@ mod tests {
             vec![255, 0, 0, 255, 255, 255, 255, 128]
         );
         assert_eq!(straighten(&bottom_up, 1, false)[..4], [255, 255, 255, 128]);
+    }
+
+    #[test]
+    fn a_screen_is_cropped_to_its_own_pixels() {
+        // 3 × 2 pixels numbered 0..6; the screen is 2 × 1.
+        let rgba = (0u8..6).flat_map(|n| [n, n, n, 255]).collect();
+        let picture = Picture {
+            width: 3,
+            height: 2,
+            rgba,
+        }
+        .cropped(2, 1);
+        assert_eq!((picture.width, picture.height), (2, 1));
+        assert_eq!(picture.rgba, vec![0, 0, 0, 255, 1, 1, 1, 255]);
+        // Never grown.
+        let same = picture.cropped(9, 9);
+        assert_eq!((same.width, same.height), (2, 1));
     }
 }

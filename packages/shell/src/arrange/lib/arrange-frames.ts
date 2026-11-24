@@ -1,12 +1,11 @@
 /**
  * The frames arrange.ts works out, apart from the compositor it asks: the
- * frame
- * a window is given back after a screen change or full screen (where a new
- * window opens is placing.ts). What Arranger remembers of a window is `Arranged`.
+ * frame a window is given back after full screen, an arrow or Move to (where
+ * a new window opens is placing.ts; after a screen change, screens-gone.ts). What Arranger remembers of a window is `Arranged`.
  */
 
 import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../../compositor/index.ts";
-import { carryFrame, fitFrame, keepLeast, type Output, type Rect, sameRect, screenFor, type Tile, tileFrame, usableFor } from "../../layout.ts";
+import { carryFrame, keepLeast, type Output, type Rect, screenFor, type Tile, tileFrame, usableFor } from "../../layout.ts";
 import { type Arrow, arrowStep, screenToward } from "../tiling.ts";
 
 /** A window the shell arranged: how, and the frame it had before (what Back gives back). */
@@ -30,16 +29,6 @@ export interface FullscreenDesktopsHook {
 /** A window's frame as it is about to be: where it is, at the size its app is being asked to take until it has drawn it. */
 export function configuredFrame(window: CompositorWindow): Rect | null {
   return window.frame ? { ...window.frame, ...window.configuring } : null;
-}
-
-/**
- * The frame a window takes on its screen as it is now: its tile there if it is
- * tiled or filled, else moved in and shrunk if it must be; null off every screen.
- */
-function fittedFrame(frame: Rect, tile: Tile | null, minSize: CompositorWindow["minSize"], outputs: readonly Output[]): Rect | null {
-  const usable = usableFor(frame, outputs);
-  if (!usable) return null;
-  return keepLeast(tile ? tileFrame(tile, usable) : fitFrame(frame, usable), minSize, usable);
 }
 
 /** Out of full screen: the frame from before, or its tile there if it was tiled or filled. */
@@ -124,22 +113,6 @@ export async function fullscreenWindow(context: ArrangeContext, id: number, on: 
   };
   await (context.desktops ? context.desktops.around(window, on, toggle) : toggle());
   return true;
-}
-
-/**
- * Windows that no longer fit their screen's usable area (a screen shrank,
- * or its scale grew) are moved in, and shrunk if they must; a tiled or
- * filled window takes its tile on the screen as it is now.
- */
-export async function fitWindows(context: ArrangeContext): Promise<void> {
-  for (const window of await context.compositor.windows()) {
-    // A full-screen window fills its screen, whatever the bars leave free.
-    const frame = configuredFrame(window);
-    if (window.state !== "normal" || !frame || window.fullscreen) continue;
-    const tile = context.arranged.get(window.id)?.tile ?? null;
-    const fitted = fittedFrame(frame, tile, window.minSize, context.outputs);
-    if (fitted && !sameRect(fitted, frame)) await context.frame(window.id, fitted, tile);
-  }
 }
 
 /**

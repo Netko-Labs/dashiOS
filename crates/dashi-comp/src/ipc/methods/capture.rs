@@ -69,6 +69,7 @@ pub(crate) fn capture_now(
     params: CaptureParams,
 ) -> Result<(), String> {
     let mask = params.mask;
+    let whole = params.window.is_none() && params.rect.is_none();
     let path = render::capture_file::check_path(&params.path)?.to_owned();
     let (area, output, only) = if let Some(id) = params.window {
         let id = id.0;
@@ -147,6 +148,10 @@ pub(crate) fn capture_now(
     let mut picture = backend::capture(state, &view)?;
     if let Some(name) = &mask {
         state.apply_mask(state.capture_masks.named(name), area, scale, &mut picture);
+    }
+    // A whole screen is its own pixels, not its size in points scaled back (a pixel over).
+    if whole && let Some(size) = crate::outputs::drawn_size(&output) {
+        picture = picture.cropped(size.w, size.h);
     }
     save_later(state, ask, path, picture, scale)
 }
