@@ -138,24 +138,16 @@ export function BluetoothPane({ services }: { services: PaneServices }) {
   const on = radios.bluetooth !== false;
   // No adapter: BlueZ says so, or the radio cannot be read at all.
   const missing = state.available === false || (loaded && radios.bluetooth === null && state.available !== true);
+  // Each fact once (SE-7, SE-17): a missing adapter or the radio being off is the row's own line, no card under it.
+  const detail = missing ? "This computer has no Bluetooth adapter." : on ? "On" : "Off. Turn it on to connect to devices.";
   return (
     <Page title="Bluetooth">
       <Group testID="bt-power">
-        <Setting id="bluetooth/bluetooth" detail={missing ? "No Bluetooth adapter" : on ? "On" : "Off"}>
+        <Setting id="bluetooth/bluetooth" detail={detail}>
           {!missing && <Switch testID="bt-radio" on={on} onChange={(next) => void devices.setBluetooth(next)} />}
         </Setting>
       </Group>
-      {missing ? (
-        <Group>
-          <Note testID="bt-unavailable">Bluetooth isn't available on this computer.</Note>
-        </Group>
-      ) : on ? (
-        <Devices services={services} />
-      ) : (
-        <Group>
-          <Note testID="bt-off">Bluetooth is off. Turn it on to connect to devices.</Note>
-        </Group>
-      )}
+      {!missing && on && <Devices services={services} />}
     </Page>
   );
 }
