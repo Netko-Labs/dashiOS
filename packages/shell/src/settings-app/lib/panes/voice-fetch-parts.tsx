@@ -7,7 +7,7 @@ import { useColors } from "../../colors.ts";
 import { ConfirmDelete } from "./parts.tsx";
 
 /** A fetch's progress: the kit's bar, in ink (Q3), and "412 MB of 1.01 GB". */
-export function Progress({ received, bytes, testID }: { received: number; bytes: number; testID: string }) {
+export function Fetching({ received, bytes, testID }: { received: number; bytes: number; testID: string }) {
   const colors = useColors();
   const part = bytes > 0 ? Math.min(1, received / bytes) : null;
   return (

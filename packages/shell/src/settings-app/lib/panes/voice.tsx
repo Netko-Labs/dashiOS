@@ -44,7 +44,7 @@ import { ModelChoiceRows } from "./voice-choice.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
 import { DictationHistoryRows } from "./voice-dictation-history.tsx";
 import { DictationWordsRows } from "./voice-dictation-words.tsx";
-import { Progress, Remove } from "./voice-fetch-parts.tsx";
+import { Fetching, Remove } from "./voice-fetch-parts.tsx";
 import { VoiceLanguages } from "./voice-languages.tsx";
 import { TalkRows } from "./voice-talk.tsx";
 import { correctionsOffer, offerWords, REWRITE_GEMMA_SET, REWRITE_SET, removeWords, setsWords, speedWords, voiceChoices, whatFetching } from "./voice-words.ts";
@@ -97,7 +97,7 @@ function ModelsRow({
       id={id}
       testID={id.replace("/", "-")}
       detail={detail}
-      {...(fetching ? { below: <Progress testID={`${id.replace("/", "-")}-progress`} received={fetching.received} bytes={fetching.bytes} /> } : {})}
+      {...(fetching ? { below: <Fetching testID={`${id.replace("/", "-")}-progress`} received={fetching.received} bytes={fetching.bytes} /> } : {})}
     >
       {fetching ? (
         <MiniButton testID={`${id.replace("/", "-")}-pause`} label="Pause" onPress={() => void voice.models.pause()} />

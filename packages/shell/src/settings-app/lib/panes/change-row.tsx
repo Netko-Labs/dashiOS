@@ -35,7 +35,10 @@ function ChangeLine({ entry }: { entry: ChangeEntry }) {
     <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, minWidth: 0 }}>
       <Text style={words}>by</Text>
       <View {...(entry.by ? { testID: "change-by-agent" } : {})} style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={entry.by ? { ...words, fontWeight: WEIGHT.semibold, color: colors.agentInk } : words}>
+        <Text
+          numberOfLines={1}
+          style={{ ...words, fontWeight: entry.by ? WEIGHT.semibold : WEIGHT.regular, color: entry.by ? colors.agentInk : colors.textMuted }}
+        >
           {changedBy(entry.by)}
         </Text>
       </View>

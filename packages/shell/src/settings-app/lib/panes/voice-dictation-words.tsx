@@ -32,23 +32,6 @@ export function profileWords(profile: Profile): string {
   return where === "" ? "Chosen from the capsule." : where;
 }
 
-/** A field of the add row: the kit's, in the panel look (SE-A11). */
-function Field({
-  value,
-  onChange,
-  onSubmit,
-  placeholder,
-  testID,
-}: {
-  value: string;
-  onChange(text: string): void;
-  onSubmit(): void;
-  placeholder: string;
-  testID: string;
-}) {
-  return <TextField look="panel" testID={testID} value={value} placeholder={placeholder} onChangeText={onChange} onSubmit={onSubmit} />;
-}
-
 /** The compact list sunk under the add row (SE-8's one other row): 28 tall, 12.5. */
 const ITEM = { height: 28, gap: SPACE.m, between: SPACE.xxs } as const;
 
@@ -114,8 +97,15 @@ function Words({ source, guard }: { source: Source; guard: PersonOnly }) {
     <Setting id="voice/dictation-words" testID="voice-dictation-words" stack>
       <View style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.s }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
-          <Field testID="dictation-word-add" value={word} onChange={setWord} onSubmit={add} placeholder="A name or term, as you write it" />
-          <Field testID="dictation-word-heard" value={heard} onChange={setHeard} onSubmit={add} placeholder="Heard as (optional)" />
+          <TextField
+            look="panel"
+            testID="dictation-word-add"
+            value={word}
+            onChangeText={setWord}
+            onSubmit={add}
+            placeholder="A name or term, as you write it"
+          />
+          <TextField look="panel" testID="dictation-word-heard" value={heard} onChangeText={setHeard} onSubmit={add} placeholder="Heard as (optional)" />
           <MiniButton testID="dictation-word-add-button" label="Add" tone="primary" disabled={word.trim() === ""} onPress={add} />
         </View>
         <Items kind="word" items={items} onRemove={(term) => guard.mine("voice/dictation-words", () => source.lexicon.removeWord(term))} />
@@ -142,8 +132,8 @@ function Replacements({ source, guard }: { source: Source; guard: PersonOnly }) 
     <Setting id="voice/dictation-replacements" testID="voice-dictation-replacements" stack>
       <View style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.s }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
-          <Field testID="dictation-replacement-from" value={from} onChange={setFrom} onSubmit={add} placeholder="What is heard" />
-          <Field testID="dictation-replacement-to" value={to} onChange={setTo} onSubmit={add} placeholder="What is typed" />
+          <TextField look="panel" testID="dictation-replacement-from" value={from} onChangeText={setFrom} onSubmit={add} placeholder="What is heard" />
+          <TextField look="panel" testID="dictation-replacement-to" value={to} onChangeText={setTo} onSubmit={add} placeholder="What is typed" />
           <MiniButton testID="dictation-replacement-add-button" label="Add" tone="primary" disabled={!ready} onPress={add} />
         </View>
         <Items

@@ -79,23 +79,6 @@ export function formFor(kind: Kind, current: Form): Form {
 /** A form's fields are this wide, in the vault's forms (Passwords, Tokens). */
 export const FORM_FIELD = 240;
 
-/** A form's field: the kit's, in the panel look (SE-A11). */
-function Field({
-  testID,
-  value,
-  placeholder: hint,
-  secure,
-  onChange,
-}: {
-  testID: string;
-  value: string;
-  placeholder: string;
-  secure?: boolean;
-  onChange: (text: string) => void;
-}) {
-  return <TextField look="panel" testID={testID} value={value} placeholder={hint} width={FORM_FIELD} {...(secure ? { secure } : {})} onChangeText={onChange} />;
-}
-
 /** A token's row: Edit… and Delete…, which confirms in place and says what goes (SE-12). */
 function TokenRow({ token, onEdit, onDelete }: { token: TokenSummary; onEdit: () => void; onDelete: () => void }) {
   const [asking, setAsking] = useState(false);
@@ -152,18 +135,26 @@ function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: T
               />
             </FormRow>
             <FormRow label="Name" detail={form.name.trim() ? `Agents hold ${placeholder(form.name.trim().toLowerCase())}` : "What agents hold it by"}>
-              <Field testID={`${id}-name`} value={form.name} placeholder="github" onChange={set("name")} />
+              <TextField look="panel" width={FORM_FIELD} testID={`${id}-name`} value={form.name} placeholder="github" onChangeText={set("name")} />
             </FormRow>
           </>
         )}
         <FormRow label="Hosts" detail="Only these get it; *.example.com for every host under example.com">
-          <Field testID={`${id}-hosts`} value={form.hosts} placeholder="api.github.com" onChange={set("hosts")} />
+          <TextField look="panel" width={FORM_FIELD} testID={`${id}-hosts`} value={form.hosts} placeholder="api.github.com" onChangeText={set("hosts")} />
         </FormRow>
         <FormRow label="Headers" detail="Where the token may go, {} for the token; commas between. Only a header a request sends is changed.">
-          <Field testID={`${id}-headers`} value={form.headers} placeholder={DEFAULT_HEADER} onChange={set("headers")} />
+          <TextField look="panel" width={FORM_FIELD} testID={`${id}-headers`} value={form.headers} placeholder={DEFAULT_HEADER} onChangeText={set("headers")} />
         </FormRow>
         <FormRow label="Token" detail={problem ?? (editing ? "Leave empty to keep the one saved" : "Saved in your vault; never shown again")}>
-          <Field testID={`${id}-token`} value={form.token} placeholder={editing ? "New token" : "Token"} secure onChange={set("token")} />
+          <TextField
+            look="panel"
+            width={FORM_FIELD}
+            testID={`${id}-token`}
+            value={form.token}
+            placeholder={editing ? "New token" : "Token"}
+            secure
+            onChangeText={set("token")}
+          />
         </FormRow>
         <FormRow label="">
           <View style={{ flexDirection: "row", gap: SPACE.m }}>

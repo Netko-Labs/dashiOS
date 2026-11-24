@@ -19,27 +19,6 @@ import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 /** The card form's fields: a limit 160 wide, a name or number 220, an expiry or code 80. */
 const FIELD = { width: 160, long: 220, short: 80 } as const;
 
-/** A form's field: the kit's, in the panel look (SE-A11). */
-function Field({
-  testID,
-  value,
-  placeholder,
-  secure,
-  width = FIELD.width,
-  onChange,
-}: {
-  testID: string;
-  value: string;
-  placeholder: string;
-  secure?: boolean;
-  width?: number;
-  onChange: (text: string) => void;
-}) {
-  return (
-    <TextField look="panel" testID={testID} value={value} placeholder={placeholder} width={width} {...(secure ? { secure } : {})} onChangeText={onChange} />
-  );
-}
-
 function Limits({ vault }: { vault: Vault }) {
   const [spending, setSpending] = useState<{ perPayment: number; perMonth: number; spentThisMonth: number } | null>(null);
   const [form, setForm] = useState({ perPayment: "", perMonth: "", password: "" });
@@ -78,19 +57,35 @@ function Limits({ vault }: { vault: Vault }) {
     <Spot id="passwords/payment-limits" cards>
       <Group testID="payments-limits">
         <FormRow label="Limit per payment" detail={`Now ${dollars(spending.perPayment)}`}>
-          <Field testID="payments-per-payment" value={form.perPayment} placeholder="100" onChange={(perPayment) => setForm((f) => ({ ...f, perPayment }))} />
+          <TextField
+            look="panel"
+            width={FIELD.width}
+            testID="payments-per-payment"
+            value={form.perPayment}
+            placeholder="100"
+            onChangeText={(perPayment) => setForm((f) => ({ ...f, perPayment }))}
+          />
         </FormRow>
         <FormRow label="Limit per month" detail={`Now ${dollars(spending.perMonth)}; ${dollars(spending.spentThisMonth)} spent in the last 30 days`}>
-          <Field testID="payments-per-month" value={form.perMonth} placeholder="300" onChange={(perMonth) => setForm((f) => ({ ...f, perMonth }))} />
+          <TextField
+            look="panel"
+            width={FIELD.width}
+            testID="payments-per-month"
+            value={form.perMonth}
+            placeholder="300"
+            onChangeText={(perMonth) => setForm((f) => ({ ...f, perMonth }))}
+          />
         </FormRow>
         <FormRow label="Your password" detail={problem ?? "Changing a limit needs it"}>
           <View style={{ flexDirection: "row", gap: SPACE.m, alignItems: "center" }}>
-            <Field
+            <TextField
+              look="panel"
+              width={FIELD.width}
               testID="payments-password"
               value={form.password}
               placeholder="Password"
               secure
-              onChange={(password) => setForm((f) => ({ ...f, password }))}
+              onChangeText={(password) => setForm((f) => ({ ...f, password }))}
             />
             <Button testID="payments-limits-save" label="Save" primary disabled={!form.password} onPress={save} />
           </View>
@@ -118,40 +113,44 @@ function AddCard({ vault, onSaved }: { vault: Vault; onSaved: () => void }) {
     <Spot id="passwords/add-card" cards>
       <Group testID="payments-add">
         <FormRow label="Name">
-          <Field
+          <TextField
+            look="panel"
             testID="payments-add-label"
             value={form.label}
             placeholder="Single-use from my bank"
             width={FIELD.long}
-            onChange={(label) => setForm((f) => ({ ...f, label }))}
+            onChangeText={(label) => setForm((f) => ({ ...f, label }))}
           />
         </FormRow>
         <FormRow label="Card number">
-          <Field
+          <TextField
+            look="panel"
             testID="payments-add-number"
             value={form.number}
             placeholder="Card number"
             secure
             width={FIELD.long}
-            onChange={(number) => setForm((f) => ({ ...f, number }))}
+            onChangeText={(number) => setForm((f) => ({ ...f, number }))}
           />
         </FormRow>
         <FormRow label="Expiry and code" detail={problem ?? undefined}>
           <View style={{ flexDirection: "row", gap: SPACE.m }}>
-            <Field
+            <TextField
+              look="panel"
               testID="payments-add-expiry"
               value={form.expiry}
               placeholder="MM/YY"
               width={FIELD.short}
-              onChange={(expiry) => setForm((f) => ({ ...f, expiry }))}
+              onChangeText={(expiry) => setForm((f) => ({ ...f, expiry }))}
             />
-            <Field
+            <TextField
+              look="panel"
               testID="payments-add-cvc"
               value={form.cvc}
               placeholder="Code"
               secure
               width={FIELD.short}
-              onChange={(cvc) => setForm((f) => ({ ...f, cvc }))}
+              onChangeText={(cvc) => setForm((f) => ({ ...f, cvc }))}
             />
           </View>
         </FormRow>

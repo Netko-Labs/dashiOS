@@ -44,33 +44,6 @@ function useVault(passwords: Passwords): [VaultView, () => void] {
   return [view, refresh];
 }
 
-/** A form's field: the kit's, in the panel look (SE-A11). */
-function Field({
-  testID,
-  value,
-  placeholder,
-  secure,
-  onChange,
-}: {
-  testID: string;
-  value: string;
-  placeholder: string;
-  secure?: boolean;
-  onChange: (text: string) => void;
-}) {
-  return (
-    <TextField
-      look="panel"
-      testID={testID}
-      value={value}
-      placeholder={placeholder}
-      width={FORM_FIELD}
-      {...(secure ? { secure } : {})}
-      onChangeText={onChange}
-    />
-  );
-}
-
 function AddLogin({ passwords, onSaved }: { passwords: Passwords; onSaved: () => void }) {
   const empty = { site: "", account: "", password: "", totp: "" };
   const [form, setForm] = useState(empty);
@@ -90,16 +63,31 @@ function AddLogin({ passwords, onSaved }: { passwords: Passwords; onSaved: () =>
     <Spot id="passwords/add-login" cards>
       <Group testID="passwords-add">
         <FormRow label="Site">
-          <Field testID="passwords-add-site" value={form.site} placeholder="github.com" onChange={set("site")} />
+          <TextField look="panel" width={FORM_FIELD} testID="passwords-add-site" value={form.site} placeholder="github.com" onChangeText={set("site")} />
         </FormRow>
         <FormRow label="Account">
-          <Field testID="passwords-add-account" value={form.account} placeholder="User name or email" onChange={set("account")} />
+          <TextField
+            look="panel"
+            width={FORM_FIELD}
+            testID="passwords-add-account"
+            value={form.account}
+            placeholder="User name or email"
+            onChangeText={set("account")}
+          />
         </FormRow>
         <FormRow label="Password">
-          <Field testID="passwords-add-password" value={form.password} placeholder="Password" secure onChange={set("password")} />
+          <TextField
+            look="panel"
+            width={FORM_FIELD}
+            testID="passwords-add-password"
+            value={form.password}
+            placeholder="Password"
+            secure
+            onChangeText={set("password")}
+          />
         </FormRow>
         <FormRow label="Two-factor secret" detail={problem ?? "Optional: the setup key, or an otpauth:// address"}>
-          <Field testID="passwords-add-totp" value={form.totp} placeholder="Setup key" secure onChange={set("totp")} />
+          <TextField look="panel" width={FORM_FIELD} testID="passwords-add-totp" value={form.totp} placeholder="Setup key" secure onChangeText={set("totp")} />
         </FormRow>
         <FormRow label="">
           <Button testID="passwords-add-save" label="Save login" primary disabled={!form.site || !form.account || !form.password} onPress={save} />
