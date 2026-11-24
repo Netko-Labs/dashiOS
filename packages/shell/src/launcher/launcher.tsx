@@ -95,8 +95,8 @@ function LauncherPanel(props: LauncherProps) {
           width: LAUNCHER.width,
           flexDirection: "column",
           borderRadius: LAUNCHER.radius,
-          // The conversation's thread is read over whatever window is under it: its glass is the launcher's colour, solid (D261).
-          backgroundColor: mode.kind === "talk" ? colors.launcher.slice(0, 7) : colors.launcher,
+          // Opaque in every mode: no window's words read through the field or the rows (DE-4, D697; the conversation's since D261).
+          backgroundColor: colors.launcher,
           borderWidth: 1,
           borderColor: colors.separator,
           shadow: SHADOW.xl,

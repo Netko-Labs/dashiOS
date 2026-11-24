@@ -8357,3 +8357,36 @@ short words, as the rulebook is written.
 - **Cost:** a private server starts for each turn (well under a second on the laptop); an OpenCode
   older than 2 has no `--standalone` and refuses the turn (the installer gives 2.x).
 - **Undo:** drop the two flags in `agents/ask/harness/catalog.ts`.
+
+### D696. An agent's picture says when the grey block is a sheet waiting for the person
+
+- **Date:** 2026-11-24. `v10/fix-installed` (the installed pass's P1: "an agent's question shows as
+  a blank dark rectangle").
+- **Question:** the installed pass saw an agent's question, and the consent before it, as a large
+  dark grey rectangle, "unreadable and unanswerable", until it timed out. On the person's own
+  screenshot (⇧❖3) both sheets draw whole, in Light and Dark. The rectangle was the `agent` capture
+  mask (`agents/mask.ts`): every sheet on the `dashi.agent-consent` layer is blanked in agents'
+  pictures, its whole surface, and an agent's click never answers one. The pass was driven through
+  `vm/agent`, so it only ever saw the blank. Unmask the question, or say what the block is?
+- **Choice:** keep the blank (a sheet is the person's to read and answer, and the question's field
+  holds their words), and say so: while a sheet waits, a whole-screen screenshot's words add "The
+  grey block is a Dashi sheet waiting for the person (a permission or a question), blanked in agents'
+  pictures: it is theirs to read and answer, and agents can't press it." (`pictureNote`,
+  `agents/lib/run/run-screen.ts`; `AgentUi.sheetUp`).
+- **Why:** an agent (or a reviewer reading its pictures) that is told why it can't see a sheet
+  waits for the person instead of reporting a broken one or clicking at it.
+- **Cost:** the block still covers the sheet's shadow margin as well as its card.
+- **Undo:** drop the sentence in `pictureNote`.
+
+### D697. Glass that holds text is opaque until the compositor blurs
+
+- **Date:** 2026-11-24. `v10/fix-installed` (the installed pass's P1, DE-4).
+- **Question:** the launcher's glass was `#f5f5f7f5` / `#0b0b0df5` (96%) and menus' 97%. With no
+  blur behind it, the window under the launcher read through its field and rows ("Accent color ·
+  Kombu", a Save button), in both modes. Raise the alpha, or make it solid?
+- **Choice:** solid: `launcher` and `menu` carry no alpha in either palette (the conversation's glass
+  was already solid, D261). DE-4 now says "opaque"; `dashi-ui/test/contrast.test.ts` holds it.
+- **Why:** any alpha short of 1 shows ink through at some contrast; until a blur pass exists there is
+  nothing translucency buys over a window but noise.
+- **Cost:** the launcher, the switcher, banners and menus no longer hint at the wallpaper under them.
+- **Undo:** put the alpha back on the two tokens (and DE-4's wording) when the compositor blurs.

@@ -246,7 +246,10 @@ unchanged. Before every agent screenshot, every still of a recording, and
 every 400 ms while an agent's recording runs, `src/agents/mask.ts` sets the
 `agent` mask to:
 
-- every consent sheet (the `dashi.agent-consent` layer);
+- every consent sheet (the `dashi.agent-consent` layer), an agent's question
+  (`ask_person`) included: while one waits for the person, the screenshot's
+  words say the grey block is that sheet, theirs to answer
+  (`agents/lib/run/run-screen.ts`, `pictureNote`; decisions.md D696);
 - the vault's windows (Settings while its Passwords pane shows);
 - windows handed to the person ("Your turn") until they press Done;
 - every password field that is showing (AT-SPI, role `PASSWORD_TEXT`, state

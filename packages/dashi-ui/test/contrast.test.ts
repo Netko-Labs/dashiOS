@@ -125,3 +125,18 @@ describe("true black", () => {
     }
   });
 });
+
+// DE-4: glass that holds text is opaque until the compositor can blur behind
+// it. At 96% (`#…f5`) a window's words read through the launcher's field and
+// rows (the installed pass of 24 Nov; decisions.md D697).
+describe("glass that holds text is opaque (DE-4)", () => {
+  for (const [mode, colors] of [
+    ["light", lightColors],
+    ["dark", darkColors],
+  ] as const) {
+    test(`${mode}: the launcher and menus carry no alpha`, () => {
+      expect(parseHex(colors.launcher)?.alpha).toBe(1);
+      expect(parseHex(colors.menu)?.alpha).toBe(1);
+    });
+  }
+});
