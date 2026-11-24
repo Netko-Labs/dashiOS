@@ -93,6 +93,13 @@ describe("the one command line", () => {
     expect(opencodeCommand({ ...turn, version: "1.19.6" }, agent).args).toEqual(["run", "--format", "json", "--agent", "dashi-task", "--", "dark mode"]);
   });
 
+  test("its own tools off but read, which its free models need, kept to the turn's folder", () => {
+    const config = JSON.parse(opencodeCommand(turn, { name: "dashi-task", description: "Works" }).env.OPENCODE_CONFIG_CONTENT ?? "{}");
+    expect(config.tools).toEqual({ "*": false, read: true, "dashi_*": true });
+    expect(config.agent["dashi-task"].tools).toEqual(config.tools);
+    expect(config.permission).toEqual({ edit: "deny", bash: "deny", webfetch: "deny", external_directory: "deny" });
+  });
+
   test("its install line is the one opencode.ai gives for the current release", () => {
     expect(HARNESSES.opencode.install).toBe("curl -fsSL https://opencode.ai/v2/install | bash");
   });

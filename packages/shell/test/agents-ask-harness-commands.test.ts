@@ -35,8 +35,8 @@ describe("command lines", () => {
     expect(codex.stdin.startsWith(HARNESS_PROMPT)).toBe(true);
     const opencode = HARNESSES.opencode.command(turn);
     const config = JSON.parse(opencode.env.OPENCODE_CONFIG_CONTENT ?? "{}");
-    expect(config.tools).toEqual({ "*": false, "dashi_*": true });
-    expect(config.permission).toEqual({ edit: "deny", bash: "deny", webfetch: "deny" });
+    expect(config.tools).toEqual({ "*": false, read: true, "dashi_*": true });
+    expect(config.permission).toEqual({ edit: "deny", bash: "deny", webfetch: "deny", external_directory: "deny" });
     expect(config.agent["dashi-plan"].prompt).toBe(HARNESS_PROMPT);
     expect(opencode.args.slice(-2)).toEqual(["--", "dark mode"]);
     // Its own server inside the sandbox, never the person's background service.

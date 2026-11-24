@@ -8400,3 +8400,25 @@ short words, as the rulebook is written.
   "… didn’t answer.", "… can’t start without a session.", "Claude Code’s own default".
 - **Cost:** none; the rest of Dashi's straight apostrophes wait for VO-3's check.
 - **Undo:** from git.
+
+### D694. OpenCode's own `read` stays on: its free models refuse a turn without it
+
+- **Date:** 2026-11-24. `v10/opencode-v2`.
+- **Question:** with D691's command line, OpenCode 2 ran inside the sandbox and still answered nothing:
+  "Free usage limit reached" (HTTP 429, `FreeUsageLimitError`: "Free models work in OpenCode"), while a
+  plain `opencode run` beside it answered at once. The 0.10 installed pass saw the same with OpenCode 1.
+- **Found (in the VM, run for run, outside the sandbox too):** the free endpoint refuses a request whose
+  agent has every one of OpenCode's own tools off. Dashi's prompt, its MCP server and its permissions
+  make no difference; `read` does: with only `read` on (beside `dashi_*`) it answered every time, without
+  it never, on `deepseek-v4.1-flash-free` and on `hy4-flash-free` (`bash`, `todowrite`, `glob` or `list`
+  alone don't do it). `read` can't be on and denied: OpenCode 2.4.1 ignores a top-level `read: "deny"`
+  (it read), and an agent's own `read: "deny"` takes the tool out, so the request is refused again.
+- **Decision:** the turn's tools are `{"*": false, "read": true, "dashi_*": true}` and `permission`
+  adds `external_directory: "deny"` to edits, shell and fetches. What `read` can reach is the turn's
+  folder only (`dashi-launcher`, `dashi-task`, `dashi-assistant` under a fresh runtime directory: empty),
+  inside a sandbox whose home holds only OpenCode's own folders; any other folder is denied
+  (`external_directory`; seen: "Permission denied: external_directory" for `/etc/hostname`).
+- **Cost:** a model may spend a call listing an empty folder. The free tier also has a real quota per
+  model and address (about 25 turns here, then 60 to 90 minutes of 429), which this doesn't change.
+  If OpenCode changes what its free tier checks, turns fail as before, with its words in the log.
+- **Undo:** drop `read: true` and `external_directory` in `agents/ask/harness/opencode.ts`.

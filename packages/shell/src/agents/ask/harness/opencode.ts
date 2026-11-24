@@ -15,6 +15,11 @@
  *
  * Which is which, the program says (`--version`, version.ts); a version
  * that can't be told is taken as the current release, 2.
+ *
+ * Its own tools are off but `read` (D694): OpenCode's free models refuse a
+ * request without it ("Free usage limit reached", run for run in the VM on
+ * two free models), and it reaches only the turn's empty folder inside the
+ * sandbox, other folders denied (`external_directory`).
  */
 
 import { join } from "node:path";
@@ -36,13 +41,13 @@ export function opencodeFlags(version: string | null | undefined): string[] {
   return major !== null && major < 2 ? [] : ["--standalone", "--archived"];
 }
 
-/** The one `opencode run` Dashi makes: every tool off but Dashi's, edits, shell and fetches denied, as `agent`. */
+/** The one `opencode run` Dashi makes: its tools off but Dashi's and `read`, edits, shell, fetches and other folders denied, as `agent`. */
 export function opencodeCommand(turn: HarnessTurn, agent: OpenCodeAgent): HarnessCommand {
-  const tools = { "*": false, [`${PLAN_SERVER}_*`]: true };
+  const tools = { "*": false, read: true, [`${PLAN_SERVER}_*`]: true };
   const config = {
     mcp: { [PLAN_SERVER]: { type: "local", command: [turn.mcp.command, ...turn.mcp.args], environment: { ...turn.mcp.env }, enabled: true } },
     tools,
-    permission: { edit: "deny", bash: "deny", webfetch: "deny" },
+    permission: { edit: "deny", bash: "deny", webfetch: "deny", external_directory: "deny" },
     agent: { [agent.name]: { description: agent.description, mode: "primary", prompt: turn.system, tools } },
   };
   return {

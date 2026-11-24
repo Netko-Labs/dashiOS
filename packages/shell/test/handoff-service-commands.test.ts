@@ -32,7 +32,7 @@ describe("the harnesses' command lines for a task", () => {
     const command = taskCommand("opencode", { ...turn, session: "ses_1", version: "2.4.1" });
     expect(command.args).toEqual(["run", "--standalone", "--archived", "--format", "json", "--agent", "dashi-task", "--session", "ses_1", "--", "Book it"]);
     expect(taskCommand("opencode", { ...turn, version: "1.19.6" }).args).toEqual(["run", "--format", "json", "--agent", "dashi-task", "--", "Book it"]);
-    expect(JSON.parse(command.env.OPENCODE_CONFIG_CONTENT ?? "{}").tools).toEqual({ "*": false, "dashi_*": true });
+    expect(JSON.parse(command.env.OPENCODE_CONFIG_CONTENT ?? "{}").tools).toEqual({ "*": false, read: true, "dashi_*": true });
   });
 
   test("the one to hand off to first: Settings' choice, else the answerer, else the catalog's order", () => {

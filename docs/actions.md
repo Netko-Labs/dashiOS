@@ -1136,8 +1136,11 @@ plan server and prints each CLI's output):
      the sandbox, never the person's background service, and Dashi's turns
      out of their session list. Its config in
      `OPENCODE_CONFIG_CONTENT`: the `dashi` server (`type: local`), tools
-     `{"*": false, "dashi_*": true}`, `permission` denying edits, shell and
-     fetches, and a `dashi-plan` agent with Dashi's prompt. Output: JSON
+     `{"*": false, "read": true, "dashi_*": true}` (`read`: OpenCode's free
+     models refuse a request without it, D694; it reaches only the turn's
+     empty folder), `permission` denying edits, shell, fetches and other
+     folders (`external_directory`), and a `dashi-plan` agent with Dashi's
+     prompt. Output: JSON
      events with `sessionID`, `text` parts, `error`.
 4. **The plan.** When the CLI ends, the recorded calls are the plan, shown
    and run exactly as any answerer's (one Return, `input-origin` checked,
@@ -1229,8 +1232,8 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   - OpenCode (opencode.ts, as plan mode runs it; OpenCode 2 run end to end
     in the VM, D691): `opencode run [--standalone --archived] --format json
     --agent dashi-task [--model <m>] [--session <id>] -- <prompt>`, its config in
-    `OPENCODE_CONFIG_CONTENT` (only `dashi_*` tools; edits, shell and
-    fetches denied).
+    `OPENCODE_CONFIG_CONTENT` (only `dashi_*` tools and `read`; edits,
+    shell, fetches and other folders denied).
   A turn that prints no event for 30 s is stuck (`quiet.ts`): its card asks,
   in plain words from its errors and whether it is signed in, "OpenCode
   isn’t signed in" (with what to type in Terminal), "… is at its limit" or
