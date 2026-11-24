@@ -38,7 +38,7 @@ export function ProgressPage() {
   const filling = useFilling();
   return (
     <PageBody>
-      <Exhibit title="Progress bar" note="Fills to how much is done; small in a row, regular on its own.">
+      <Exhibit title="Progress bar" note="Fills in ink to how much is done (Q3: never the accent); small in a row, regular on its own.">
         <Caption>Small, 40%</Caption>
         <ProgressBar testID="progress:small" value={0.4} width={240} />
         <Caption>Regular, filling</Caption>
@@ -180,6 +180,25 @@ export function AlertsPage() {
           glyph={glyphs.INFO}
           tone="neutral"
           buttons={[{ label: "OK", testID: "alert:still:ok", onPress: noop, kind: "primary" }]}
+        />
+      </Exhibit>
+      <Exhibit
+        title="Tiles say the job"
+        note="Ume destroys or failed, broth cautions, shiso is an agent's question, neutral is everything else; the accent never washes a tile (R4)."
+      >
+        <Alert
+          question="Let Claude use this computer?"
+          message="It can see the screen and use the pointer."
+          glyph={glyphs.INFO}
+          tone="agent"
+          buttons={[{ label: "Allow Once", testID: "alert:still:agent", onPress: noop, kind: "primary" }]}
+        />
+        <Alert
+          question="The disk is almost full."
+          message="Free some space to keep saving."
+          glyph={glyphs.WARNING}
+          tone="warning"
+          buttons={[{ label: "OK", testID: "alert:still:warning", onPress: noop, kind: "primary" }]}
         />
       </Exhibit>
       <Exhibit title="As sheets" note="Each opens over the window, in the mode of the column it was opened from.">

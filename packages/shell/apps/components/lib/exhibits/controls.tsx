@@ -42,6 +42,19 @@ export function ButtonsPage() {
           )}
         </States>
       </Exhibit>
+      <Exhibit title="Small and fill" note="Small is 24 tall, 12 SemiBold, for panels, banners and rows; fill takes its row's width.">
+        <States>
+          {({ state, disabled }) => (
+            <>
+              <Button testID={`button:${state}:small`} label="Clear All" size="small" disabled={disabled} onPress={noop} />
+              <Button testID={`button:${state}:small-ink`} label="Reply" size="small" primary disabled={disabled} onPress={noop} />
+              <View style={{ width: 160, flexDirection: "row" }}>
+                <Button testID={`button:${state}:fill`} label="Continue" fill primary disabled={disabled} onPress={noop} />
+              </View>
+            </>
+          )}
+        </States>
+      </Exhibit>
       <Exhibit title="Default button" note="A secondary button Enter presses wears a 2 px ink edge: a destructive sheet's Cancel.">
         <States states={["enabled", "pressed", "disabled"]}>
           {({ state, disabled }) => <Button testID={`button:${state}:default`} label="Cancel" isDefault disabled={disabled} onPress={noop} />}
@@ -85,6 +98,12 @@ const SIZES = [
   { value: "l", label: "Large" },
 ];
 
+const GLYPH_VIEWS = [
+  { value: "grid", label: "Icons", glyph: glyphs.MORE },
+  { value: "list", label: "List", glyph: glyphs.CHEVRON_UP_DOWN },
+  { value: "info", label: "Details", glyph: glyphs.INFO },
+];
+
 const PAPER: ReadonlyArray<PopUpOption<string>> = [
   { value: "a4", label: "A4" },
   { value: "letter", label: "US Letter" },
@@ -107,6 +126,7 @@ const GROUPED: ReadonlyArray<PopUpOption<string>> = [
 
 export function PickersPage() {
   const [segment, setSegment] = useState("m");
+  const [view, setView] = useState("grid");
   const [pill, setPill] = useState("m");
   const [paper, setPaper] = useState("a4");
   const [grouped, setGrouped] = useState("a5");
@@ -115,6 +135,13 @@ export function PickersPage() {
       <Exhibit title="Segmented control" note="Two to four short options.">
         <States states={["enabled", "pressed", "focused", "disabled"]}>
           {({ state, disabled }) => <Segmented testID={`segmented:${state}`} options={SIZES} value={segment} onChange={setSegment} disabled={disabled} />}
+        </States>
+      </Exhibit>
+      <Exhibit title="Segmented control, glyphs" note="Each glyph carries its name for screen readers; the chosen one is raised with shadow sm.">
+        <States states={["enabled", "disabled"]}>
+          {({ state, disabled }) => (
+            <Segmented testID={`segmented:glyphs:${state}`} options={GLYPH_VIEWS} value={view} onChange={setView} disabled={disabled} />
+          )}
         </States>
       </Exhibit>
       <Exhibit title="Choice pills" note="Two to six options in a settings row; the chosen one is kombu.">
@@ -177,12 +204,30 @@ export function FieldsPage() {
   const [query, setQuery] = useState("");
   return (
     <PageBody>
-      <Exhibit title="Text field" note="Its edge is the focus ring's purple while it has the keyboard.">
+      <Exhibit
+        title="Text field"
+        note="Its edge is the focus ring's purple while it has the keyboard, ume while what it holds is wrong; a glyph over its start; a line under it."
+      >
         <TextField testID="field:text" value={text} onChangeText={setText} width={220} />
         <TextField testID="field:empty" value="" placeholder="Name" onChangeText={noop} width={220} />
+        <TextField
+          testID="field:glyph"
+          value=""
+          placeholder="Website"
+          glyph={glyphs.SEARCH}
+          message="example.com or a full address"
+          onChangeText={noop}
+          width={240}
+        />
+        <TextField testID="field:invalid" value="12" label="Code" invalid message="Six digits." onChangeText={noop} width={220} />
+        <TextField testID="field:disabled" value="alexk" disabled onChangeText={noop} width={220} />
+        <TextField testID="field:panel" look="panel" value="Alex Kim" onChangeText={noop} width={220} />
       </Exhibit>
-      <Exhibit title="Search field" note="Esc empties it first; the clear button shows once something is typed.">
-        <SearchField testID="field:search" value={query} onChangeText={setQuery} width={220} />
+      <Exhibit title="Search field" note="210, shrinking to 96; its words shorten to Search under 140 and end in an ellipsis. Esc empties it first.">
+        <SearchField testID="field:search" value={query} onChangeText={setQuery} placeholder="Search apps and add-ons" />
+        <SearchField testID="field:narrow" value="" onChangeText={noop} placeholder="Search apps and add-ons" width={120} />
+        <SearchField testID="field:find" value="milk" variant="find" status="2 of 4" onChangeText={noop} />
+        <SearchField testID="field:panel" look="panel" value="" placeholder="Search settings" onChangeText={noop} />
       </Exhibit>
     </PageBody>
   );

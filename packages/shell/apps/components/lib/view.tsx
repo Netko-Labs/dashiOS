@@ -13,6 +13,8 @@ import { type ReactNode, useState } from "react";
 import { useAppMenus } from "../../kit/index.ts";
 import { ButtonsPage, FieldsPage, PickersPage, SwitchesPage } from "./exhibits/controls.tsx";
 import { AlertsPage, MenusPage, NoticesPage, ProgressPage } from "./exhibits/feedback.tsx";
+import { ChecksPage, PanelPage, PicksPage, StatesPage } from "./exhibits/kit.tsx";
+import { MeasuresPage } from "./exhibits/measures.tsx";
 import { ListsPage, RowsPage, ShortcutsPage } from "./exhibits/structure.tsx";
 import { ColorsPage, GroundsPage, TintsPage, TypePage } from "./exhibits/tokens.tsx";
 import { galleryMenus } from "./menus.ts";
@@ -23,6 +25,7 @@ export const GALLERY_SIZE = { width: 1040, height: 700 } as const;
 
 const PAGE_VIEWS: Readonly<Record<PageId, () => ReactNode>> = {
   buttons: () => <ButtonsPage />,
+  checks: () => <ChecksPage />,
   pickers: () => <PickersPage />,
   switches: () => <SwitchesPage />,
   fields: () => <FieldsPage />,
@@ -32,11 +35,15 @@ const PAGE_VIEWS: Readonly<Record<PageId, () => ReactNode>> = {
   rows: () => <RowsPage />,
   lists: () => <ListsPage />,
   notices: () => <NoticesPage />,
+  states: () => <StatesPage />,
+  picks: () => <PicksPage />,
+  panel: () => <PanelPage />,
   shortcuts: () => <ShortcutsPage />,
   colors: () => <ColorsPage />,
   grounds: () => <GroundsPage />,
   tints: () => <TintsPage />,
   type: () => <TypePage />,
+  measures: () => <MeasuresPage />,
 };
 
 export function GalleryWindow({ initialPage = "buttons" }: { initialPage?: PageId }) {
