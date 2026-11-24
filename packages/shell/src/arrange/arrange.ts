@@ -27,7 +27,6 @@ import {
   configuredFrame,
   type EventOf,
   type FullscreenDesktopsHook,
-  fitWindows,
   fullscreenWindow,
   screenPlan,
 } from "./lib/arrange-frames.ts";
@@ -113,11 +112,10 @@ export class Arranger {
     const changed = !sameOutputs(before, this.outputs);
     await this.drags.send(this.compositor, this.outputs);
     if (!changed) return;
-    // Windows of a screen that went move to one left, and back when it returns; then
-    // windows that no longer fit their screen's usable area (it shrank, or its scale
-    // grew) are moved in, and shrunk if they must, a tile taking its tile there.
+    // Every window follows its screen, on every Desktop (screens-gone.ts): windows of a
+    // screen that went move to one left, and back when it returns; the others go where
+    // their screen went, inside what it leaves free, a tile taking its tile there.
     await screensChanged(this.context(), before);
-    await fitWindows(this.context());
   }
 
   /** Where a new window goes, as any other (also for a claimed one that could not be placed its own way). */
@@ -235,7 +233,7 @@ export class Arranger {
   }
 
   private closed(event: EventOf<"window-closed">): void {
-    this.remembering.closed(event.id, event, this.arranged.get(event.id)?.tile ?? null, this.outputs);
+    this.remembering.closed(event.id, event, this.arranged.get(event.id)?.tile ?? null, this.outputs, this.displaced.get(event.id));
     this.forget(event.id);
     this.beforeFullscreen.delete(event.id);
   }

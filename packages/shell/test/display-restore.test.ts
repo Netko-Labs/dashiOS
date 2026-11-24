@@ -8,7 +8,7 @@ import { expect, test } from "bun:test";
 import { outputsOf } from "../src/compositor/outputs.ts";
 import { settle } from "../src/display-config/layout.ts";
 import { DisplayManager } from "../src/display-config/manager.ts";
-import { defaultMode, monitorsOf } from "../src/display-config/monitors.ts";
+import { defaultMode, monitorsOf, rateOf } from "../src/display-config/monitors.ts";
 import { planRestore, settled } from "../src/display-config/plan.ts";
 import { DisplayStore } from "../src/display-config/saved.ts";
 import { fakeCompositor } from "./support/compositor.ts";
@@ -149,4 +149,11 @@ test("a scale change asks for the neighbour's new place in the same request", ()
     { name: "eDP-1", scale: 1.75 },
     { name: "HDMI-A-1", position: { x: 1646, y: 0 } },
   ]);
+});
+
+test("the rate a screen runs is the nearest offered, not the first within 0.6 Hz", () => {
+  // The VM's 1920 × 1200 offers 59.95 and 59.885 Hz and runs 59.885: Displays marked 59.95.
+  expect(rateOf([59950, 59885], 59885)).toBe(59885);
+  expect(rateOf([60000, 59940], 59950)).toBe(59940);
+  expect(rateOf([120000], 59885)).toBeNull();
 });

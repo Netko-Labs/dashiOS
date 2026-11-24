@@ -6916,3 +6916,75 @@ short words, as the rulebook is written.
   screen a frame is on (tiles, Fill, Center, Back, fitting, placing, Move to)
   follows.
 - **Undo:** `screens[0]` back as `screenFor`'s fallback.
+### D537. Every window follows its screen, on every Desktop; a window shrunk to fit gets its size back
+
+- **Date:** 2026-11-24. `v10/screens-fix`.
+- **Found** (the installed pass, `dashi-0.10.0-review/04-screens-installed`):
+  after a screen change only the windows that showed were fitted
+  (`fitWindows` skipped a window with no `frame`). A tile on a Desktop that
+  wasn't showing kept the tile it had while the replugged screen had no bar
+  yet (y 6, under the menu bar); a full-screen Terminal kept 820 × 615 in a
+  screen that went to 1024 × 768; Files hung 158 pt off a screen that
+  shrank. A screen moved in the arrangement left its windows where they
+  were, on the other screen. And a window fitted into a screen that came back
+  at 640 × 480 before its mode was set kept that size, and its app's memory
+  stored it.
+- **Decision:** one pass on every screen change, over every window
+  (`frame`, `away` or `parked`): one on a screen that went moves off as in
+  D533; one on a screen still here goes where the screen went (the same
+  place from its top left), inside its usable area as it is now, a tile to
+  its tile there, a full-screen one full screen over it again (out, framed,
+  in) when the screen moved or changed size. A window the screen has no room
+  for is shrunk and remembered as displaced, as a window off a screen that
+  went is; whenever its screen has room again it gets its own frame back. A
+  window closed while displaced leaves its own frame (and screen) in its
+  memory, not the one a screen still settling gave it. A drag, a resize or
+  an arrangement by the person forgets it, as before.
+  (`arrange/lib/screens-gone.ts`; `fitWindows` is gone.)
+- **Cost:** a window the app resized itself while displaced gets the size
+  the shell remembered at the next screen change.
+- **Undo:** `fitWindows` back after `screensChanged`, and `screensChanged`
+  only for screens that went or came.
+
+### D538. A set of screens with nothing saved comes back as it last ran
+
+- **Date:** 2026-11-24. `v10/screens-fix`.
+- **Found:** with no arrangement saved for a pair of screens (nobody had
+  changed it in Displays), the main display unplugged and plugged back came
+  back as the second screen, right of the other, which stayed main
+  (`choosePrimary` took the first connector listed, and the compositor puts
+  a new screen on the right).
+- **Decision:** the display manager notes the arrangement each set of
+  screens runs, whenever it changes (`display-config/lib/seen.ts`; not when
+  a screen is off or on its way), and a set with nothing saved is restored
+  from that: where each was, its mode, and which was main. A set never seen
+  makes the built-in panel main, else the main display the person last had
+  among several, else the first. Kept in memory only: `displays.json` holds
+  what a person or an agent chose.
+- **Cost:** after a new login, a pair never arranged in Displays comes up as
+  the compositor places it, as before.
+- **Undo:** `restore` reads `store.get(key)` alone; `previousMain` out of
+  `planRestore`.
+
+### D539. Displays marks the rate the screen runs, the nearest offered
+
+- **Date:** 2026-11-24. `v10/screens-fix`.
+- **Found:** a 1920 × 1200 screen offering 59.95 and 59.885 Hz, running
+  59.885, showed 59.95 chosen: the first rate within 0.6 Hz won, and
+  choosing 59.95 did nothing.
+- **Decision:** `rateOf` gives the nearest rate within 0.6 Hz
+  (`display-config/monitors.ts`), for the pill and for whether a choice is
+  the one running.
+- **Undo:** the first within 0.6 Hz, as `RefreshRate` had it.
+
+### D540. A capture of a whole screen is its own pixels
+
+- **Date:** 2026-11-24. `v10/screens-fix`.
+- **Found:** ⇧❖3 saved 1922 × 1201 for a 1920 × 1200 screen at 1.75: the
+  screen's size in points is rounded up (1098 × 686), and scaled back it is a
+  pixel over.
+- **Decision:** `capture` of a whole screen (`output`, or the screen under
+  the pointer) crops the picture to the screen's mode (`Picture::cropped`).
+  A `rect` or a window is as before; screencopy and image capture keep the
+  sizes they announce.
+- **Undo:** drop the crop in `ipc/methods/capture.rs`.

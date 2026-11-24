@@ -10,7 +10,7 @@ import { SCALES } from "@dashi/ui";
 import type { Compositor } from "../../compositor/index.ts";
 import type { ApplyResult, DisplayManager } from "../../display-config/manager.ts";
 import { mirrorRequests } from "../../display-config/mirror.ts";
-import { type Mode, type Monitor, monitorsOf, type Rotation, type VrrMode } from "../../display-config/monitors.ts";
+import { type Mode, type Monitor, monitorsOf, type Rotation, rateOf, ratesOf, type VrrMode } from "../../display-config/monitors.ts";
 import { toWire } from "../../display-config/plan.ts";
 import { type ScreenInfo, screensOf } from "../../displays.ts";
 import type { SettingsStore } from "../store.ts";
@@ -143,7 +143,7 @@ export class ScreensStore {
     const monitor = this.snapshot.monitors.find((candidate) => candidate.name === name);
     const mode = monitor?.mode;
     if (!mode) return;
-    if (Math.abs(mode.refreshMhz - rate) <= 600) {
+    if (rate === (rateOf(ratesOf(monitor.modes, mode), mode.refreshMhz) ?? mode.refreshMhz)) {
       this.settings.setDisplayRefresh(name, "fixed");
       return;
     }

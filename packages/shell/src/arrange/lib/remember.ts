@@ -12,6 +12,7 @@ import type { Output, Rect, Tile } from "../../layout.ts";
 import { memoryOf, type WindowMemory } from "./memory.ts";
 import type { MemoryFile } from "./memory-file.ts";
 import { remembers } from "./placing.ts";
+import type { Displaced } from "./screens-gone.ts";
 
 export class Remembering {
   /** The windows that leave a memory, by id: their app. */
@@ -40,14 +41,21 @@ export class Remembering {
     else this.ownFullscreen.delete(id);
   }
 
-  /** A window closed at `frame` (for a full-screen one, its frame from before), arranged as `tile`. */
-  closed(id: number, closed: { frame?: Rect; fullscreen?: true }, tile: Tile | null, outputs: readonly Output[]): void {
+  /**
+   * A window closed at `frame` (for a full-screen one, its frame from before), arranged as `tile`.
+   * One `displaced` (screens-gone.ts) leaves where it wanted to be: the screen that went, or its
+   * own size, not the one a screen with no room for it (a screen still settling) gave it.
+   */
+  closed(id: number, closed: { frame?: Rect; fullscreen?: true }, tile: Tile | null, outputs: readonly Output[], displaced?: Displaced): void {
     const appId = this.apps.get(id);
     const own = this.ownFullscreen.has(id);
     this.apps.delete(id);
     this.ownFullscreen.delete(id);
     if (!this.file || appId === undefined || !closed.frame) return;
-    const memory = memoryOf(closed.frame, { tile, fullscreen: closed.fullscreen === true && own }, outputs, this.now());
+    const fullscreen = closed.fullscreen === true && own;
+    const memory = displaced
+      ? { screen: displaced.screen, frame: displaced.frame, tile: displaced.tile ?? tile, fullscreen, at: this.now() }
+      : memoryOf(closed.frame, { tile, fullscreen }, outputs, this.now());
     if (memory) this.file.set(appId, memory);
   }
 }

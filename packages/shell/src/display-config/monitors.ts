@@ -202,6 +202,16 @@ export function ratesOf(modes: readonly Mode[], size: { width: number; height: n
     .sort((a, b) => b - a);
 }
 
+/**
+ * Of `rates`, the one a screen running at `refreshMhz` runs: the nearest, within 0.6 Hz (a mode
+ * reports its rate a little off what it lists); null for none. Two rates that close (59.95 and
+ * 59.89) are told apart: the first within 0.6 Hz is not always the one.
+ */
+export function rateOf(rates: readonly number[], refreshMhz: number): number | null {
+  const near = [...rates].sort((a, b) => Math.abs(a - refreshMhz) - Math.abs(b - refreshMhz))[0];
+  return near !== undefined && Math.abs(near - refreshMhz) <= 600 ? near : null;
+}
+
 /** The mode of that size nearest `refreshMhz`, else the native one of that size, else the fastest. */
 export function modeFor(modes: readonly OfferedMode[], size: { width: number; height: number }, refreshMhz?: number): OfferedMode | undefined {
   const same = modes.filter((mode) => mode.width === size.width && mode.height === size.height);

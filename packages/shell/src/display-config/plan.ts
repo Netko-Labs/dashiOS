@@ -42,6 +42,8 @@ export interface RestoreOptions {
   lastMode?: (monitor: Monitor) => Mode | undefined;
   /** A monitor nobody chose a mode for runs `defaultMode` (default true; false after the screens refused it). */
   defaultModes?: boolean;
+  /** The connector of the main display the person last had among several: main again in a set with nothing saved, after a built-in panel. */
+  previousMain?: string;
 }
 
 const sameMode = (a: Mode | undefined, b: Mode | undefined): boolean =>
@@ -88,7 +90,9 @@ export function planRestore(all: readonly Monitor[], saved: SavedLayout | undefi
   }
   const names = lit.length > 0 ? lit.map((monitor) => monitor.name) : monitors.map((monitor) => monitor.name);
   const savedPrimary = saved?.primary ? monitors.find((monitor) => identityOf(monitor) === saved.primary && names.includes(monitor.name)) : undefined;
-  const primary = savedPrimary?.name ?? choosePrimary(names) ?? undefined;
+  const previous = options.previousMain !== undefined && names.includes(options.previousMain) ? options.previousMain : undefined;
+  const builtIn = monitors.find((monitor) => monitor.builtIn && names.includes(monitor.name))?.name;
+  const primary = savedPrimary?.name ?? builtIn ?? previous ?? choosePrimary(names) ?? undefined;
   const current = monitors.find((monitor) => monitor.primary)?.name;
   const request: ConfigRequest = { outputs, ...(primary !== undefined && primary !== current ? { primary } : {}) };
   return request.outputs.length === 0 && request.primary === undefined ? null : request;

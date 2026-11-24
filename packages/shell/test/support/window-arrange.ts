@@ -48,8 +48,13 @@ export function fake(
       const window = windows.find((candidate) => candidate.id === params.window);
       if (window && method === "frame") {
         const size = { width: Number(params.width), height: Number(params.height) };
-        const drawn = lag && window.frame ? { width: window.frame.width, height: window.frame.height } : size;
-        window.frame = { x: Number(params.x), y: Number(params.y), ...drawn };
+        const was = window.frame ?? window.away ?? window.parked;
+        const drawn = lag && was ? { width: was.width, height: was.height } : size;
+        const framed = { x: Number(params.x), y: Number(params.y), ...drawn };
+        // Off screen, it takes the frame where it waits (on another Desktop, or back from the Dock).
+        if (!window.frame && window.away) window.away = framed;
+        else if (!window.frame && window.parked) window.parked = framed;
+        else window.frame = framed;
         if (lag) window.configuring = size;
         else delete window.configuring;
       }

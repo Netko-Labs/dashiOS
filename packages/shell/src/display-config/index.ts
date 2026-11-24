@@ -15,6 +15,7 @@ export {
   nativeSize,
   ROTATIONS,
   type Rotation,
+  rateOf,
   ratesOf,
   refreshLabel,
   sizeLabel,
