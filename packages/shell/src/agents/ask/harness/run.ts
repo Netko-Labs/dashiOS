@@ -7,7 +7,7 @@
 
 import { join } from "node:path";
 import { planSocketInside } from "../../sandbox.ts";
-import type { HarnessSpec } from "./catalog.ts";
+import type { HarnessSpec } from "./spec.ts";
 
 /** A program started for a turn: what it prints, how it ends, and how to stop it. */
 export interface Running {

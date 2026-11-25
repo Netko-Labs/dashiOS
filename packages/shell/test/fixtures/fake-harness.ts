@@ -13,6 +13,11 @@
  */
 
 const argv = process.argv.slice(2);
+// Asked its version (ask/harness/version.ts), it says the current OpenCode's.
+if (argv[0] === "--version") {
+  console.log("fake-harness v2.4.1");
+  process.exit(0);
+}
 const kind = argv[0] === "exec" ? "codex" : argv[0] === "run" ? "opencode" : "claude-code";
 const after = (flag: string): string | null => {
   const at = argv.indexOf(flag);

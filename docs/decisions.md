@@ -8449,3 +8449,68 @@ short words, as the rulebook is written.
   the longest that showed whole in the 200-wide sidebar (25 characters).
 - A slider's stops are named "15%" (a level from 0 to 1) or at the step's places, never
   "0.15000000000000002" (`notchLabel`, `slider-math.ts`; Control Center's ink slider too).
+
+### D691. One place says how Dashi runs OpenCode, by the version the program says it is
+
+- **Date:** 2026-11-24. `v10/opencode-v2`.
+- **Question:** D690 put `--standalone --archived` in plan mode's command line only. The launcher's
+  assistant and hand-offs build their own (`handoff/lib/commands.ts`, which the assistant takes), so the
+  installed 0.10 still ended every OpenCode 2 question with "Location not found". And OpenCode 1 (1.19,
+  which `opencode.ai/install` still gives) has neither flag.
+- **Decision:** `agents/ask/harness/opencode.ts` builds the one `opencode run` (Dashi's agent in
+  `OPENCODE_CONFIG_CONTENT`, every tool off but `dashi_*`) for plan mode (`dashi-plan`), hand-offs and the
+  assistant (`dashi-task`). Before a turn the found program is asked `--version` (`version.ts`): once per
+  file, kept by its path, modified time, size and inode (OpenCode's installer gives every release the same
+  modified time), never at the shell's start, 3 s at most. 2.x gets `--standalone --archived`; 1.x runs
+  as before. A version that can't be told (no answer in time, words without a number) is taken as 2, the
+  current release and the one Dashi's install line gives (D692), and asked again next turn.
+- **Cost:** one `opencode --version` (about 50 ms) the first time a turn runs after an install or update.
+  An OpenCode 2 that doesn't answer `--version` in 3 s runs as 2, which is right; a 1.x that doesn't
+  would get flags it doesn't know.
+- **Undo:** from git (`agents/ask/harness/opencode.ts`, `version.ts`); `opencodeFlags` is the switch.
+
+### D692. Dashi's install line for OpenCode is opencode.ai's own, for the current release
+
+- **Date:** 2026-11-24. `v10/opencode-v2`.
+- **Question:** Settings › Agents said "Install it with `curl -fsSL https://opencode.ai/install | bash`".
+  That installer now gives OpenCode 1 only (it refuses a 2.x version and names `/v2/install`), so someone
+  following Dashi's line got the old release.
+- **Decision:** `curl -fsSL https://opencode.ai/v2/install | bash`. On 24 Nov 2026 opencode.ai's home
+  page and its docs both give exactly this line, and it installs 2.x (2.4.1 then) into
+  `~/.opencode/bin`, where Dashi already looks. OpenCode 1 still works when it is what is installed (D691).
+- **Cost:** when opencode.ai moves its installer again, the line goes stale until it is changed here.
+- **Undo:** `install` in `agents/ask/harness/opencode.ts`.
+
+### D693. A message that names a harness names it as Dashi shows it, with curly apostrophes
+
+- **Date:** 2026-11-24. `v10/opencode-v2`.
+- **Question:** the assistant said "opencode isn't installed." (the program's name, a straight
+  apostrophe) where plan mode and hand-offs said "OpenCode isn't installed."
+- **Decision:** every message that names a harness takes its display name (`ANSWERERS[id].name`), and
+  its apostrophes are curly (design.html VO-3): "OpenCode isn’t installed.", "… isn’t signed in",
+  "… isn’t answering", "OpenCode’s model is at its limit", "OpenCode’s configured provider",
+  "… didn’t answer.", "… can’t start without a session.", "Claude Code’s own default".
+- **Cost:** none; the rest of Dashi's straight apostrophes wait for VO-3's check.
+- **Undo:** from git.
+
+### D694. OpenCode's own `read` stays on: its free models refuse a turn without it
+
+- **Date:** 2026-11-24. `v10/opencode-v2`.
+- **Question:** with D691's command line, OpenCode 2 ran inside the sandbox and still answered nothing:
+  "Free usage limit reached" (HTTP 429, `FreeUsageLimitError`: "Free models work in OpenCode"), while a
+  plain `opencode run` beside it answered at once. The 0.10 installed pass saw the same with OpenCode 1.
+- **Found (in the VM, run for run, outside the sandbox too):** the free endpoint refuses a request whose
+  agent has every one of OpenCode's own tools off. Dashi's prompt, its MCP server and its permissions
+  make no difference; `read` does: with only `read` on (beside `dashi_*`) it answered every time, without
+  it never, on `deepseek-v4.1-flash-free` and on `hy4-flash-free` (`bash`, `todowrite`, `glob` or `list`
+  alone don't do it). `read` can't be on and denied: OpenCode 2.4.1 ignores a top-level `read: "deny"`
+  (it read), and an agent's own `read: "deny"` takes the tool out, so the request is refused again.
+- **Decision:** the turn's tools are `{"*": false, "read": true, "dashi_*": true}` and `permission`
+  adds `external_directory: "deny"` to edits, shell and fetches. What `read` can reach is the turn's
+  folder only (`dashi-launcher`, `dashi-task`, `dashi-assistant` under a fresh runtime directory: empty),
+  inside a sandbox whose home holds only OpenCode's own folders; any other folder is denied
+  (`external_directory`; seen: "Permission denied: external_directory" for `/etc/hostname`).
+- **Cost:** a model may spend a call listing an empty folder. The free tier also has a real quota per
+  model and address (about 25 turns here, then 60 to 90 minutes of 429), which this doesn't change.
+  If OpenCode changes what its free tier checks, turns fail as before, with its words in the log.
+- **Undo:** drop `read: true` and `external_directory` in `agents/ask/harness/opencode.ts`.

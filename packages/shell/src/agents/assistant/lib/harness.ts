@@ -15,7 +15,8 @@
  * `--allowedTools mcp__dashi`, `--permission-mode dontAsk`,
  * `--setting-sources ""`, `--effort low`, and `--resume <id>` for every ask
  * after a conversation's first. Codex and OpenCode take the launcher runs'
- * command lines (handoff/lib/commands.ts), unverified end to end.
+ * command lines (handoff/lib/commands.ts); OpenCode's is by its version
+ * (ask/harness/opencode.ts), and was run end to end in the VM (D691).
  */
 
 import { join } from "node:path";
@@ -28,7 +29,9 @@ import {
   type HarnessTurn,
   harnessEnv,
   PLAN_SERVER,
+  type Probe,
   type ShellPaths,
+  turnVersion,
 } from "../../ask/index.ts";
 import { eventsOf, lineObject, taskCommand } from "../../handoff/index.ts";
 import { taskSocket, unitName } from "../../sandbox.ts";
@@ -124,6 +127,8 @@ export interface HarnessHost {
   shell: ShellPaths;
   files: Files;
   spawn?: Spawner;
+  /** Asks the program its version (`--version`), for a harness whose command line depends on it (OpenCode). */
+  probe?: Probe;
   /** For tests: run the harness itself, not through dashi-agent (no bubblewrap or systemd there). */
   direct?: boolean;
 }
@@ -215,6 +220,7 @@ export async function askHarness(host: HarnessHost, ask: HarnessAsk): Promise<Ha
     system: ask.system,
     session: ask.session,
     mcp,
+    version: await turnVersion(spec, where, host.probe),
     ...(ask.model ? { model: ask.model } : {}),
   });
   const profile = {

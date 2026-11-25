@@ -142,7 +142,7 @@ export class AskTasks {
       if (signal.aborted) return;
       task.phase = "failed";
       task.failure =
-        error instanceof AnswerError ? { kind: error.failure, text: error.message } : { kind: "failed", text: `${task.answerer.info.name} didn't answer.` };
+        error instanceof AnswerError ? { kind: error.failure, text: error.message } : { kind: "failed", text: `${task.answerer.info.name} didn’t answer.` };
       // In the history as the plan it would have been (a Retry that answers replaces the line), and out of Now in a while.
       this.keep(task, task.serial + 1, task.failure.text);
       task.leaving = (this.deps.timers ?? realTimers).set(() => this.leaveNow(task), FAILED_STAYS_MS);

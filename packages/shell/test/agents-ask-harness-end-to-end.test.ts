@@ -75,7 +75,7 @@ describe("a harness answering, end to end with a fake CLI", () => {
       );
     expect(await failure(answer.turn([], { text: "@signed-out", results: [] }, TOOLS, new AbortController().signal))).toEqual([
       "not-signed-in",
-      "Claude Code isn't signed in.",
+      "Claude Code isn’t signed in.",
     ]);
     expect(await failure(answer.turn([], { text: "@hang", results: [] }, TOOLS, new AbortController().signal))).toEqual([
       "no-answer",
@@ -97,7 +97,7 @@ describe("a harness answering, end to end with a fake CLI", () => {
     });
     expect(await failure(missing.turn([], { text: "x", results: [] }, TOOLS, new AbortController().signal))).toEqual([
       "not-installed",
-      "Codex isn't installed.",
+      "Codex isn’t installed.",
     ]);
     rmSync(runtime, { recursive: true, force: true });
   });

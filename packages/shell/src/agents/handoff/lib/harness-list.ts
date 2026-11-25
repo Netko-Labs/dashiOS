@@ -4,7 +4,7 @@ import { ANSWERERS, findHarness, HARNESS_IDS, HARNESSES, type HarnessId, signedI
 import { harnessOrder } from "../order.ts";
 import type { HandoffDeps, HandoffHarness } from "../types.ts";
 
-/** The harnesses' words for their rows, mid-sentence: "your ChatGPT plan", "OpenCode's configured provider" (a name keeps its capital). */
+/** The harnesses' words for their rows, mid-sentence: "your ChatGPT plan", "OpenCode’s configured provider" (a name keeps its capital). */
 export function usesWords(id: HarnessId): string {
   const uses = HARNESSES[id].uses;
   return /^(?:Your|A|An|The)\b/.test(uses) ? uses.charAt(0).toLowerCase() + uses.slice(1) : uses;

@@ -17,14 +17,11 @@
  *   out: it starts its thread and stops at 401): `codex exec --json` as plan
  *   mode runs it (catalog.ts), the shell tool and web search off,
  *   `mcp_servers.dashi` approved; `exec … resume <id> -`.
- * - OpenCode (checked against opencode 1.19.5's `--help`, and run with no
- *   account: it makes its session with the `dashi-task` agent, then its free
- *   model's limit stops it, printing no event): `opencode run --format json
- *   --agent dashi-task`, its config in `OPENCODE_CONFIG_CONTENT` (only
- *   `dashi_*` tools; edits, shell and fetches denied); `--session <id>`.
+ * - OpenCode: ask/harness/opencode.ts, the one place that says how Dashi
+ *   runs it (`opencode run --format json --agent dashi-task`, by version).
  */
 
-import { type HarnessCommand, type HarnessId, type HarnessTurn, PLAN_SERVER } from "../../ask/index.ts";
+import { type HarnessCommand, type HarnessId, type HarnessTurn, type OpenCodeAgent, opencodeCommand, PLAN_SERVER } from "../../ask/index.ts";
 
 /** What every harness running a task is told, after its own system prompt. */
 export const TASK_PROMPT = [
@@ -103,30 +100,9 @@ function codex(turn: HarnessTurn): HarnessCommand {
   };
 }
 
-function opencode(turn: HarnessTurn): HarnessCommand {
-  const tools = { "*": false, [`${PLAN_SERVER}_*`]: true };
-  const config = {
-    mcp: { [PLAN_SERVER]: { type: "local", command: [turn.mcp.command, ...turn.mcp.args], environment: { ...turn.mcp.env }, enabled: true } },
-    tools,
-    permission: { edit: "deny", bash: "deny", webfetch: "deny" },
-    agent: { "dashi-task": { description: "Works on a task on Dashi", mode: "primary", prompt: turn.system, tools } },
-  };
-  return {
-    args: [
-      "run",
-      "--format",
-      "json",
-      "--agent",
-      "dashi-task",
-      ...(turn.model ? ["--model", turn.model] : []),
-      ...(turn.session ? ["--session", turn.session] : []),
-      "--",
-      turn.prompt,
-    ],
-    stdin: "",
-    env: { OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
-  };
-}
+const TASK_AGENT: OpenCodeAgent = { name: "dashi-task", description: "Works on a task on Dashi" };
+
+const opencode = (turn: HarnessTurn): HarnessCommand => opencodeCommand(turn, TASK_AGENT);
 
 const COMMANDS: Readonly<Record<HarnessId, (turn: HarnessTurn) => HarnessCommand>> = { "claude-code": claudeCode, codex, opencode };
 

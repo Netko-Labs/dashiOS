@@ -35,6 +35,7 @@ function harnessFor(id: HarnessId, host: HarnessHost): Answerer {
     env: host.env,
     // Only this turn's sandbox may reach its plan socket.
     fromTurn: (peer, agent) => host.direct === true || (peer !== null && agent !== null && inUnit(peer, planUnit(id, agent))),
+    ...(host.probe ? { probe: host.probe } : {}),
     ...(host.direct ? { direct: true } : {}),
     ...(host.timeoutMs ? { timeoutMs: host.timeoutMs } : {}),
   });

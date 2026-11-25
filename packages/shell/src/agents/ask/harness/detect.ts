@@ -9,7 +9,7 @@
 import { accessSync, closeSync, constants, existsSync, openSync, readFileSync, readSync, realpathSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import type { HarnessId } from "../answerer.ts";
-import type { HarnessSpec } from "./catalog.ts";
+import type { HarnessSpec } from "./spec.ts";
 
 export interface Files {
   /** Whether `path` is a file this user may run. */

@@ -167,7 +167,7 @@ describe("the hand-off service", () => {
     await handoff.start({ harness: "codex", request: "Book", context: NO_CONTEXT });
     expect(started).toEqual([]);
     expect(handoff.runs.get("run1")?.phase).toBe("failed");
-    expect(handoff.runs.get("run1")?.error).toBe("Codex isn't installed.");
+    expect(handoff.runs.get("run1")?.error).toBe("Codex isn’t installed.");
     handoff.close();
   });
 });

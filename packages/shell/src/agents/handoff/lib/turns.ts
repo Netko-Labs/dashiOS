@@ -5,7 +5,7 @@
  */
 
 import { join } from "node:path";
-import { ANSWERERS, findHarness, HARNESSES, type HarnessId, harnessEnv } from "../../ask/index.ts";
+import { ANSWERERS, findHarness, HARNESSES, type HarnessId, harnessEnv, turnVersion } from "../../ask/index.ts";
 import { taskSocket } from "../../sandbox.ts";
 import type { HandoffDeps } from "../types.ts";
 import { TASK_PROMPT, taskCommand } from "./commands.ts";
@@ -63,11 +63,13 @@ export class Turns {
     const spec = HARNESSES[harness];
     const where = home ? findHarness(spec, home, env.PATH, files) : null;
     if (!where || !runtime) {
-      runs.event(run, { kind: "failed", error: `${ANSWERERS[harness].name} isn't installed.` });
+      runs.event(run, { kind: "failed", error: `${ANSWERERS[harness].name} isn’t installed.` });
       return false;
     }
+    const version = await turnVersion(spec, where, this.deps.options.probe);
     // The bridge connects again when the shell restarts (bin/dashi-mcp.ts), through the socket folder the sandbox binds.
-    const command = taskCommand(harness, { prompt, system: TASK_PROMPT, session, mcp: { command: shell.bun, args: [shell.bridge, "--reconnect"], env: {} } });
+    const mcp = { command: shell.bun, args: [shell.bridge, "--reconnect"], env: {} };
+    const command = taskCommand(harness, { prompt, system: TASK_PROMPT, session, mcp, version });
     const profile = {
       socket: taskSocket(runtime),
       readOnly: [...where.readOnly, ...[shell.bun, shell.bridge].filter((path) => path.startsWith(`${home}/`))],

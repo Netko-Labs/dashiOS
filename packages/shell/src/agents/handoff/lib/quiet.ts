@@ -42,10 +42,10 @@ export function quietQuestion(name: string, reason: QuietReason, signIn: string 
     case "signed-out":
       return {
         kind: "stuck",
-        title: `${name} isn't signed in`,
-        detail: `It hasn't answered in ${seconds} seconds.${signIn ? ` Sign in to a provider in Terminal (${signIn}), then ask again.` : " Sign it in, then ask again."}`,
+        title: `${name} isn’t signed in`,
+        detail: `It hasn’t answered in ${seconds} seconds.${signIn ? ` Sign in to a provider in Terminal (${signIn}), then ask again.` : " Sign it in, then ask again."}`,
         choices: [...signInChoice, wait],
-        needs: "isn't signed in",
+        needs: "isn’t signed in",
       };
     case "limit":
       return {
@@ -58,18 +58,18 @@ export function quietQuestion(name: string, reason: QuietReason, signIn: string 
     case "quiet":
       return {
         kind: "stuck",
-        title: `${name} isn't answering`,
+        title: `${name} isn’t answering`,
         detail: `Nothing from it in ${seconds} seconds.`,
         choices: [wait],
-        needs: "isn't answering",
+        needs: "isn’t answering",
       };
   }
 }
 
 /** A failure in plain words when it is one of these; the harness's own words otherwise. */
 export function plainFailure(name: string, error: string): string {
-  if (LIMIT.test(error)) return `${name}'s model is at its limit. Try again later.`;
-  if (SIGNED_OUT.test(error)) return `${name} isn't signed in.`;
+  if (LIMIT.test(error)) return `${name}’s model is at its limit. Try again later.`;
+  if (SIGNED_OUT.test(error)) return `${name} isn’t signed in.`;
   return error;
 }
 
