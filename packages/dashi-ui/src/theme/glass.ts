@@ -3,8 +3,8 @@
  * GL-4): four neutral materials, each a blur of what is behind, a saturation lift, a tint per mode that
  * the contrast floor raises (never lowers) until the surface's weakest words keep 4.5:1, a static grain,
  * a light rim and a dark hairline. Every number here is the shell's (D713): the compositor only draws
- * them (y3), mirin's `material` names the level (y2), and the kit's surfaces wear it (y4). Values only:
- * nothing reads the Frost tokens yet but design.html (H24).
+ * them (y3), mirin's `material` names the level (y2), and the kit's surfaces wear it (y4). Values only,
+ * all in `GLASS` (at the end): nothing reads them yet but design.html (H24).
  *
  * `GLASS_TINTS` is the spike's (D710, D713): the launcher's tint, still what `DASHI_GLASS` draws.
  */
@@ -52,7 +52,7 @@ export interface GlassMaterial {
  * its conversation, banners, sheets, the lock's field. Thick: the focused window's sidebar. Paper:
  * widgets (the Inks' paper turned glass, CO-11).
  */
-export const GLASS: Readonly<Record<GlassLevel, GlassMaterial>> = {
+const LEVELS: Readonly<Record<GlassLevel, GlassMaterial>> = {
   thin: {
     blur: 18,
     saturation: 1.8,
@@ -84,7 +84,7 @@ export const GLASS: Readonly<Record<GlassLevel, GlassMaterial>> = {
  * the password are. It has no solid twin: where glass is off the wallpaper shows sharp under the
  * lock's own wash (LOGIN, LOGIN_LIGHT).
  */
-export const GLASS_VEIL = {
+const VEIL = {
   blur: 10,
   saturation: 1.15,
   light: { tint: "#F6F6F8", least: 0.12 },
@@ -92,7 +92,7 @@ export const GLASS_VEIL = {
 } as const;
 
 /** The grain on every material: static, never animated, from one tile, so a smooth blur never bands. */
-export const GLASS_GRAIN = {
+const GRAIN = {
   /** Its strength, grey ± this. */
   amount: 0.035,
   /** The tile's side, in points. */
@@ -100,14 +100,14 @@ export const GLASS_GRAIN = {
 } as const;
 
 /** The rim: a line inside the edge, white from the top down at these α (light from above). */
-export const GLASS_RIM = {
+const RIM = {
   width: 1,
   light: { top: 0.85, middle: 0.35, bottom: 0.15 },
   dark: { top: 0.28, middle: 0.1, bottom: 0.06 },
 } as const;
 
 /** The hairline (Frost's "keel"): a black line just outside the edge, at this α, so the edge holds on any backdrop. */
-export const GLASS_HAIRLINE = { width: 0.5, light: 0.1, dark: 0.5 } as const;
+const HAIRLINE = { width: 0.5, light: 0.1, dark: 0.5 } as const;
 
 /**
  * The floor: the tint's α is the least α, or the lowest that keeps every ground under the surface at
@@ -115,40 +115,59 @@ export const GLASS_HAIRLINE = { width: 0.5, light: 0.1, dark: 0.5 } as const;
  * after `fallAfterMs` of stillness, easing over MOTION.base; the backdrop's tone goes to the client at
  * most every `toneEveryMs`.
  */
-export const GLASS_FLOOR = { ratio: 4.5, margin: 0.15, fallAfterMs: 300, toneEveryMs: 120 } as const;
+const FLOOR = { ratio: 4.5, margin: 0.15, fallAfterMs: 300, toneEveryMs: 120 } as const;
 
 /**
  * Words and glyphs on glass (GL-1): a grey that leans a breath to the backdrop's hue (H, from the
  * compositor's tone), at this lightness and at most this chroma. Light stays light (D725): the glass
  * whitens over a dark wallpaper and its words never flip.
  */
-export const GLASS_INK: Readonly<Record<"light" | "dark", { primary: Omit<Oklch, "H">; secondary: Omit<Oklch, "H"> }>> = {
+const INK: Readonly<Record<"light" | "dark", { primary: Omit<Oklch, "H">; secondary: Omit<Oklch, "H"> }>> = {
   light: { primary: { L: 0.2, C: 0.02 }, secondary: { L: 0.43, C: 0.035 } },
   dark: { primary: { L: 0.955, C: 0.012 }, secondary: { L: 0.8, C: 0.03 } },
 };
 
 /** How deep glass goes (GL-2): a surface sees at most this many glass layers under it; one more is its solid twin. */
-export const GLASS_DEPTH = { layers: 2 } as const;
+const DEPTH = { layers: 2 } as const;
 
 /**
  * Where glass gives way (GL-3): all glass together keeps under `budgetMs` of a frame; after `misses`
  * missed budgets in a row the oldest layer is kept as it is, then turns to its solid twin.
  */
-export const GLASS_BUDGET = { budgetMs: 1.5, misses: 2 } as const;
+const BUDGET = { budgetMs: 1.5, misses: 2 } as const;
 
 /** Glass frosting in (MO-4): its words fade in `wordsAfterMs` after the panel starts to open. */
-export const GLASS_FROST = { wordsAfterMs: 40 } as const;
+const FROST = { wordsAfterMs: 40 } as const;
 
 /**
  * A widget on air (CO-12, D724): its paper glass takes `stain` of its own ink into the tint (still
  * floored), it lifts `lift` points, and its glow is the `lg` shadow in its ink at `glow`.
  */
-export const GLASS_ON_AIR = { stain: 0.14, glow: 0.5, lift: 2 } as const;
+const ON_AIR = { stain: 0.14, glow: 0.5, lift: 2 } as const;
 
 /**
  * Inks that change on glass (D726): Light matcha is one step darker on paper glass (L 0.52 → 0.48), so
  * the battery widget's glass need not go almost solid to keep it 4.5:1.
  */
-export const GLASS_INKS: Readonly<{ matcha: { light: Oklch } }> = {
+const INKS_ON_GLASS: Readonly<{ matcha: { light: Oklch } }> = {
   matcha: { light: { L: 0.48, C: 0.13, H: 112 } },
 };
+
+/**
+ * Frost, every number in one token (design.html "Glass" binds each): `levels` (`GLASS.levels.thin.blur`),
+ * the lock's `veil`, and the parts every level has.
+ */
+export const GLASS = {
+  levels: LEVELS,
+  veil: VEIL,
+  grain: GRAIN,
+  rim: RIM,
+  hairline: HAIRLINE,
+  floor: FLOOR,
+  ink: INK,
+  depth: DEPTH,
+  budget: BUDGET,
+  frost: FROST,
+  onAir: ON_AIR,
+  inks: INKS_ON_GLASS,
+} as const;

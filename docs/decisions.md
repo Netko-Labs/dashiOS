@@ -8625,10 +8625,9 @@ short words, as the rulebook is written.
   glass a grey that leans to the backdrop's tone; titles of 20 and up in Inter Display SemiBold.
   design.html takes Frost's "rules it changes" (DE-4, DE-2, CO-6, CO-10, CO-11, CO-12, RA-1, RA-2,
   LA-1, UI-5, TY-1, TY-2, KB-2, MO-3, PA-9) and adds GL-1 to GL-4 and MO-4. Every number is a token in
-  `@dashi/ui`'s `theme/glass.ts` (`GLASS`, `GLASS_VEIL`, `GLASS_GRAIN`, `GLASS_RIM`, `GLASS_HAIRLINE`,
-  `GLASS_FLOOR`, `GLASS_INK`, `GLASS_DEPTH`, `GLASS_BUDGET`, `GLASS_FROST`, `GLASS_ON_AIR`,
-  `GLASS_INKS`), bound in design.html's Glass tables, so H24 holds the page and the code together
-  before anything reads them. Each rule the code doesn't follow yet says which workstream makes it
+  `@dashi/ui`'s `theme/glass.ts`, one `GLASS` (`levels`, `veil`, `grain`, `rim`, `hairline`, `floor`,
+  `ink`, `depth`, `budget`, `frost`, `onAir`, `inks`), bound in design.html's Glass tables, so H24 holds
+  the page and the code together before anything reads them. Each rule the code doesn't follow yet says which workstream makes it
   true: y2 (mirin's `material` on Linux), y3 (the compositor's levels, floor and fallbacks), y4 (the
   shell and the kit wearing it).
 - **Why:** it keeps Dashi calm (the owner's principles) and lets the wallpaper be the colour; the floor
@@ -8649,7 +8648,7 @@ short words, as the rulebook is written.
 ### D722. The lock screen is frosted
 
 - **Date:** 2026-11-25. The owner's answer.
-- **Choice:** the wallpaper under the veil (`GLASS_VEIL`: blur 10, saturation 1.15, a light tint),
+- **Choice:** the wallpaper under the veil (`GLASS.veil`: blur 10, saturation 1.15, a light tint),
   frosted most in a band behind the clock and the password; the field on regular glass, the widgets
   on paper glass. With glass off (GL-3) the lock is today's washes (`LOGIN`, `LOGIN_LIGHT`).
 - **Undo:** drop the veil; the washes stay.
@@ -8666,7 +8665,7 @@ short words, as the rulebook is written.
 
 - **Date:** 2026-11-25. The owner's answer ("the Now dot is enough"), after "the flood looks like shit".
 - **Choice:** CO-12: the card on air is lit: 14% of its ink in its paper glass's tint (floored), lifted
-  2 points with the `lg` shadow in its ink at 50% (`GLASS_ON_AIR`); its one number stays inked, its
+  2 points with the `lg` shadow in its ink at 50% (`GLASS.onAir`); its one number stays inked, its
   words stay ink; the tally is the vermilion dot of the "Now" tag and the bar's capsule. The 3-point
   ring and the flood (D401's) are gone; house lights, holders, cuts and timings are unchanged.
 - **Undo:** CO-12's old sentence; `ON_INK` is still in the code until y4 removes the flood.
@@ -8685,28 +8684,28 @@ short words, as the rulebook is written.
 - **Question:** the Inks' Light matcha (`#6B6F03`, 5.2:1 on the paper) is the worst ink on paper glass:
   it forced the battery widget's glass up to α 0.96 over a mid-dark photo.
 - **Choice:** on glass, Light matcha is OKLCH L 0.48 (from 0.52): `#606301`, 6.2:1 on the paper
-  (`GLASS_INKS.matcha.light`). Dark and the other inks are unchanged; the Inks' own table (`INKS`) is
+  (`GLASS.inks.matcha.light`). Dark and the other inks are unchanged; the Inks' own table (`INKS`) is
   untouched, so widgets off glass print as before.
-- **Undo:** drop `GLASS_INKS`.
+- **Undo:** drop `GLASS.inks`.
 
 ### D727. The cost is accepted: under 5% of a 120 Hz frame
 
 - **Date:** 2026-11-25. The owner's answer, from the spike's numbers (`dashi-0.10.0-review/24-blur-spike/`).
 - **Choice:** one pane 0.16 ms of GPU a frame over a playing video in the VM, three about 0.3 ms,
   nothing at rest; the laptop is estimated under 5% of its 8.3 ms frame. The rulebook holds all glass
-  together under 1.5 ms (`GLASS_BUDGET`); two misses in a row and the oldest layer is kept, then solid.
+  together under 1.5 ms (`GLASS.budget`); two misses in a row and the oldest layer is kept, then solid.
 - **Undo:** the budget is a token.
 
 ### D728. The rulebook's own calls for glass
 
 - **Date:** 2026-11-25. `v10/glass-rules` (reversible; decided here, not asked).
 - **Choices:**
-  - **The tokens' shape.** `GLASS` is one record per level (`blur`, `saturation`, and per mode `tint`,
-    `least`, `solid`), the veil apart (it has no solid twin), and the shared parts each a small
-    constant, numbers only, so design.html binds every one with `data-token` (H24 reads numbers; a hex
-    can't be bound, so the tints' hex are written beside their bound α). Paper's tint is `INK_PAPER`,
-    not a copy. `GLASS_TINTS` (the spike's launcher tint) stays until y4 moves the launcher to `regular`.
-  - **"Keel" is called the hairline** in the rules and the tokens (`GLASS_HAIRLINE`): one word for the
+  - **The tokens' shape.** One export, `GLASS` (the package's index is at H2's 300 lines, and y3 reads
+    one place): `levels`, one record per level (`blur`, `saturation`, and per mode `tint`, `least`,
+    `solid`), the veil apart (it has no solid twin), and the shared parts, numbers only, so design.html
+    binds every one with `data-token` (H24 reads numbers; a hex can't be bound, so the tints' hex are
+    written beside their bound α). Paper's tint is `INK_PAPER`, not a copy. `GLASS_TINTS` (the spike's launcher tint) stays until y4 moves the launcher to `regular`.
+  - **"Keel" is called the hairline** in the rules and the tokens (`GLASS.hairline`): one word for the
     line at an edge across the page.
   - **A window left out of a capture is left out of every backdrop in it** (GL-3, Frost's rule). D714
     still holds (captures show the glass as the screen does); this removes its stated cost, a masked
