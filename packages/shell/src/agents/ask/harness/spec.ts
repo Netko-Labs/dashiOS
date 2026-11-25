@@ -78,3 +78,10 @@ const SIGNED_OUT = /not logged in|log ?in|sign ?in|unauthori[sz]ed|\b401\b|authe
 
 /** Whether a harness's error means it isn't signed in (or its login lapsed): the words they all use. */
 export const signedOutWords = (error: string): boolean => SIGNED_OUT.test(error);
+
+/** Words for a model at its limit (a free tier's quota, a rate limit): the words they all use. */
+const AT_LIMIT =
+  /rate.?limit|quota|usage limit|too many requests|\b429\b|limit (?:reached|exceeded)|exceeded .*limit|free (?:tier|model)|insufficient credit|out of credits?/i;
+
+/** Whether a harness's error means its model is at its limit: try again later. */
+export const atLimitWords = (error: string): boolean => AT_LIMIT.test(error);

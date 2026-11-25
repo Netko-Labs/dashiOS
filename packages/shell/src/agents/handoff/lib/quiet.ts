@@ -9,6 +9,7 @@
  * (`turn-N.jsonl.err`) and whether it is signed in say which words.
  */
 
+import { atLimitWords } from "../../ask/index.ts";
 import type { RunQuestion } from "../run-view.ts";
 
 /** How long a turn may print nothing before the person is asked. */
@@ -19,9 +20,6 @@ export type QuietReason = "signed-out" | "limit" | "quiet";
 /** Words a harness uses when it isn't signed in, or its login lapsed. */
 const SIGNED_OUT =
   /not (?:logged|signed) in|\blog ?in\b|sign ?in|unauthori[sz]ed|\b401\b|authenticat|no (?:api )?key|invalid api key|api key|no providers?\b|credentials/i;
-/** Words for a model at its limit. */
-const LIMIT =
-  /rate.?limit|quota|usage limit|too many requests|\b429\b|limit (?:reached|exceeded)|exceeded .*limit|free (?:tier|model)|insufficient credit|out of credits?/i;
 
 /**
  * Why a turn is silent: its errors say it isn't signed in, or that its model
@@ -29,7 +27,7 @@ const LIMIT =
  * not true) is taken as signed out, and one that is, as merely quiet.
  */
 export function quietReason(errors: string, signedIn: boolean | null): QuietReason {
-  if (LIMIT.test(errors)) return "limit";
+  if (atLimitWords(errors)) return "limit";
   if (SIGNED_OUT.test(errors)) return "signed-out";
   return signedIn === true ? "quiet" : "signed-out";
 }
@@ -68,7 +66,7 @@ export function quietQuestion(name: string, reason: QuietReason, signIn: string 
 
 /** A failure in plain words when it is one of these; the harness's own words otherwise. */
 export function plainFailure(name: string, error: string): string {
-  if (LIMIT.test(error)) return `${name}’s model is at its limit. Try again later.`;
+  if (atLimitWords(error)) return `${name}’s model is at its limit. Try again later.`;
   if (SIGNED_OUT.test(error)) return `${name} isn’t signed in.`;
   return error;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { HARNESS_PROMPT, HARNESSES, harnessEnv, turnPrompt } from "../src/agents/ask/harness/index.ts";
+import { atLimitWords, HARNESS_PROMPT, HARNESSES, harnessEnv, turnPrompt } from "../src/agents/ask/harness/index.ts";
 
 describe("command lines", () => {
   const turn = {
@@ -95,4 +95,11 @@ describe("command lines", () => {
       ].join("\n"),
     );
   });
+});
+
+test("a model at its limit is told apart from any other failure", () => {
+  expect(atLimitWords("Free usage limit reached")).toBe(true);
+  expect(atLimitWords("429 Too Many Requests")).toBe(true);
+  expect(atLimitWords("Location not found: /run/user/1000/dashi-assistant")).toBe(false);
+  expect(atLimitWords("Invalid API key · Please run /login")).toBe(false);
 });

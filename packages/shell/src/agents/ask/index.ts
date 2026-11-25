@@ -18,6 +18,7 @@ export {
 } from "./answerer.ts";
 export { type AnswererRow, answererRows } from "./choices.ts";
 export {
+  atLimitWords,
   type Files,
   findHarness,
   HARNESSES,
