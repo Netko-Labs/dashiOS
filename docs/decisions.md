@@ -8565,8 +8565,8 @@ short words, as the rulebook is written.
   wayland-protocols 1.45 staging, in the `wayland-protocols` crate Dashi already uses): a region,
   blurred with the look the shell chose for windows, clipped to the window's rounded corners; the shell
   grants it per client like the other privileged protocols, and says the look. Not `org_kde_kwin_blur`:
-  the ext protocol replaced it, and the apps that matter (Qt 6.9+, GTK's work, foot, kitty, quickshell)
-  speak ext. (2) **Dashi's own surfaces:** mirin's `material` on Linux becomes the Metal host binding
+  the ext protocol replaced it, and the clients that ask for blur now (foot, kitty, quickshell and the
+  shells on it) speak ext. (2) **Dashi's own surfaces:** mirin's `material` on Linux becomes the Metal host binding
   ext-background-effect-v1 and setting the blur region from the laid-out views that carry `material`,
   in the same `wl_surface.commit` as the frame that draws them (so glass and panel never drift), plus
   one request on `dashi-chrome-v1` for what the region can't say: each pane's corner radius and its
