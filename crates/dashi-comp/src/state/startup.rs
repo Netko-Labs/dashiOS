@@ -136,6 +136,7 @@ impl Dashi {
             chrome_style: ChromeStyle::default(),
             window_style: Default::default(),
             chrome_objects: Vec::new(),
+            glass: Default::default(),
             layer_regions: Default::default(),
             cursor_status: CursorImageStatus::default_named(),
             dnd_icon: None,

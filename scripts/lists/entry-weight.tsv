@@ -364,6 +364,7 @@ packages/shell/src/main.tsx	packages/shell/src/force-quit
 packages/shell/src/main.tsx	packages/shell/src/front-window.ts
 packages/shell/src/main.tsx	packages/shell/src/fullscreen.ts
 packages/shell/src/main.tsx	packages/shell/src/gestures.ts
+packages/shell/src/main.tsx	packages/shell/src/glass.ts
 packages/shell/src/main.tsx	packages/shell/src/glyphs.ts
 packages/shell/src/main.tsx	packages/shell/src/gpu
 packages/shell/src/main.tsx	packages/shell/src/graphics

@@ -35,6 +35,19 @@ const WindowStyle = obj({
   fade: optional(num({ min: 0, max: 1000 })),
 });
 
+/** A pane of frosted glass behind a shell surface (render/glass/ in dashi-comp). */
+const GlassPane = obj({
+  rect: optional(obj({ x: num(), y: num(), width: num(), height: num() })),
+  radius: num({ min: 0, max: 128 }),
+  blur: num({ min: 0, max: 128 }),
+  saturation: optional(num({ min: 0, max: 3 })),
+  tint: optional(str()),
+  noise: optional(num({ min: 0, max: 1 })),
+  xray: optional(bool()),
+  brightness: optional(num({ min: 0, max: 3 })),
+  floor: optional(obj({ ink: str(), ratio: num({ min: 1, max: 21 }) })),
+});
+
 const Pointer = {
   naturalScroll: optional(bool()),
   accelSpeed: optional(num({ min: -1, max: 1 })),
@@ -67,6 +80,7 @@ const Keyboard = obj({
 export const CHROME = {
   chrome: method("shell", obj({ dark: optional(bool()), radius: optional(num()), reduceMotion: optional(bool()) }), Done),
   "window-style": method("shell", WindowStyle, Done),
+  glass: method("shell", obj({ namespace: str(), panes: list(GlassPane, { max: 8 }) }), obj({ frosted: bool() })),
   keymap: method("shell", Keymap, Done),
   "held-keys": method(
     "shell",

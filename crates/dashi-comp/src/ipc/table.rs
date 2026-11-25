@@ -146,6 +146,7 @@ pub(crate) const METHODS: &[Method] = &[
     // Shell chrome and input claims
     shell("chrome", typed!(chrome::chrome)),
     shell("window-style", typed!(chrome::window_style)),
+    shell("glass", typed!(chrome::glass)),
     shell("keymap", typed!(chrome::keymap)),
     shell("held-keys", typed!(chrome::held_keys)),
     shell("bars", typed!(chrome::bars)),

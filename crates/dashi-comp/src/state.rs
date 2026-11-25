@@ -137,6 +137,8 @@ pub(crate) struct Dashi {
     /// Buttons whose press went to a window's sheet instead of the window; their release goes nowhere (wm/sheets.rs).
     pub swallowed_buttons: Vec<u32>,
     pub cursors: Cursors,
+    /// The shell's panes of frosted glass (IPC `glass`; render/glass/).
+    pub glass: crate::render::glass::Glass,
     /// Where the shell's layer surfaces take the pointer (IPC `input-region`).
     pub layer_regions: crate::handlers::layer_regions::LayerRegions,
     pub text: Text,

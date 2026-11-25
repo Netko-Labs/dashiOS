@@ -9,6 +9,7 @@ import { joinShellMenus } from "../applets/index.ts";
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";
+import { GlassPanes } from "../glass.ts";
 import { screenAt } from "../layout.ts";
 import { type BarPill, barHold, MenuBar, MenuBars, startBarTips } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
@@ -198,6 +199,8 @@ export function startBars(needs: BarsNeeds): MenuBars {
   );
   services.add("menu bars", () => menuBars.close());
   menuBars.start(needs.firstScreens, screens.mainDisplay);
+  // Every menu bar frosted, when `DASHI_GLASS` names it (glass.ts).
+  new GlassPanes(compositor, "menubar", "dashi.menubar").set("whole", 0);
   const stopFollowingScreens = compositor
     ? compositor.on((event) => {
         if (event.event === "outputs-changed") void screens.names().then((names) => names && followScreens(names));

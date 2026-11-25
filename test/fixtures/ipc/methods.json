@@ -236,6 +236,36 @@
     "reply": {},
     "who": "shell"
   },
+  "glass": {
+    "params": {
+      "namespace": "dashi.launcher",
+      "panes": [
+        {
+          "blur": 30.0,
+          "brightness": 1.05,
+          "floor": {
+            "ink": "#6e6e73",
+            "ratio": 4.5
+          },
+          "noise": 0.02,
+          "radius": 16.0,
+          "rect": {
+            "height": 412.0,
+            "width": 680.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "saturation": 1.6,
+          "tint": "#f5f5f7b3",
+          "xray": false
+        }
+      ]
+    },
+    "reply": {
+      "frosted": true
+    },
+    "who": "shell"
+  },
   "gpu-keep": {
     "params": {
       "card": "card0",
