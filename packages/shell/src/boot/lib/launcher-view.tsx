@@ -8,6 +8,7 @@ import { CAPSULE } from "@dashi/ui";
 import { placedOutputs } from "../../arrange/index.ts";
 import type { Compositor } from "../../compositor/index.ts";
 import { openFile } from "../../file-manager.ts";
+import type { GlassPanes, GlassRect, GlassTint } from "../../glass.ts";
 import {
   LAUNCHER,
   Launcher,
@@ -81,6 +82,8 @@ export interface LauncherView {
   launchFromLauncher: (entry: Entry) => boolean;
   openWith: (appId: string, env: Record<string, string>) => boolean;
   pictures: (rects: PictureRect[]) => void;
+  /** The launcher's panel as frosted glass, when `DASHI_GLASS` names it (glass.ts). */
+  glass: GlassPanes;
   heightMs: () => number | undefined;
   access: { accessible: boolean };
 }
@@ -147,6 +150,7 @@ export function launcherElement(view: LauncherView, { presented, scope, entries,
       {...(heightMs ? { heightTransitionMs: heightMs } : {})}
       {...(height !== undefined ? { height } : {})}
       onPictures={view.pictures}
+      {...(view.glass.on ? { onGlass: (panel: GlassRect, look: GlassTint) => view.glass.set([panel], LAUNCHER.radius, look) } : {})}
       accessible={view.access.accessible}
       onClose={close}
     />

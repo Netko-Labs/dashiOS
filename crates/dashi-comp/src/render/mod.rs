@@ -7,6 +7,7 @@ pub(crate) mod capture_file;
 pub(crate) mod cursor;
 pub(crate) mod depth;
 mod drawn;
+pub(crate) mod glass;
 // Agents (0.4.0, secrets): what their pictures blank.
 pub(crate) mod mask;
 mod mask_cover;
@@ -44,6 +45,8 @@ smithay::backend::renderer::element::render_elements! {
     Scaled=RescaleRenderElement<WaylandSurfaceRenderElement<R>>,
     /// A window's main surface drawn small, its corners rounded.
     ScaledRounded=RescaleRenderElement<rounded::RoundedElement<R>>,
+    /// A pane of frosted glass behind a shell surface (glass/).
+    Glass=glass::GlassElement,
     /// A plain shape (where a dragged window would tile).
     Solid=SolidColorRenderElement,
     /// A piece of a live picture the shell placed (thumbnails/): a window's surface,

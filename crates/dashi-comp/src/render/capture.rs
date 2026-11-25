@@ -75,13 +75,13 @@ where
         .to_f64()
         .to_physical(view.scale)
         .to_i32_round();
-    let elements = view_elements(state, renderer, view);
+    let mut elements = view_elements(state, renderer, view);
     let clear = if view.only.is_some() {
         [0.0; 4]
     } else {
         crate::backend::BACKGROUND
     };
-    render_offscreen(renderer, size, view.scale, &elements, clear)
+    render_offscreen(renderer, size, view.scale, &mut elements, clear)
 }
 
 /// A screen that mirrors another, as it shows now (its source's picture and
@@ -103,24 +103,25 @@ where
     R::TextureId: Clone + Send + 'static,
 {
     let size = crate::outputs::drawn_size(output).ok_or("that screen has no mode")?;
-    let elements = super::output_elements(state, renderer, output, cursor);
+    let mut elements = super::output_elements(state, renderer, output, cursor);
     // Its scale is the picture's while it mirrors (render/mirror.rs).
     let scale = output.current_scale().fractional_scale();
     render_offscreen(
         renderer,
         size,
         scale.into(),
-        &elements,
+        &mut elements,
         crate::backend::BACKGROUND,
     )
 }
 
-/// Draw `elements` into a new texture `size` pixels across and read it back.
+/// Draw `elements` into a new texture `size` pixels across and read it back; its glass frosted
+/// as on screen (decisions.md D714), with textures of its own.
 fn render_offscreen<R>(
     renderer: &mut R,
     size: smithay::utils::Size<i32, smithay::utils::Physical>,
     scale: smithay::utils::Scale<f64>,
-    elements: &[super::DashiElement<R>],
+    elements: &mut [super::DashiElement<R>],
     clear: [f32; 4],
 ) -> Result<Picture, String>
 where
@@ -136,6 +137,7 @@ where
     if size.w <= 0 || size.h <= 0 || size.w > 16384 || size.h > 16384 {
         return Err("nothing to capture there".into());
     }
+    super::glass::frost_capture(renderer, size, scale.x, elements);
     let buffer_size = size.to_logical(1).to_buffer(1, Transform::Normal);
     let mut texture: GlesTexture = renderer
         .create_buffer(Fourcc::Abgr8888, buffer_size)
@@ -145,7 +147,7 @@ where
         .map_err(|error| format!("{error:?}"))?;
     let mut damage = OutputDamageTracker::new(size, scale, Transform::Normal);
     damage
-        .render_output(renderer, &mut framebuffer, 0, elements, clear)
+        .render_output(renderer, &mut framebuffer, 0, &*elements, clear)
         .map_err(|error| format!("rendering the capture: {error:?}"))?;
     let mapping = renderer
         .copy_framebuffer(

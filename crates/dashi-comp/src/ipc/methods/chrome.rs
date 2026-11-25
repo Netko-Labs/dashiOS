@@ -8,7 +8,11 @@ use crate::{
     input::{InputParams, Pointers},
     ipc::protocol::{Coord, Count, Done, Int, Millis, Nothing, Rect},
     keys::{HeldKeysParams, KeyboardParams, Keymap, KeymapParams},
-    render::{self, depth::WindowStyle},
+    render::{
+        self,
+        depth::WindowStyle,
+        glass::{GlassParams, GlassReply},
+    },
     state::Dashi,
 };
 
@@ -85,6 +89,15 @@ pub(crate) fn chrome(state: &mut Dashi, _: &Ask, params: Chrome) -> Result<Done,
         state.chrome_style.reduce_motion = reduce;
     }
     Ok(Done {})
+}
+
+/// The panes of frosted glass behind one of the shell's surfaces; whether this compositor frosts.
+pub(crate) fn glass(state: &mut Dashi, _: &Ask, params: GlassParams) -> Result<GlassReply, String> {
+    state.glass.set(&params)?;
+    let nested = !matches!(state.backend, crate::backend::Backend::Udev(_));
+    Ok(GlassReply {
+        frosted: !nested && state.glass.can(),
+    })
 }
 
 pub(crate) fn window_style(

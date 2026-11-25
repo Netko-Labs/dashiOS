@@ -123,9 +123,10 @@ fn draw(
             return Some((output, Turn::Later));
         }
     };
-    let elements = render::output_elements(state, &mut renderer, &output, true);
+    let mut elements = render::output_elements(state, &mut renderer, &output, true);
     let now = monotonic_now();
     screen.stats.drawing(now, frame_time(&output));
+    render::glass::frost_screen(state, &mut renderer, &output, &output.name(), &mut elements);
     let flags = screen.planes.flags(now, || planes::scene(&elements));
     let rendered = screen
         .scanout

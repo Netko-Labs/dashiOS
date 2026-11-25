@@ -46,12 +46,20 @@ pub(super) fn layer_elements<R>(
                 .layer_motion
                 .step(&surface.wl_surface().id(), !drawn.is_empty(), reduce, now)
         });
-        let Some(step) = step else {
-            elements.extend(drawn.into_iter().map(DashiElement::Surface));
-            continue;
-        };
         let about = (geometry.loc + offset + Point::from((geometry.size.w / 2, 0)))
             .to_physical_precise_round(scale);
+        // Its panes of glass, behind it (render/glass/).
+        let glass = state.as_deref().filter(|_| !drawn.is_empty()).map(|state| {
+            let motion = step.map(|step| (step.alpha, about, step.scale));
+            state
+                .glass
+                .elements(surface.namespace(), at, geometry.size, scale, motion)
+        });
+        let Some(step) = step else {
+            elements.extend(drawn.into_iter().map(DashiElement::Surface));
+            elements.extend(glass.into_iter().flatten().map(DashiElement::Glass));
+            continue;
+        };
         elements.extend(
             surface
                 .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, at, scale, step.alpha)
@@ -62,5 +70,6 @@ pub(super) fn layer_elements<R>(
                     ))
                 }),
         );
+        elements.extend(glass.into_iter().flatten().map(DashiElement::Glass));
     }
 }

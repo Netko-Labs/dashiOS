@@ -8514,3 +8514,100 @@ short words, as the rulebook is written.
   model and address (about 25 turns here, then 60 to 90 minutes of 429), which this doesn't change.
   If OpenCode changes what its free tier checks, turns fail as before, with its words in the log.
 - **Undo:** drop `read: true` and `external_directory` in `agents/ask/harness/opencode.ts`.
+
+### D710. Frosted glass is the compositor's pass; the shell names the panes (a spike, off by default)
+
+- **Date:** 2026-11-25. `v10/blur-spike` (review: `dashi-0.10.0-review/24-blur-spike/`).
+- **Question:** the owner wants "expressiveness, frosted glass". On Linux nothing blurred behind Dashi's
+  surfaces (mirin's `material` is macOS and Windows only; DE-4, D697). Who blurs, and who says where?
+- **Decision:** dashi-comp blurs (Rust displays); the shell says which panes of its surfaces are glass,
+  where, and how they look (TypeScript decides), over a new IPC method, `glass {namespace, panes}`, the
+  way `input-region` already names the parts of a Metal surface that take clicks. The pane is drawn
+  just behind its surface, which keeps its own translucent fill over it. Behind `DASHI_GLASS`
+  (`1`: the launcher; or `launcher,dock,menubar`), off by default, until the owner picks a direction
+  (`glass/frost`, `tint`, `prism`).
+- **Cost:** a pane's rect comes from the panel's `onLayout`, a frame or so after the host draws it; a
+  panel that changes size (the launcher's list) can show its glass a frame out of step. The shipped
+  version moves the rect into the surface's own commit (D712).
+- **Undo:** unset `DASHI_GLASS`; drop `render/glass/`, the `Glass` element and the IPC method.
+
+### D711. The blur: the dual filter at half size, done again only when what is behind changes
+
+- **Date:** 2026-11-25. `v10/blur-spike`.
+- **Question:** which blur, and how not to pay for it every frame?
+- **Decision:** what is behind a pane (the elements after it in the screen's list, glass under it
+  already frosted; with `xray`, only the wallpaper) is drawn at half size into a texture of the pane plus the blur's reach, clipped to
+  the screen, by a damage tracker of its own; then halved 1 to 6 times and doubled back with the dual
+  filter (Bjørge, SIGGRAPH 2015; written from the talk, no copyleft code read). When that tracker finds
+  nothing changed, nothing is drawn or blurred and the pane is not damaged on screen. The pane is
+  opaque but for its corners, so what is under it is not drawn on screen twice. Saturation, a tint, a
+  grain and the rounded corners are one shader over the result. Textures are kept per pane with the
+  GPU's EGL context, in sizes rounded up to 64 pixels, so a pane that grows a little keeps them.
+  Damage the tracker reports empty (a 1 px line, nothing at half size) is no change; and the pane's
+  solid part never holds an empty band, which the display refused as a damage clip (EINVAL) frame
+  after frame (`glass/element.rs` `solid`, tested).
+- **Cost (measured in the VM, 1920 × 1200 at 1.75, a 60 fps video behind):** 0.16 ms of GPU a
+  frame for the launcher's pane, 0.3 ms for the launcher, the bar and the Dock together, when all are
+  blurred again every frame; at rest nothing is blurred again and frosting costs 0.05 ms of the loop.
+  The passes are plain GL in one go (`glass/gl.rs`): through smithay's frames each pass cost a fence
+  and a flush, 1.5 ms of the loop per pane. A blur is not an exact Gaussian; `blur` is close to CSS's
+  `blur()`.
+- **Undo:** swap `kawase.rs` for another filter; the IPC stays.
+
+### D712. Apps ask for blur with ext-background-effect-v1; the Metal host sends its glass with its commit
+
+- **Date:** 2026-11-25. `v10/blur-spike` (the protocol decision; not built in the spike).
+- **Question:** how does a surface say "this rounded rect is glass, this thick"? KDE's
+  `org_kde_kwin_blur` (a region), the staging `ext-background-effect-v1` (a region; "the blur algorithm
+  is subject to compositor policies"; KWin, Mutter, niri 26.04 serve it, cosmic-comp has a draft), or
+  a host prop sent over Dashi's IPC?
+- **Decision:** (1) **Other apps:** dashi-comp serves `ext-background-effect-v1` (MIT, in
+  wayland-protocols 1.45 staging, in the `wayland-protocols` crate Dashi already uses): a region,
+  blurred with the look the shell chose for windows, clipped to the window's rounded corners; the shell
+  grants it per client like the other privileged protocols, and says the look. Not `org_kde_kwin_blur`:
+  the ext protocol replaced it, and the clients that ask for blur now (foot, kitty, quickshell and the
+  shells on it) speak ext. (2) **Dashi's own surfaces:** mirin's `material` on Linux becomes the Metal host binding
+  ext-background-effect-v1 and setting the blur region from the laid-out views that carry `material`,
+  in the same `wl_surface.commit` as the frame that draws them (so glass and panel never drift), plus
+  one request on `dashi-chrome-v1` for what the region can't say: each pane's corner radius and its
+  material level (thin, regular, thick). The shell keeps deciding the look per level (`glass` IPC
+  becomes `glass-style {levels}`), and whether glass is on at all.
+- **Cost:** mirin work (sumi binds one more global; the host turns `material` views into a region);
+  a `dashi-chrome-v1` version bump.
+- **Undo:** keep the IPC method of D710 for the shell's surfaces.
+
+### D713. Every number of the glass is the shell's
+
+- **Date:** 2026-11-25. `v10/blur-spike`.
+- **Decision:** `blur` (0 to 128 points), `saturation` (0 to 3), `tint` (`#rrggbbaa`), `noise` (0 to
+  1), `radius` and `xray` come in the IPC; dashi-comp only range-checks them. The spike's look is one
+  constant, `GLASS_LOOK` in `packages/shell/src/glass.ts` (30 points, 1.7, a 0.025 grain). The tint is
+  the compositor's, not the surface's fill (the launcher paints none over glass): `GLASS_TINTS` in
+  `@dashi/ui`'s `theme/glass.ts`, the launcher's colour at 70%, with a floor that raises it, pixel by
+  pixel, until the launcher's muted words keep 4.5:1 (CO-6) over whatever is behind; both glass
+  directions (tint's "floor", prism's "contrast governor") ask for one.
+- **Undo:** change the constant; the designers' directions will set it per material level.
+
+### D714. A capture or a recording shows the glass as the screen does
+
+- **Date:** 2026-11-25. `v10/blur-spike`.
+- **Question:** a screenshot, a screen share or an agent's picture: frost the glass (showing a blur of
+  what is behind), or draw it clear, or opaque?
+- **Decision:** as on screen: captures are drawn by the same scene, so the glass is frosted there too,
+  with textures of its own. What is blurred 30 points is not legible, and a recording that differs from
+  the screen is a bug report waiting. Masks still blank masked windows in agents' pictures (they paint
+  the picture after it is drawn, the glass included).
+- **Cost:** a masked window's colours bleed, blurred, into glass beside it in an agent's picture; never
+  its words.
+- **Undo:** skip `frost` in `render/capture.rs` (the glass then draws nothing, and what is behind shows sharp).
+
+### D715. Where glass is off: the shell's call, and the compositor says when it can't
+
+- **Date:** 2026-11-25. `v10/blur-spike`.
+- **Decision:** Reduce Transparency: the shell sends no panes and the surfaces wear their opaque fill
+  (DE-4 as today). Battery saver: x-ray glass (`xray`: only the wallpaper, blurred once and kept, as
+  niri's default is), so nothing is blurred again while windows move. A screen shared: glass stays
+  (D714). A GPU that can't: `glass` answers `{frosted: false}` (nested, headless, or shaders that did
+  not compile) and the shell keeps the opaque fill. None of these is built in the spike beyond the
+  answer and `xray`; they come with the shipped version.
+- **Undo:** each is one condition in the shell.
