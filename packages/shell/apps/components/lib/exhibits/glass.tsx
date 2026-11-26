@@ -37,6 +37,7 @@ import {
   useFocusGap,
   useGlassTone,
   useOnGlass,
+  useSessionDark,
   useSolidTwin,
   WEIGHT,
   WideTile,
@@ -73,7 +74,11 @@ function Panel({ solid, children }: { solid: boolean; children: ReactNode }) {
 function Label({ solid }: { solid: boolean }) {
   const colors = useColors();
   const tone = useGlassTone();
-  const said = solid ? "Glass off" : tone === null ? "Regular glass, neutral" : `Regular glass, leaning to ${tone}`;
+  const dark = useDark();
+  const other = dark !== useSessionDark();
+  const glass = tone === null ? "Regular glass, neutral" : `Regular glass, leaning to ${tone}`;
+  // Glass is drawn in the session's mode: the other mode's column shows its twin.
+  const said = solid ? "Glass off" : other ? `Its twin: glass is drawn in ${dark ? "Light" : "Dark"} Mode now` : glass;
   return <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{said}</Text>;
 }
 
@@ -219,19 +224,15 @@ function PanelLook() {
 /** A tooltip's ground: regular's solid twin, never glass (GL-6). */
 function Tip() {
   const ground = useSolidTwin("regular");
-  return (
-    <OffGlass>
-      <TipWords ground={ground} />
-    </OffGlass>
-  );
+  return <OffGlass>{<TipWords ground={ground} />}</OffGlass>;
 }
 
 function TipWords({ ground }: { ground: string }) {
   const colors = useColors();
-  const glass = useOnGlass();
+  const words = useOnGlass() === null ? "A tooltip is never glass" : "on glass";
   return (
     <View style={{ alignSelf: "flex-start", paddingHorizontal: SPACE.m, paddingVertical: SPACE.xxs, borderRadius: RADIUS.row, backgroundColor: ground }}>
-      <Text style={{ fontSize: TYPE.secondary.size, color: colors.text }}>{glass === null ? "A tooltip is never glass" : "on glass"}</Text>
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.text }}>{words}</Text>
     </View>
   );
 }

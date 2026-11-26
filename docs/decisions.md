@@ -8994,6 +8994,8 @@ short words, as the rulebook is written.
 - **Why:** the twin must be right wherever the compositor draws no glass (another compositor, glass off
   for the app, the first frame), and every control under the surface has to know it is on glass; one
   component does both, so no surface can forget either.
+  The compositor draws glass in the session's mode, so a subtree an `Appearance` paints in the other
+  mode (the gallery's Dark column in a Light session) gets its twin, not glass of the wrong mode.
 - **Cost:** a surface's glass is a React subtree, not a prop on any view.
 - **Undo:** surfaces pass `material` themselves and wrap their trees in `OnGlassContext`.
 
@@ -9063,4 +9065,8 @@ short words, as the rulebook is written.
   `SHADOW.xl` (DE-1).
 - **Why:** the host's bug, fixed where it starts (Part A); a view with a translucent fill was darkened
   by its own shadow too.
+- **Also found in the VM** (the first end-to-end run of `material`), fixed in mirin the same way: the
+  blur capability was never read (wayland-protocols 0.32.9 says `blur` is 0; Dashi sends 1), an app's
+  window was opaque over its own panes, and a surface offering only `Inherit` got straight alpha.
+  Proof: `dashi-0.10.0-review/28-glass-kit/`.
 - **Undo:** revert the shader's cut; surfaces drop their shadows instead.

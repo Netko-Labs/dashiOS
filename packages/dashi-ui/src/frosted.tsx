@@ -6,14 +6,15 @@
  * material (an older one refuses the tree). Everything under it paints on glass (`OnGlassContext`):
  * the vibrant inks leaning to the backdrop's tone (`useGlassTone`), the glass edge, fills, the stepped
  * inks (theme/on-glass.ts). A third layer of glass is its solid twin with neutral inks (GL-2), and
- * `solid` turns glass off for one surface (the gallery's "glass off", GL-3's twin).
+ * `solid` turns glass off for one surface (the gallery's "glass off", GL-3's twin). The compositor draws
+ * glass in the session's mode, so a subtree an `Appearance` paints in the other mode gets the twin.
  *
  * What is never glass (GL-6) leaves it with `OffGlass`: a tooltip, a capture's chips, a window's content.
  */
 
 import { useHostProtocol, useWindowGlass, View, type ViewProps } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
-import { GLASS, type GlassLevel, type OnGlass, OnGlassContext, useDark } from "./theme/index.ts";
+import { GLASS, type GlassLevel, type OnGlass, OnGlassContext, useDark, useSessionDark } from "./theme/index.ts";
 
 /** How many glass layers are above this one in the tree (GL-2). */
 const Depth = createContext(0);
@@ -34,8 +35,10 @@ export function Frosted({ level, solid = false, style, children, ...rest }: Fros
   const window = useWindowGlass();
   const depth = useContext(Depth);
   const twin = useSolidTwin(level);
+  // The compositor draws glass in the session's mode: a subtree painted in the other (`Appearance`) gets its twin.
+  const inMode = useDark() === useSessionDark();
   // A third layer is drawn solid (GL-2), as is glass turned off; neither leans to a backdrop it can't see.
-  const glass = !solid && depth < GLASS.depth.layers && window.available;
+  const glass = !solid && inMode && depth < GLASS.depth.layers && window.available;
   const tone = glass && window.drawing ? window.tone : null;
   const onGlass = useMemo<OnGlass>(() => ({ level, tone }), [level, tone]);
   return (

@@ -16,7 +16,7 @@ export {
   seedFromPixels,
   seedOf,
 } from "./accent/index.ts";
-export { Appearance, type AppearanceSource, setAppearanceSource, useAccent, useColors, useDark } from "./appearance.ts";
+export { Appearance, type AppearanceSource, setAppearanceSource, useAccent, useColors, useDark, useSessionDark } from "./appearance.ts";
 export {
   AMBER,
   CAPTURE_AREA,

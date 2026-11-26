@@ -158,6 +158,18 @@ describe("Frosted", () => {
     expect(JSON.stringify(node("probe"))).toContain(`${vibrantInks(false, null).primary}|none`);
   });
 
+  test("a subtree painted in the other mode than the session's is its twin: the compositor draws the session's", async () => {
+    const { node, host } = await sent(
+      <Appearance dark>
+        <Frosted level="regular" testID="other" />
+      </Appearance>,
+    );
+    host.emit(SAYS_GLASS);
+    await settle();
+    expect(node("other")?.props.material).toBeUndefined();
+    expect(node("other")?.props.background).toBe(GLASS.levels.regular.dark.solid);
+  });
+
   test("off glass, a window's inks again (GL-6: a tooltip)", async () => {
     const { node } = await sent(
       tree(

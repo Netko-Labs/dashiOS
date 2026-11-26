@@ -51,6 +51,11 @@ export function useDark(): boolean {
   return fixed ?? live;
 }
 
+/** Dark Mode itself, whatever an `Appearance` above fixed: the mode the compositor draws glass in. */
+export function useSessionDark(): boolean {
+  return useSyncExternalStore(source.subscribe, source.isDark);
+}
+
 const noAccent = (): null => null;
 
 /** The accent's seed right now (null: Kombu); repaints the caller when it changes. */
