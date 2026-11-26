@@ -10,6 +10,13 @@
  * above), who signs in under it (initials `initials`, a field `field` wide), and Today: a full-height pane
  * of regular glass `today` wide at the right, its title `todayTitle` Inter Display SemiBold. Below
  * `splitMin` points wide the pane becomes a bottom sheet and the clock one line.
+ *
+ * Where lock-v3's frames put things (y4, D803): the day's top `top` from the screen's top; who signs in
+ * `footer` from the foot (the row's top: it rides up on a short screen, never over the clock), the power
+ * pills `powerBottom` from the foot, thin-glass pills `pill.height` tall with a `pill.glyph` glyph and
+ * `pill.padding` at their sides; the field's go arrow a `arrow` disc. Today: its title's top `pane.top`,
+ * `pane.padding` in from its sides, a section's caption `pane.section` under what is above it; a
+ * notification on it `note` tall and the song `playing` tall, its sleeve `sleeve`.
  */
 const LOCK = {
   clock: { size: 264, line: 216 },
@@ -21,6 +28,15 @@ const LOCK = {
   today: 744,
   todayTitle: 24,
   splitMin: 1280,
+  top: 104,
+  footer: 315,
+  powerBottom: 44,
+  pill: { height: 28, glyph: 13, padding: 10 },
+  arrow: 20,
+  pane: { top: 92, padding: 46, section: 24 },
+  note: 54,
+  playing: 76,
+  sleeve: 52,
 } as const;
 
 /**

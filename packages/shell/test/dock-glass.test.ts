@@ -139,7 +139,13 @@ test("the Trash's menu: Open, and Empty Trash…, which the controller hands to 
     compositor: null,
     launch: () => null,
   });
-  controller.trash = { open: () => done.push("open"), empty: async () => (done.push("empty"), true) };
+  controller.trash = {
+    open: () => void done.push("open"),
+    empty: async () => {
+      done.push("empty");
+      return true;
+    },
+  };
   await controller.run({ kind: "trash-open" });
   await controller.run({ kind: "trash-empty" });
   expect(done).toEqual(["open", "empty"]);

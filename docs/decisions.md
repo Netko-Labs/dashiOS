@@ -9109,3 +9109,25 @@ short words, as the rulebook is written.
   (`confirmPerson`, ume, "Empty the Trash?") and then empties every Trash (`gio trash --empty`). Files
   dropped on it go to the Trash, except the home folder, the root and the folders the sidebar lists.
 - **Undo:** leave `trash` out of `startDock`.
+
+### D803. The lock is split on wide screens only; the narrow one waits for its drawing
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; LK-1 to LK-5, NO-7, MS-6; lock-v3 C).
+- **Choice:** a sign-in screen at least `GLASS.lock.splitMin` (1280) points wide is split (`SplitLogin`,
+  `@dashi/ui`): the day and the 264 / 216 clock flush left (88 in, 96 on a 1920-wide screen), who signs
+  in (initials on regular glass, the 280 field of regular glass with an ink go arrow, the hint) from
+  `GLASS.lock.footer` above the foot (it rides up on a short screen, never over the clock), Sleep, Restart
+  and Shut Down as thin pills `GLASS.lock.powerBottom` above it; on the lock where the person is, Today at
+  the right (`widgets/lock-today.tsx`): the Calendar widget wide, a row of three compacts (the weather,
+  the battery, the person's first compact widget), each app's notifications as one hidden note (its
+  count, the time, a lock glyph, NO-7), and the song with its buttons. The other screens, the login
+  screen and Glance draw the left half alone at the same place. The split's root wears the veil where the
+  host draws glass; dashi-comp now draws a lock surface's own panes (it drew none). Below 1280 points
+  (the VM's laptop screen at 1.75, a portrait monitor) everything is as it was: that layout is being drawn
+  for the owner and isn't approved.
+- **Left out, small:** Metal draws no tracking and no tabular figures, so the clock's −0.02 em and the
+  day's 0.06 em are missing; Today's notes show no app icon (the widgets know no catalog); the status
+  chip (Wi-Fi, the battery, an agent at work) needs a status source the lock doesn't have; the per-app
+  "Show previews" setting isn't built, so every app's words are hidden; Glance folds the next event as
+  the tally's on-air line (the event on air), not every next event.
+- **Undo:** `isSplitWidth` false: every screen is the column again.

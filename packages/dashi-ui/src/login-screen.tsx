@@ -20,6 +20,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { RESTART, SHUT_DOWN, SLEEP } from "./glyphs.ts";
 import { ClockHead } from "./inks-clock.tsx";
 import { Avatar } from "./login-parts.tsx";
+import { isSplitWidth, SplitLogin, useVeil, WhoSignsIn } from "./login-split.tsx";
 import { LOGIN, type LoginColors, loginColors } from "./theme/colors.ts";
 import { pill, RADIUS, SPACE, TYPE, WEIGHT } from "./theme/measures.ts";
 
@@ -84,11 +85,15 @@ export interface LoginScreenProps {
   mode?: "light" | "dark";
   /** The host draws Inter Display and the light weights: the clock in ExtraLight, else Regular. */
   display?: boolean;
+  /**
+   * On a screen at least `GLASS.lock.splitMin` wide the screen is split (login-split.tsx, LK-1): this is its
+   * right side, the lock's Today, where the person is. `head`, `around` and `above` are the column's only.
+   */
+  today?: ReactNode;
 }
 
-export function LoginScreen(props: LoginScreenProps): ReactNode {
-  const { day, time, name, picture, hint, error, above, below, onPower, head, around, mode = "dark", display = false } = props;
-  const colors = loginColors(mode);
+/** Sleep, Restart and Shut Down ask for a second click within `CONFIRM_MS`: which one is armed, and a press. */
+function usePowerArming(onPower: ((what: PowerAction) => void) | undefined): [PowerAction | null, (what: PowerAction) => void] {
   const [arming, setArming] = useState<PowerAction | null>(null);
   useEffect(() => {
     if (!arming) return;
@@ -100,12 +105,64 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
     setArming(null);
     onPower?.(what);
   };
+  return [arming, press];
+}
 
+export function LoginScreen(props: LoginScreenProps): ReactNode {
+  const [width, setWidth] = useState(0);
+  const [arming, press] = usePowerArming(props.onPower);
+  const colors = loginColors(props.mode ?? "dark");
+  const split = isSplitWidth(width);
+  const veil = useVeil();
+  // One root for both layouts: the ground, the ring's colour, and the veil once split (LK-4).
+  const root = {
+    testID: "login-screen",
+    onLayout: (bounds: { width: number }) => setWidth(bounds.width),
+    ...(split ? veil : {}),
+    style: { flex: 1, backgroundColor: colors.ground, focusRingColor: colors.focusRing },
+  } as const;
+  if (split) {
+    const { display = false } = props;
+    const who = (
+      <WhoSignsIn
+        {...props}
+        display={display}
+        colors={colors}
+        placeholder={props.placeholder ?? "Password"}
+        secure={props.secure ?? true}
+        error={props.error ?? false}
+      />
+    );
+    return (
+      <View {...root}>
+        <SplitLogin
+          bare
+          day={props.day}
+          time={props.time}
+          display={display}
+          colors={colors}
+          width={width}
+          who={who}
+          today={props.today}
+          arming={arming}
+          {...(props.onPower ? { press } : {})}
+        />
+      </View>
+    );
+  }
   return (
-    <View
-      testID="login-screen"
-      style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: colors.ground, focusRingColor: colors.focusRing }}
-    >
+    <View {...root}>
+      <ColumnLogin {...props} arming={arming} press={press} />
+    </View>
+  );
+}
+
+/** The centred column: a screen narrower than `GLASS.lock.splitMin` (its split is being drawn, D803). */
+function ColumnLogin(props: LoginScreenProps & { arming: PowerAction | null; press: (what: PowerAction) => void }): ReactNode {
+  const { day, time, name, picture, hint, error, above, below, onPower, head, around, mode = "dark", display = false, arming, press } = props;
+  const colors = loginColors(mode);
+  return (
+    <View testID="login-column" style={{ flex: 1, flexDirection: "column", alignItems: "center" }}>
       {around}
       {head ?? <ClockHead day={day} time={time} ink={colors.ink} display={display} testID="login-head" />}
       <View style={{ flex: 1, minHeight: SPACE.page }} />

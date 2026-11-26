@@ -81,6 +81,8 @@ export interface LoginColors {
   chip: string;
   wrong: string;
   focusRing: string;
+  /** A glyph on an ink fill (the field's go arrow). */
+  onInk: string;
 }
 
 /** The login screen (always: nobody has signed in to choose) and the lock in Dark: the wallpaper darkened to 72% black. */
@@ -96,6 +98,7 @@ export const LOGIN: LoginColors = {
   chip: "#ffffff1a",
   wrong: darkColors.criticalInk,
   focusRing: darkColors.focusRing,
+  onInk: darkColors.onPrimary,
 };
 
 /**
@@ -115,6 +118,7 @@ export const LOGIN_LIGHT: LoginColors = {
   chip: `${INK_TEXT.light.ink}14`,
   wrong: lightColors.criticalInk,
   focusRing: lightColors.focusRing,
+  onInk: lightColors.onPrimary,
 };
 
 /** The set for a mode: the login screen asks for "dark" always, the lock for the person's mode. */

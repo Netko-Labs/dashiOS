@@ -12,6 +12,7 @@ export { type HubNeeds, type HubNotice, setWidgetHub, WidgetHub, widgetHub } fro
 export { COLUMN_WIDTH, columnHeight, GRID, packColumn, SIZE_ORDER, SPANS, sizeWord, span } from "./layout.ts";
 export { LiveCards } from "./live.tsx";
 export { LOCK_ROW, LockHead, LockSide, lockSide, lockTime, NowBar, useClockDisplay } from "./lock.tsx";
+export { LockToday, lockNotes, noteWords, todayRow } from "./lock-today.tsx";
 export { alpha, type CardColours, type CardLook, cardColours, useCard } from "./look.tsx";
 export { lockOpenerOf, openerOf } from "./openers.ts";
 export { Blank, Btn, Glyph, Grow, Head, Lab, Meta, NowTag, Num, Private, Rule, Standby, Title, VRule, Words } from "./parts.tsx";

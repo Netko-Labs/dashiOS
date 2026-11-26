@@ -11,6 +11,12 @@
  * the clock, who is signing in and the field, as the login screen's; no
  * widgets, no power buttons, no Glance. Both follow the person's mode, as
  * the widgets do (Q2, D671); the clock is the one clock (D670).
+ *
+ * On a screen at least 1280 pt wide both are split (lock-v3 C, LK-1, D803):
+ * the left half (the day, the 264 clock, who signs in, the power pills) and,
+ * where the person is, Today at the right (widgets/lock-today.tsx); the cover
+ * is the left half alone, at the same place. A narrower screen keeps the
+ * centred column: its split is still being drawn.
  */
 
 import { LoginScreen, type PowerAction, useDark } from "@dashi/ui";
@@ -21,6 +27,7 @@ import {
   Glance,
   LockHead,
   LockSide,
+  LockToday,
   lockOpenerOf,
   lockTime,
   NowBar,
@@ -141,6 +148,8 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower, cover = f
           hint={status === "idle" ? unlockHint(pending, HINTS.idle) : HINTS[status]}
           error={status === "wrong"}
           {...(onPower ? { onPower } : {})}
+          // On a wide screen, Today at the right where the person is (LK-1); the cover is the left half alone (MS-6).
+          {...(cover ? {} : { today: <LockToday placements={placements} onPress={press} /> })}
           {...(cover
             ? {}
             : {
@@ -151,6 +160,7 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower, cover = f
         />
         {resting && !cover ? (
           <Glance
+            day={face.day}
             onWake={() => {
               setTouched((n) => n + 1);
               wake();

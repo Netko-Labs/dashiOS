@@ -2,10 +2,12 @@
  * The login screen: pick who (when there is more than one person), then
  * @dashi/ui's LoginScreen with what greetd asks, and under it the session to
  * start. The clock ticks every second; it is the lock's clock (D670), and
- * the screen is Dark's look whatever anyone's mode (D671).
+ * the screen is Dark's look whatever anyone's mode (D671). On a screen at
+ * least 1280 pt wide it is the split lock's left half alone (LK-3, D803),
+ * over the veil; narrower, the centred column it was.
  */
 
-import { ClockHead, LOGIN, LOGIN_PARTS, LoginBackLink, LoginChip, LoginPerson, LoginScreen, type PowerAction, TYPE } from "@dashi/ui";
+import { ClockHead, isSplitWidth, LOGIN, LOGIN_PARTS, LoginBackLink, LoginChip, LoginPerson, LoginScreen, type PowerAction, SplitLogin, TYPE } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import { formatDay, formatTime } from "./clock.ts";
@@ -115,18 +117,63 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
   );
 }
 
-/** What the screens without the login form show: the day and the clock, on the form's ground. */
+/** The screen's width, measured: the split at 1280 pt and up (LK-3), the centred column below. */
+function useWidth(): [number, { onLayout: (bounds: { width: number }) => void; style: { flex: 1 } }] {
+  const [width, setWidth] = useState(0);
+  return [width, { onLayout: (bounds) => setWidth(bounds.width), style: { flex: 1 } }];
+}
+
+/** What the screens without the login form show: the day and the clock, on the form's ground; wide, the lock's left half alone (LK-3). */
 export function Backdrop(): ReactNode {
   const now = useNow();
   const display = useDisplay();
+  const [width, measured] = useWidth();
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: LOGIN.ground }}>
-      <ClockHead day={formatDay(now)} time={formatTime(now)} ink={LOGIN.ink} display={display} />
+    <View {...measured}>
+      {isSplitWidth(width) ? (
+        <SplitLogin day={formatDay(now)} time={formatTime(now)} display={display} colors={LOGIN} width={width} testID="greeter-backdrop" />
+      ) : (
+        <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: LOGIN.ground }}>
+          <ClockHead day={formatDay(now)} time={formatTime(now)} ink={LOGIN.ink} display={display} />
+        </View>
+      )}
     </View>
   );
 }
 
 function UserPicker(props: { day: string; time: string; display: boolean; users: User[]; onPick: (user: User) => void }): ReactNode {
+  const [width, measured] = useWidth();
+  return <View {...measured}>{isSplitWidth(width) ? <SplitPicker {...props} width={width} /> : <ColumnPicker {...props} />}</View>;
+}
+
+/** Who signs in, chosen on the split screen: the people in a row where the field goes (LK-3). */
+function SplitPicker(props: { day: string; time: string; display: boolean; users: User[]; onPick: (user: User) => void; width: number }): ReactNode {
+  const { day, time, display, users, onPick, width } = props;
+  return (
+    <SplitLogin
+      day={day}
+      time={time}
+      display={display}
+      colors={LOGIN}
+      width={width}
+      testID="greeter-users"
+      who={
+        <View style={{ flexDirection: "row", gap: LOGIN_PARTS.pickerGap }}>
+          <People users={users} onPick={onPick} />
+        </View>
+      }
+    />
+  );
+}
+
+function People({ users, onPick }: { users: User[]; onPick: (user: User) => void }): ReactNode {
+  if (users.length === 0) return <Text style={{ fontSize: TYPE.body.size, color: LOGIN.muted }}>No one can log in on this computer.</Text>;
+  return users.map((user) => (
+    <LoginPerson key={user.name} testID={`greeter-user-${user.name}`} name={user.displayName} picture={user.picture} onPress={() => onPick(user)} />
+  ));
+}
+
+function ColumnPicker(props: { day: string; time: string; display: boolean; users: User[]; onPick: (user: User) => void }): ReactNode {
   const { day, time, display, users, onPick } = props;
   return (
     <View
@@ -136,13 +183,7 @@ function UserPicker(props: { day: string; time: string; display: boolean; users:
       <ClockHead day={day} time={time} ink={LOGIN.ink} display={display} />
       <View style={{ flex: 1 }} />
       <View style={{ marginBottom: LOGIN_PARTS.pickerBottom, flexDirection: "row", gap: LOGIN_PARTS.pickerGap }}>
-        {users.length === 0 ? (
-          <Text style={{ fontSize: TYPE.body.size, color: LOGIN.muted }}>No one can log in on this computer.</Text>
-        ) : (
-          users.map((user) => (
-            <LoginPerson key={user.name} testID={`greeter-user-${user.name}`} name={user.displayName} picture={user.picture} onPress={() => onPick(user)} />
-          ))
-        )}
+        <People users={users} onPick={onPick} />
       </View>
     </View>
   );

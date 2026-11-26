@@ -53,6 +53,14 @@ pub(super) fn locked_elements<R>(
             .into_iter()
             .map(DashiElement::Surface),
         );
+        // Its panes of glass, behind it and over the wallpaper: the lock's veil and Today (LK-4).
+        elements.extend(
+            state
+                .glass
+                .surface_elements(lock.wl_surface(), (at, output_geo.size), scale, None, None)
+                .into_iter()
+                .map(DashiElement::Glass),
+        );
     }
     if let Some(wallpaper) = state
         .wallpaper

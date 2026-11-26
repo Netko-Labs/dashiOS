@@ -59,7 +59,17 @@ export {
   STOP,
   WARNING,
 } from "./glyphs.ts";
-export { CLOCK_DAY, ClockHead, type ClockHeadProps, clockFace, clockParts, InksClock, type InksClockProps } from "./inks-clock.tsx";
+export {
+  CLOCK_DAY,
+  ClockHead,
+  type ClockHeadProps,
+  clockFace,
+  clockParts,
+  InksClock,
+  type InksClockProps,
+  LockClock,
+  type LockClockProps,
+} from "./inks-clock.tsx";
 export { InlineField, type InlineFieldProps } from "./inline-field.tsx";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { KeyedText, type KeyedTextStyle, keyGlyphSize, namesKeys } from "./keyed-text.tsx";
@@ -76,6 +86,7 @@ export {
   type LoginScreenProps,
   type PowerAction,
 } from "./login-screen.tsx";
+export { initialsOf, isSplitWidth, SplitLogin, type SplitLoginProps, type SplitPower, splitInset, WhoSignsIn, type WhoSignsInProps } from "./login-split.tsx";
 export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, type Size } from "./menu-place.ts";
 export { type MenuHighlight, MenuHighlightContext, MenuLine, MenuRow, type MenuRowProps, menuHighlight } from "./menu-row.tsx";
 export { MONTH_GRID, MonthGrid, type MonthGridProps } from "./month-grid.tsx";

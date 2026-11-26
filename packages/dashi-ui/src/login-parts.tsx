@@ -7,8 +7,10 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
-import type { ReactNode } from "react";
+import { type ReactNode, useContext } from "react";
+import { Frosted } from "./frosted.tsx";
 import { CHEVRON_LEFT } from "./glyphs.ts";
+import { InSplit } from "./login-split.tsx";
 import { Picture } from "./picture.tsx";
 import { LOGIN, type LoginColors } from "./theme/colors.ts";
 import { pill, RADIUS, SPACE, TYPE, WEIGHT } from "./theme/measures.ts";
@@ -26,18 +28,24 @@ export function Avatar({
   picture,
   size = LOGIN_PARTS.avatar,
   colors = LOGIN,
+  glass: glassAsked = false,
 }: {
   name: string;
   picture?: string;
   size?: number;
   colors?: LoginColors;
+  /** On the split screen: the initials on regular glass (frost-objects board 28, LK-3). */
+  glass?: boolean;
 }): ReactNode {
-  const initial = (
-    <View
-      style={{ width: size, height: size, borderRadius: pill(size), backgroundColor: colors.initialsGround, alignItems: "center", justifyContent: "center" }}
-    >
-      <Text style={{ fontSize: TYPE.figure.size, fontWeight: WEIGHT.semibold, color: colors.ink }}>{(name[0] ?? "?").toUpperCase()}</Text>
-    </View>
+  const glass = useContext(InSplit) || glassAsked;
+  const round = { width: size, height: size, borderRadius: pill(size), alignItems: "center", justifyContent: "center" } as const;
+  const letter = <Text style={{ fontSize: TYPE.figure.size, fontWeight: WEIGHT.semibold, color: colors.ink }}>{(name[0] ?? "?").toUpperCase()}</Text>;
+  const initial = glass ? (
+    <Frosted level="regular" style={round}>
+      {letter}
+    </Frosted>
+  ) : (
+    <View style={{ ...round, backgroundColor: colors.initialsGround }}>{letter}</View>
   );
   if (!picture) return initial;
   return <Picture source={picture} resizeMode="cover" style={{ width: size, height: size, borderRadius: pill(size) }} fallback={initial} />;
@@ -84,23 +92,23 @@ export function LoginChip({
   testID: string;
   colors?: LoginColors;
 }): ReactNode {
-  return (
-    <View
-      testID={testID}
-      focusable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={{
-        height: LOGIN_PARTS.chip,
-        marginTop: SPACE.xs,
-        paddingHorizontal: SPACE.gap,
-        justifyContent: "center",
-        borderRadius: pill(LOGIN_PARTS.chip),
-        backgroundColor: colors.chip,
-      }}
-    >
-      <Text style={{ fontSize: TYPE.secondary.size, color: colors.muted }}>{label}</Text>
+  const look = {
+    height: LOGIN_PARTS.chip,
+    marginTop: SPACE.xs,
+    paddingHorizontal: SPACE.gap,
+    justifyContent: "center",
+    borderRadius: pill(LOGIN_PARTS.chip),
+  } as const;
+  const words = <Text style={{ fontSize: TYPE.secondary.size, color: colors.muted }}>{label}</Text>;
+  const role = { testID, focusable: true, accessibilityRole: "button", accessibilityLabel, onPress } as const;
+  // On the split screen the chip is thin glass (LK-3); in the column, its wash.
+  return useContext(InSplit) ? (
+    <Frosted level="thin" {...role} style={look}>
+      {words}
+    </Frosted>
+  ) : (
+    <View {...role} style={{ ...look, backgroundColor: colors.chip }}>
+      {words}
     </View>
   );
 }
@@ -112,13 +120,16 @@ export function LoginPerson({
   onPress,
   testID,
   colors = LOGIN,
+  glass: glassAsked = false,
 }: {
   name: string;
   picture?: string;
   onPress: () => void;
   testID: string;
   colors?: LoginColors;
+  glass?: boolean;
 }): ReactNode {
+  const glass = useContext(InSplit) || glassAsked;
   return (
     <View
       testID={testID}
@@ -135,7 +146,7 @@ export function LoginPerson({
         borderRadius: RADIUS.sheet,
       }}
     >
-      <Avatar name={name} picture={picture} size={LOGIN_PARTS.pickAvatar} colors={colors} />
+      <Avatar name={name} picture={picture} size={LOGIN_PARTS.pickAvatar} colors={colors} glass={glass} />
       <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.ink }}>{name}</Text>
     </View>
   );
