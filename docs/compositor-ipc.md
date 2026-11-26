@@ -293,7 +293,7 @@ it again before it is sent (`keys/locked.rs`).
 | `session-changed` | |
 | `lock` | `locked` |
 | `screen-capture` | `active` |
-| `glass-tone` | `namespace, tone` (`#rrggbb`): the mean colour behind the first pane of one of the shell's surfaces (`glass`), blurred and lifted, before the tint, when it settles after a change (at most every 120 ms, at least every second while it keeps changing), so its words lean toward it (Frost's vibrant inks) |
+| `glass-tone` | `namespace, tone` (`#rrggbb`): the mean colour behind the first pane of one of the shell's surfaces (`glass`), blurred and lifted, before the tint, at once for a new pane (its first frame of glass), then when it settles after a change (at most every 120 ms, at least every second while it keeps changing), so its words lean toward it (Frost's vibrant inks) |
 | `person-input` | `window: int\|null` (throttled) |
 | `overview` | `active` |
 | `overview-pick` | `window: int\|null` |

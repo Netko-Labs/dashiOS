@@ -41,7 +41,9 @@ Events:
   under Reduce Transparency): paint **no fill** under them. `none`: it doesn't (the person turned glass
   off for this app, or the GPU can't): paint the fill you'd paint without glass.
 - `tone(0xRRGGBB)`: the mean colour of what is behind the first pane, blurred and lifted, before the
-  tint; when it settles after a change, at most every 120 ms. Words on glass lean toward its hue
+  tint: at once for new panes (their first frame of glass, still or moving behind) and for a new
+  `dashi_glass_v1` of a surface whose tone is known; then when it settles after a change, at most
+  every 120 ms, and once a second while it keeps changing. Words on glass lean toward its hue
   (Frost's vibrant inks).
 
 Rules the server keeps:
