@@ -89,6 +89,7 @@ const EVENTS = {
   "session-changed": loose({}),
   lock: loose({ locked: bool() }),
   "screen-capture": loose({ active: bool() }),
+  "glass-tone": loose({ namespace: str(), tone: str() }),
   "person-input": loose({ window: maybeWindow }),
   overview: loose({ active: bool() }),
   "overview-pick": loose({ window: maybeWindow }),
