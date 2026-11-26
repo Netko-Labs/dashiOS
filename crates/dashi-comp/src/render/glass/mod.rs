@@ -1,15 +1,24 @@
-//! Frosted glass (a spike, decisions.md D710 to D719): the compositor blurs
-//! what is behind a pane of one of the shell's layer surfaces; the shell says
-//! which panes, where, and how they look (IPC `glass`). Rust displays,
+//! Frosted glass (decisions.md D710 to D719, D730 to D749): the compositor
+//! blurs what is behind a pane and draws its material over it. Who has glass,
+//! what each material looks like and whether it is frosted, the wallpaper
+//! only or solid is the shell's (IPC `glass-style`, `glass-clients`); where
+//! the panes are is the client's (ext-background-effect-v1 and dashi_glass_v1,
+//! protocols/) or, for the shell's own panes, IPC `glass`. Rust displays,
 //! TypeScript decides: nothing here chooses whether there is glass.
 //!
-//! - params.rs: the IPC's params, range-checked.
-//! - element.rs: a pane among a screen's elements, put behind its surface.
-//! - frost.rs: once the screen's elements are known, what is behind each
-//!   pane is drawn small and blurred, again only when it changed.
-//! - kawase.rs, shaders.rs: the blur (the dual filter) and the pane's look.
+//! - style.rs: the levels' looks and the mode; params.rs: the shell's panes.
+//! - clients.rs: who is granted; surfaces.rs: a client surface's committed panes.
+//! - place.rs: panes as elements, behind their surfaces; element.rs: one pane.
+//! - frost.rs, cache.rs: what is behind each pane, drawn small and blurred,
+//!   again only when it changed; kawase.rs, gl.rs, shaders.rs: the blur and look.
+//! - tone.rs: the backdrop's colour, for the words on glass; screen.rs: a
+//!   screen's frosting, and where its tones go.
 //! - stats.rs: what it costs, in dashi.log with `DASHI_GLASS_STATS=1`.
 
+mod announce;
+mod backdrop;
+mod cache;
+pub(crate) mod clients;
 mod element;
 mod frost;
 mod gl;
@@ -17,24 +26,47 @@ mod gl;
 mod gpu_tests;
 mod kawase;
 mod params;
+mod place;
+mod screen;
 mod shaders;
 mod stats;
+pub(crate) mod style;
+pub(crate) mod surfaces;
+mod tone;
 
 use std::collections::HashMap;
 
-use smithay::utils::{Logical, Physical, Point, Rectangle, Scale};
+use smithay::reexports::{
+    wayland_protocols::ext::background_effect::v1::server::ext_background_effect_manager_v1::ExtBackgroundEffectManagerV1,
+    wayland_server::{Weak, protocol::wl_surface::WlSurface},
+};
 
-pub(crate) use element::GlassElement;
-use element::PaneKey;
+pub(crate) use clients::GlassClients;
+pub(crate) use element::{Clip, GlassElement};
 pub(crate) use frost::frost;
+use params::Pane;
 pub(crate) use params::{GlassParams, GlassReply};
-use params::{Look, Pane};
+pub(crate) use screen::{frost_capture, frost_screen};
 pub(crate) use stats::Stats;
+pub(crate) use style::{GlassStyleParams, Level, Style};
 
-/// The panes of glass the shell asked for, by layer namespace.
+use crate::protocols::dashi_chrome::generated::dashi_glass_v1::DashiGlassV1;
+
+/// The shell's panes and style, the grants, and the protocol objects that hear about them.
 #[derive(Default)]
 pub(crate) struct Glass {
     panes: HashMap<String, Vec<Pane>>,
+    /// The looks and the mode (`glass-style`); none: no client's glass is drawn.
+    pub style: Option<Style>,
+    pub clients: clients::Clients,
+    /// ext_background_effect_manager_v1s bound (they hear the capabilities).
+    pub managers: Vec<Weak<ExtBackgroundEffectManagerV1>>,
+    /// Surfaces with an ext_background_effect_surface_v1.
+    pub effects: Vec<WlSurface>,
+    /// dashi_glass_v1 objects, by surface (they hear `drawing` and `tone`).
+    pub objects: Vec<(Weak<WlSurface>, DashiGlassV1)>,
+    /// What each manager and object last heard (drawn or not), by object id.
+    pub said: HashMap<smithay::reexports::wayland_server::backend::ObjectId, bool>,
     /// False once a GPU could not compile the shaders.
     pub works: bool,
     tried: bool,
@@ -64,116 +96,8 @@ impl Glass {
         self.works = worked;
     }
 
-    /// The panes of a surface of `namespace` drawn at `at` (the screen's pixels), `size`
-    /// big, at `scale`; `motion` is its entrance's alpha and scale about a point, if any.
-    pub(crate) fn elements(
-        &self,
-        namespace: &str,
-        at: Point<i32, Physical>,
-        size: smithay::utils::Size<i32, Logical>,
-        scale: Scale<f64>,
-        motion: Option<(f32, Point<i32, Physical>, f64)>,
-    ) -> Vec<GlassElement> {
-        let Some(panes) = self.panes.get(namespace) else {
-            return Vec::new();
-        };
-        panes
-            .iter()
-            .enumerate()
-            .map(|(index, pane)| {
-                let rect = pane
-                    .rect
-                    .unwrap_or_else(|| Rectangle::from_size(size.to_f64()));
-                let (alpha, grow) = match motion {
-                    Some((alpha, about, by)) => (alpha, Some((about, by))),
-                    None => (1.0, None),
-                };
-                let by = grow.map_or(1.0, |(_, by)| by);
-                let mut geometry = rect.to_physical_precise_round(scale);
-                geometry.loc += at;
-                if let Some((about, by)) = grow {
-                    let from = (geometry.loc - about).to_f64().upscale(by);
-                    geometry.loc = about + from.to_i32_round();
-                    geometry.size = geometry.size.to_f64().upscale(by).to_i32_round();
-                }
-                let look = Look {
-                    radius: pane.look.radius * scale.x * by,
-                    // Not grown: a blur that changed each frame of an entrance would be drawn anew each.
-                    blur: pane.look.blur * scale.x,
-                    ..pane.look
-                };
-                let key = PaneKey {
-                    namespace: namespace.to_owned(),
-                    index,
-                };
-                GlassElement::new(key, geometry, look, alpha)
-            })
-            .collect()
-    }
-}
-
-/// Frost the panes among `elements`, a screen's (frost.rs), counting what it costs (stats.rs).
-/// `cache` names the textures kept for it: the screen's name for what it shows, another for a
-/// picture of it drawn apart (a capture).
-pub(crate) fn frost_screen<R>(
-    state: &mut crate::state::Dashi,
-    renderer: &mut R,
-    output: &smithay::output::Output,
-    cache: &str,
-    elements: &mut [super::DashiElement<R>],
-) where
-    R: smithay::backend::renderer::Renderer
-        + smithay::backend::renderer::ImportAll
-        + smithay::backend::renderer::ImportMem
-        + super::GlesAccess
-        + smithay::backend::renderer::Offscreen<smithay::backend::renderer::gles::GlesTexture>
-        + smithay::backend::renderer::Bind<smithay::backend::renderer::gles::GlesTexture>,
-    R::TextureId: smithay::backend::renderer::Texture + Clone + Send + 'static,
-{
-    if !elements
-        .iter()
-        .any(|e| matches!(e, super::DashiElement::Glass(_)))
-    {
-        return;
-    }
-    let Some(size) = crate::outputs::drawn_size(output) else {
-        return;
-    };
-    let scale = output.current_scale().fractional_scale();
-    let timing = state.glass.stats.begin(renderer.gles());
-    match frost(renderer, cache, size, scale, elements) {
-        Ok(done) => {
-            state.glass.tried(true);
-            if let Some(timing) = timing {
-                state.glass.stats.end(renderer.gles(), cache, timing, done);
-            }
-        }
-        Err(error) => {
-            if state.glass.can() {
-                tracing::warn!(%error, "no glass on this GPU");
-            }
-            state.glass.tried(false);
-        }
-    }
-}
-
-/// Frost the panes among a capture's `elements` (`size` pixels at `scale`), with textures of its
-/// own: a capture shows the glass as the screen does (decisions.md D714).
-pub(crate) fn frost_capture<R>(
-    renderer: &mut R,
-    size: smithay::utils::Size<i32, Physical>,
-    scale: f64,
-    elements: &mut [super::DashiElement<R>],
-) where
-    R: smithay::backend::renderer::Renderer
-        + smithay::backend::renderer::ImportAll
-        + smithay::backend::renderer::ImportMem
-        + super::GlesAccess
-        + smithay::backend::renderer::Offscreen<smithay::backend::renderer::gles::GlesTexture>
-        + smithay::backend::renderer::Bind<smithay::backend::renderer::gles::GlesTexture>,
-    R::TextureId: smithay::backend::renderer::Texture + Clone + Send + 'static,
-{
-    if let Err(error) = frost(renderer, &format!("capture@{scale}"), size, scale, elements) {
-        tracing::debug!(%error, "a capture's glass");
+    /// How many layers of glass a pane may have under it before it is drawn solid.
+    pub(crate) fn deepest(&self) -> usize {
+        self.style.as_ref().map_or(usize::MAX, |style| style.depth)
     }
 }

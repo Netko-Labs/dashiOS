@@ -40,7 +40,7 @@ Events:
   compositor draws the panes (frosted, wallpaper-only under battery saver, or the level's solid twin
   under Reduce Transparency): paint **no fill** under them. `none`: it doesn't (the person turned glass
   off for this app, or the GPU can't): paint the fill you'd paint without glass.
-- `tone(0xRRGGBB)`: the mean colour of what is behind the panes, blurred and lifted, before the
+- `tone(0xRRGGBB)`: the mean colour of what is behind the first pane, blurred and lifted, before the
   tint; when it settles after a change, at most every 120 ms. Words on glass lean toward its hue
   (Frost's vibrant inks).
 

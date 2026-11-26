@@ -180,6 +180,11 @@ pub(crate) enum Event {
     ScreenCapture {
         active: bool,
     },
+    /// The backdrop's tone behind one of the shell's glass surfaces (`glass`), `#rrggbb`.
+    GlassTone {
+        namespace: String,
+        tone: String,
+    },
     PersonInput {
         window: Option<u64>,
     },

@@ -24,7 +24,7 @@ use smithay::{
 use super::{
     element::{GlassElement, PaneKey},
     frost,
-    params::Look,
+    style::Look,
 };
 use crate::render::DashiElement;
 
@@ -45,21 +45,12 @@ fn renderer() -> GlesRenderer {
 }
 
 fn look(blur: f64) -> Look {
-    Look {
-        radius: 12.0,
-        blur,
-        saturation: 1.0,
-        tint: [0.0; 4],
-        noise: 0.0,
-        xray: false,
-        brightness: 1.0,
-        floor: [0.0; 2],
-    }
+    Look::plain(12.0, blur)
 }
 
 fn pane(rect: Rectangle<i32, Physical>, blur: f64) -> DashiElement<GlesRenderer> {
     let key = PaneKey {
-        namespace: "dashi.test".into(),
+        owner: super::element::Owner::Shell("dashi.test".into()),
         index: 0,
     };
     DashiElement::Glass(GlassElement::new(key, rect, look(blur), 1.0))
@@ -135,7 +126,7 @@ fn what_is_behind_comes_out_blurred_and_the_right_way_up() {
         &mut renderer,
         "test",
         Size::from((W, H)),
-        1.0,
+        (1.0, None),
         &mut elements,
     )
     .expect("frosted");
@@ -174,7 +165,7 @@ fn it_is_blurred_again_only_when_what_is_behind_changes() {
             &mut renderer,
             "test",
             Size::from((W, H)),
-            1.0,
+            (1.0, None),
             &mut elements,
         )
         .expect("frosted")
@@ -231,7 +222,7 @@ fn glass_costs() {
                     &mut renderer,
                     "cost",
                     Size::from((sw, sh)),
-                    1.75,
+                    (1.75, None),
                     &mut elements,
                 )
                 .expect("frosted");

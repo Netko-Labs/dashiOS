@@ -48,12 +48,22 @@ pub(super) fn layer_elements<R>(
         });
         let about = (geometry.loc + offset + Point::from((geometry.size.w / 2, 0)))
             .to_physical_precise_round(scale);
-        // Its panes of glass, behind it (render/glass/).
+        // Its panes of glass, behind it: the shell's (IPC) and its own (render/glass/).
         let glass = state.as_deref().filter(|_| !drawn.is_empty()).map(|state| {
             let motion = step.map(|step| (step.alpha, about, step.scale));
-            state
-                .glass
-                .elements(surface.namespace(), at, geometry.size, scale, motion)
+            let mut panes =
+                state
+                    .glass
+                    .elements(surface.namespace(), at, geometry.size, scale, motion);
+            let own = (at, geometry.size);
+            panes.extend(state.glass.surface_elements(
+                surface.wl_surface(),
+                own,
+                scale,
+                motion,
+                None,
+            ));
+            panes
         });
         let Some(step) = step else {
             elements.extend(drawn.into_iter().map(DashiElement::Surface));

@@ -118,7 +118,7 @@ impl Stats {
         gles: &mut GlesRenderer,
         output: &str,
         timing: Timing,
-        done: Frosting,
+        done: &Frosting,
     ) {
         let screen = self.screens.entry(output.to_owned()).or_default();
         let finished = gles

@@ -11,7 +11,7 @@ use crate::{
     render::{
         self,
         depth::WindowStyle,
-        glass::{GlassParams, GlassReply},
+        glass::{GlassClients, GlassParams, GlassReply, GlassStyleParams},
     },
     state::Dashi,
 };
@@ -94,10 +94,33 @@ pub(crate) fn chrome(state: &mut Dashi, _: &Ask, params: Chrome) -> Result<Done,
 /// The panes of frosted glass behind one of the shell's surfaces; whether this compositor frosts.
 pub(crate) fn glass(state: &mut Dashi, _: &Ask, params: GlassParams) -> Result<GlassReply, String> {
     state.glass.set(&params)?;
-    let nested = !matches!(state.backend, crate::backend::Backend::Udev(_));
     Ok(GlassReply {
-        frosted: !nested && state.glass.can(),
+        frosted: state.glass_frosts(),
     })
+}
+
+/// How each material looks and how glass is drawn; whether this compositor frosts.
+pub(crate) fn glass_style(
+    state: &mut Dashi,
+    _: &Ask,
+    params: GlassStyleParams,
+) -> Result<GlassReply, String> {
+    state.glass.style = Some(render::glass::style::parse(&params)?);
+    state.announce_glass();
+    Ok(GlassReply {
+        frosted: state.glass_frosts(),
+    })
+}
+
+/// Which apps get glass.
+pub(crate) fn glass_clients(
+    state: &mut Dashi,
+    _: &Ask,
+    params: GlassClients,
+) -> Result<Done, String> {
+    state.glass.clients.set(&params)?;
+    state.announce_glass();
+    Ok(Done {})
 }
 
 pub(crate) fn window_style(

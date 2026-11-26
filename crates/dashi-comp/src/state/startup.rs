@@ -228,6 +228,7 @@ fn handler_globals(
     crate::handlers::security::create_global(dh);
     crate::handlers::toplevel_meta::create_globals(dh);
     crate::render::present::create_global(dh);
+    crate::protocols::background_effect::create_global(dh);
     crate::protocols::xdg_foreign::create_globals(dh);
     inhibit
 }
