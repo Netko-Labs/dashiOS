@@ -8652,6 +8652,8 @@ short words, as the rulebook is written.
   frosted most in a band behind the clock and the password; the field on regular glass, the widgets
   on paper glass. With glass off (GL-3) the lock is today's washes (`LOGIN`, `LOGIN_LIGHT`).
 - **Undo:** drop the veil; the washes stay.
+- **Corrected (2026-11-26, D768):** the veil is blur 24, saturation 1.2 (Frost v2), and the lock is
+  C · Split (D760): the tint gathers behind the left half's words; Today is regular glass.
 
 ### D723. Battery saver keeps glass, wallpaper-only
 
@@ -8669,6 +8671,10 @@ short words, as the rulebook is written.
   words stay ink; the tally is the vermilion dot of the "Now" tag and the bar's capsule. The 3-point
   ring and the flood (D401's) are gone; house lights, holders, cuts and timings are unchanged.
 - **Undo:** CO-12's old sentence; `ON_INK` is still in the code until y4 removes the flood.
+- **Corrected (2026-11-26, D768):** the 14% stain, the lift and the coloured `lg` shadow were Frost v1's.
+  The owner's answer, as Frost v2 drew it: the card keeps its glass as off air, glows faintly in its own
+  ink (`0 0 30 3`, 60% Light, 55% Dark, `GLASS.onAir`), and the "Now" tag carries the tally's dot.
+  No tint, no lift, no ring, no flood.
 
 ### D725. Light glass stays light over a dark wallpaper
 
@@ -8687,6 +8693,8 @@ short words, as the rulebook is written.
   (`GLASS.inks.matcha.light`). Dark and the other inks are unchanged; the Inks' own table (`INKS`) is
   untouched, so widgets off glass print as before.
 - **Undo:** drop `GLASS.inks`.
+- **Corrected (2026-11-26, D768):** `#5F6305` (OKLCH 0.48 0.104 112, Frost v2's), not `#606301`:
+  the chroma sRGB holds there; 6.2:1 on the paper either way. `GLASS.inks.light.matcha`.
 
 ### D727. The cost is accepted: under 5% of a 120 Hz frame
 
@@ -8825,3 +8833,149 @@ short words, as the rulebook is written.
   renderer as the rest of its frame; the copy carries the result and costs what it did. Nothing in
   the glass knows about the copy.
 - **Undo:** nothing to undo; a per-screen opt-out would be a `glass-style` field.
+
+### D729. Frost v2 is the base: its five questions settled
+
+- **Date:** 2026-11-26. The owner's second round (`dashi-0.10.0-design/glass/owner-answers.md`, "Second
+  round"; the design: `glass/frost-v2/`), written into the rulebook on `v10/glass-rules`.
+- **Question:** Frost v2 drew the first round's answers and asked five things: banners beside the widgets
+  or pushing them down; the Dark conversation going solid over a bright wallpaper; the on-air glow's
+  strength; the lock (replaced by lock-v3, D760); battery saver's row.
+- **Choice:** the recommendations, which the owner didn't object to. Banners have their own lane, left of
+  the widget column and top-aligned with it, newest on top, 8 apart, 356 wide, radius 18; a widget is never
+  covered or moved (NO-6). Words on a fill inside glass are primary ink, so the Dark conversation stays
+  frosted (GL-1). The on-air glow stays faint and the Now dot carries the tally (CO-12, D724). Battery
+  saver's row is "Lighter glass on battery saver", on by default (GL-3). The floor learned v2's two rules:
+  words on a fill are checked on the fill (white 55% Light, 10% Dark, `GLASS.fill`), and marks are held at
+  3:1, words at 4.5:1 (`GLASS.floor.glyphs`). The veil is blur 24, saturation 1.2.
+- **Cost:** the lane takes a column of the desktop's width while banners show.
+- **Undo:** each is a sentence in its rule and a number in `GLASS`.
+
+### D760. The lock is C · Split, its clock 264 ExtraLight
+
+- **Date:** 2026-11-26. The owner's answer (`glass/lock-v3/`, option C).
+- **Question:** "the lock screen needs more work": its layout and its clock. Four layouts were drawn:
+  A · Stage (a hero clock, a shelf), B · Desk (widgets lead), C · Split, D · Depth (the clock behind the
+  photo's subject).
+- **Choice:** C. Time at the left edge (264 / 216 Inter Display ExtraLight, hours over minutes, 88 in on
+  the laptop, 96 on a 1920-wide screen, the day 18 above) with who signs in under it; Today on the right, a
+  744 pt full-height pane of regular glass with the Calendar widget wide, three small widgets,
+  Notifications and Playing on paper glass. The login screen, Glance and the other screens are the left
+  half (LK-1 to LK-5, MS-6, TY-1). `LOCK_GLASS` is retired for paper glass. D · Depth not now: it needs a
+  segmentation model whose code and weights are MIT-compatible, and would only ever be an opt-in. Below
+  1280 pt wide Today becomes a bottom sheet and the clock one line: decided here, not yet drawn. Today's
+  title (24) and the initials (52) are new named sizes in TY-1.
+- **Why:** one clock in one place on every surface (D570, D571), the face the owner approved, at last at a
+  size with presence; Today reads at full size; nothing new from the compositor.
+- **Cost:** the pane hides half the wallpaper, frosted; `TYPE.clock` changes (120 → 264 / 216) with y4.
+- **Undo:** A's layout is drawn (232 Light, one line); the numbers are `GLASS.lock`.
+
+### D761. Notifications on the lock are hidden by default
+
+- **Date:** 2026-11-26. The owner's answer.
+- **Choice:** on the lock a notification shows its app, a count, the time and a lock glyph, never who or
+  what. Notifications › an app › Show previews: When Unlocked (the default) or Always (NO-7).
+- **Why:** a locked screen is seen by whoever walks past.
+- **Undo:** the default is one setting.
+
+### D762. Coloured inks are on the floor's list, and five take a step on glass
+
+- **Date:** 2026-11-26. The owner's answer, from `glass/frost-objects/` (question 1).
+- **Question:** the floor only knew the two vibrant inks. Every coloured ink an object shows (ume words,
+  the tally, the microphone, the agents' purple, moss, wakame) failed somewhere until it was named, and
+  then its surface went near solid (α 0.86 to 1.00).
+- **Choice:** both. Every coloured ink a surface shows is on its floor list, words at 4.5:1 and marks at 3:1
+  (GL-5); and the inks that failed take one OKLCH step on glass, as matcha did (D726): Light ume words
+  `#A0324A`, Light wakame `#00737E`, Light microphone `#9F4800` on a 12% wash (its pill's `microphoneWash`, 16% today), Dark ume on a fill
+  `#F6859B` (`GLASS.inks`). The tally keeps its one vermilion (3.15:1 as a mark).
+- **Cost:** two reds and two teals in the system, one for glass; the kit picks by where it draws.
+- **Undo:** drop the steps and let those surfaces go near solid while the ink shows.
+
+### D763. The focus ring keeps a white gap on the accent
+
+- **Date:** 2026-11-26. The owner's answer (frost-objects question 2).
+- **Question:** purple `#6E56CF` on the owner's magenta is 1.05:1: the ring vanished round a knob in a lit
+  page header or inside a lit tile.
+- **Choice:** one purple ring still (KB-2), with a 1.5 pt `onAccent` gap where it crosses an accent fill
+  (`GLASS.focusGap`). Not a white ring: the ring stays one colour everywhere.
+- **Undo:** the gap is one number.
+
+### D764. The Dock: a label, ink badges, a download bar, a Trash, autohide that shows nothing, magnification
+
+- **Date:** 2026-11-26. The owner's answer (frost-objects question 3), magnification against the
+  designer's advice.
+- **Choice:** a new section, The Dock (DK-1 to DK-6): radius 20; a hover label of regular glass after
+  300 ms; counts as ink pills, never red; a download as an ink bar on a paper plate, never the accent; a
+  Trash after the last divider; hidden shows nothing, a 2 pt band and a 250 ms rest; magnification, the
+  icon to 1.42 and its neighbours to 1.18, lifted 12. Decided here: magnification is on by default (the
+  owner asked for it) and off under Reduce Motion; the row and its glass widen with it and are blurred again
+  only while it moves, inside the glass budget; the label takes the menu's radius (the designer drew 9, off
+  RA-1's scale once menus are 10).
+- **Cost:** a magnifying Dock re-blurs a thin pane while the pointer moves along it (about the spike's
+  0.16 ms a frame); a press must land on the icon as drawn.
+- **Undo:** magnification's default is one setting; each part is its own rule.
+
+### D765. Control Center gets a Display page, a Focus page and a Now Playing tile
+
+- **Date:** 2026-11-26. The owner's answer (frost-objects question 4), the tile against the designer's
+  advice.
+- **Choice:** CC-5 (Display: a brightness slider per screen Dashi can dim, Night Shift, Dark, Displays
+  Settings…), CC-6 (Focus: for 1 hour, until this evening, until tomorrow, until I turn it off; "Banners
+  wait in the area. Agents' questions still ask."), CC-7 (Now Playing: a wide tile, a 56 pill on a fill,
+  the sleeve a 44 disc, Pause or Play and Next in ink; it opens the player). Decided here: with no player
+  the tile isn't shown and keeps its place (CC-2); the bar's capsule and the live card are unchanged.
+- **Undo:** each is a catalog entry.
+
+### D766. The objects' recommendations, all of them
+
+- **Date:** 2026-11-26. The owner: "accept all the designer's recommendations" (frost-objects questions 5 to 9).
+- **Choice:**
+  - The bottom capsule's line stays solid (ink for dictation, the persona's colour for voice); only its
+    card is glass, with the persona's 1.5 rim (CP-11).
+  - Notification cards in the area are paper glass, banners regular (NO-5).
+  - A link on glass is primary ink, underlined, never the accent (GL-1).
+  - A selection in a window without focus turns neutral: ink 10%, its bar ink 55% (CO-9, `GLASS.selection`);
+    on glass the selection wash is the accent at 22%.
+  - Words on fills are primary ink (v2's question 2, answer b; GL-1).
+  - The glass control edge: ink 56% Light, white 44% Dark, 3:1 on the floored ground (CO-6, `GLASS.edge`).
+  - Control Center: muted is the knob in ink; a knob wears the glass edge; a dim applet tile is exempt like
+    disabled (CC-1).
+- **Undo:** each is a sentence in its rule.
+
+### D767. The objects designer's own calls, taken as rules
+
+- **Date:** 2026-11-26. `glass/frost-objects/` README, "Decided here".
+- **Choice:** tooltips are always regular's solid twin (T-1, GL-6); a submenu is one level at most and, as a
+  third layer, its solid twin; a group's peeking edges and the widget gallery's previews are solid twins
+  (GL-2); the overview's background is the veil with no tint and no floor; the OSD and the switcher are
+  regular glass, the Spaces row and the taskbar thin (DE-4); an applet's popover is framed by the shell on
+  regular glass, r12, pad 14 (LA-4); no glass over or inside a capture or under the eyedropper (GL-6); the
+  login screen is always Dark, the veil full width (LK-3); the snap preview is thin glass, r10, inset 6,
+  never the accent (WI-10); "Your turn" pushes the banner lane down (NO-6); chosen in the switcher, the
+  Spaces row and the launcher's pictures is the accent, hover ink, and editing a widget rings it in ink
+  (CO-9).
+- **Undo:** each is a sentence in its rule.
+
+### D768. The leftovers in the tokens and the rules, fixed
+
+- **Date:** 2026-11-26. Found by the objects designer.
+- **Choice:** `GLASS.onAir` is the glow only (`blur` 30, `spread` 3, the ink at 0.60 / 0.55): no stain, no
+  lift. CO-12, GL-4 ("the one stained glass") and D724 say the same. The veil is 24 / 1.2 (D722, LK-4).
+  Light matcha on glass is `#5F6305` (D726). D722, D724 and D726 keep their text and gain a "Corrected" line
+  pointing here, so the log still shows what was first decided.
+- **Undo:** none wanted.
+
+### D769. Where the second round's numbers live
+
+- **Date:** 2026-11-26. `v10/glass-rules` (reversible; decided here).
+- **Choices:**
+  - The surfaces' numbers (the lock, the Dock, the banners' lane, the Now Playing tile) sit in
+    `theme/glass-surfaces.ts`, gathered into `GLASS` (`GLASS.lock`, `GLASS.dock`, `GLASS.banner`,
+    `GLASS.nowPlaying`): the package index is at H2's 300 lines, y4 reads one place, and design.html binds
+    each (H24). y4 may move one beside its component (H21b) with the page in the same commit.
+  - New sections: The Dock (DK-1 to DK-6) and The lock screen (LK-1 to LK-5); new rules GL-5, GL-6, CC-5 to
+    CC-7, NO-5 to NO-7, CP-11, WI-10.
+  - Every rule the code doesn't follow yet is tagged "Not yet in code — y4", naming y3 where the
+    compositor's part is also missing.
+  - Not taken: holding a widget's category figures at 3:1 as large text (lock-v3's question 4). The wakame
+    step makes it pass at 4.5:1, and a threshold is not loosened when an ink can move instead (Part A).

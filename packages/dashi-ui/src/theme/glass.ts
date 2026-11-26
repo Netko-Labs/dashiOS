@@ -10,6 +10,7 @@
  */
 
 import { useDark } from "./appearance.ts";
+import { GLASS_SURFACES } from "./glass-surfaces.ts";
 import { INK_PAPER } from "./inks.ts";
 import type { Oklch } from "./lib/oklch.ts";
 import { lightColors, TRUE_BLACK } from "./palette.ts";
@@ -48,9 +49,10 @@ export interface GlassMaterial {
 }
 
 /**
- * The materials (DE-4). Thin: the menu bar, the Dock. Regular: menus, Control Center, the launcher and
- * its conversation, banners, sheets, the lock's field. Thick: the focused window's sidebar. Paper:
- * widgets (the Inks' paper turned glass, CO-11).
+ * The materials (DE-4). Thin: the menu bar, the Dock, the taskbar, the Spaces row, the lock's power
+ * buttons. Regular: menus, Control Center, the launcher and its conversation, banners, sheets, the OSD,
+ * the switcher, panels, the capsule's card, the lock's field and Today. Thick: the focused window's
+ * sidebar (its solid twin without focus). Paper: widgets and the area's notification cards (CO-11).
  */
 const LEVELS: Readonly<Record<GlassLevel, GlassMaterial>> = {
   thin: {
@@ -80,13 +82,14 @@ const LEVELS: Readonly<Record<GlassLevel, GlassMaterial>> = {
 };
 
 /**
- * The lock screen's veil (D722): the whole wallpaper frosted, thickest in a band where the clock and
- * the password are. It has no solid twin: where glass is off the wallpaper shows sharp under the
- * lock's own wash (LOGIN, LOGIN_LIGHT).
+ * The veil (D722, Frost v2): the whole wallpaper frosted, under the lock, the login screen and (with no
+ * tint and no floor) the overview. Its tint is shaped by what sits on it: on the lock a band behind the
+ * clock and who signs in, feathered to a quarter at the sides. It has no solid twin: where glass is off
+ * the wallpaper shows sharp under the lock's own wash (LOGIN, LOGIN_LIGHT).
  */
 const VEIL = {
-  blur: 10,
-  saturation: 1.15,
+  blur: 24,
+  saturation: 1.2,
   light: { tint: "#F6F6F8", least: 0.12 },
   dark: { tint: "#0A0A0C", least: 0.18 },
 } as const;
@@ -110,12 +113,31 @@ const RIM = {
 const HAIRLINE = { width: 0.5, light: 0.1, dark: 0.5 } as const;
 
 /**
- * The floor: the tint's α is the least α, or the lowest that keeps every ground under the surface at
- * `ratio` + `margin` against its weakest ink, the grain at both extremes. It rises at once and falls only
- * after `fallAfterMs` of stillness, easing over MOTION.base; the backdrop's tone goes to the client at
- * most every `toneEveryMs`.
+ * The floor: the tint's α is the least α, or the lowest that keeps every ground under the surface, against
+ * every ink it names (GL-5), at `ratio` (words) or `glyphs` (marks) + `margin`, the grain at both
+ * extremes, and on its fills too when words sit on them (D729). It rises at once and falls only after
+ * `fallAfterMs` of stillness, easing over MOTION.base; the backdrop's tone goes to the client at most
+ * every `toneEveryMs`. In battery saver it runs once per wallpaper.
  */
-const FLOOR = { ratio: 4.5, margin: 0.15, fallAfterMs: 300, toneEveryMs: 120 } as const;
+const FLOOR = { ratio: 4.5, glyphs: 3, margin: 0.15, fallAfterMs: 300, toneEveryMs: 120 } as const;
+
+/** A fill inside glass (a tile, a field, a bubble, a card's choice): white at this α, laid on the glass. */
+const FILL = { light: 0.55, dark: 0.1 } as const;
+
+/**
+ * The glass control edge (CO-6, D766): a button's, a field's or an off switch's edge on glass, ink at
+ * `light` in Light and white at `dark` in Dark, 3:1 on the floored ground.
+ */
+const EDGE = { light: 0.56, dark: 0.44 } as const;
+
+/**
+ * A selection on glass (CO-9): the accent's wash at `wash` over the floored ground, its words primary. In a
+ * window without focus it is neutral: ink at `unfocusedWash`, its bar ink at `unfocusedBar`.
+ */
+const SELECTION = { wash: 0.22, unfocusedWash: 0.1, unfocusedBar: 0.55 } as const;
+
+/** The gap of the focus ring where it crosses something lit in the accent (KB-2, D763): onAccent, in points. */
+const FOCUS_GAP = 1.5;
 
 /**
  * Words and glyphs on glass (GL-1): a grey that leans a breath to the backdrop's hue (H, from the
@@ -140,22 +162,26 @@ const BUDGET = { budgetMs: 1.5, misses: 2 } as const;
 const FROST = { wordsAfterMs: 40 } as const;
 
 /**
- * A widget on air (CO-12, D724): its paper glass takes `stain` of its own ink into the tint (still
- * floored), it lifts `lift` points, and its glow is the `lg` shadow in its ink at `glow`.
+ * A card on air (CO-12, D724 as corrected by D768): its paper glass stays as off air; it glows faintly in
+ * its own ink (a shadow 0 0 `blur` `spread`, the ink at `light` / `dark`), and the "Now" tag carries the
+ * tally's dot. No stain, no lift, no ring, no flood.
  */
-const ON_AIR = { stain: 0.14, glow: 0.5, lift: 2 } as const;
+const ON_AIR = { blur: 30, spread: 3, light: 0.6, dark: 0.55 } as const;
 
 /**
- * Inks that change on glass (D726): Light matcha is one step darker on paper glass (L 0.52 → 0.48), so
- * the battery widget's glass need not go almost solid to keep it 4.5:1.
+ * Inks one step darker (Light) or lighter (Dark) on glass (GL-5, D762), so the floor need not go solid for
+ * them: Light matcha (D726), Light ume words, Light wakame, Light microphone (its pill's wash at
+ * `microphoneWash`), and Dark ume on a fill.
  */
-const INKS_ON_GLASS: Readonly<{ matcha: { light: Oklch } }> = {
-  matcha: { light: { L: 0.48, C: 0.13, H: 112 } },
-};
+const INKS_ON_GLASS = {
+  light: { matcha: "#5F6305", ume: "#A0324A", wakame: "#00737E", microphone: "#9F4800" },
+  dark: { umeOnFill: "#F6859B" },
+  microphoneWash: 0.12,
+} as const;
 
 /**
  * Frost, every number in one token (design.html "Glass" binds each): `levels` (`GLASS.levels.thin.blur`),
- * the lock's `veil`, and the parts every level has.
+ * the `veil`, the parts every level has, and the surfaces the glass rounds drew (`glass-surfaces.ts`).
  */
 export const GLASS = {
   levels: LEVELS,
@@ -170,4 +196,9 @@ export const GLASS = {
   frost: FROST,
   onAir: ON_AIR,
   inks: INKS_ON_GLASS,
+  fill: FILL,
+  edge: EDGE,
+  selection: SELECTION,
+  focusGap: FOCUS_GAP,
+  ...GLASS_SURFACES,
 } as const;
