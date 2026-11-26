@@ -7,7 +7,7 @@
  * switch (appearance.ts).
  */
 
-import { hostTextAntialiasing, setAppearanceSource, useSurface } from "@dashi/ui";
+import { hostTextAntialiasing, setAppearanceSource } from "@dashi/ui";
 import { type NativeHostTransport, render, type SurfaceOptions, spawnNativeHost, View } from "@mirinjs/metal";
 import type { ReactElement, ReactNode } from "react";
 import { appearance } from "./appearance.ts";
@@ -39,24 +39,22 @@ export function popoverSurface(placement: PopoverPlacement, keyboard: PopoverKey
   };
 }
 
-/** The popover's corner, the shell's own panels' (a sheet's radius). */
+/** The corner of the shell's frame round a popover (design.html LA-4). */
 export const POPOVER_RADIUS = 12;
 
 /**
- * The ground under every applet's popover: solid, rounded, and clipping the
- * applet's tree to its corners. An applet's own ground may be glass (the
- * launcher's 96% tint was the template's), but a layer surface has no blur
- * behind it, so a window under it ghosted through every row. On this ground
- * any tint the applet lays on top comes out solid.
+ * The ground under every applet's popover: clear. The shell frames the
+ * popover in regular glass, 14 round it, on a surface under this one (LA-4,
+ * decisions.md D784): an applet can't wear a material itself, and its tree
+ * reads on the frame's glass, or on its solid twin where glass is off.
  */
 export function PopoverGround({ children, onEscape }: { children: ReactNode; onEscape?: () => void }) {
-  const surface = useSurface();
   return (
     <View
       testID="applet-popover-ground"
       // Esc closes it, as it closes the shell's menus (a key no control in it took).
       {...(onEscape ? { onWindowKeyDown: (event: { key: string }) => event.key === "escape" && onEscape() } : {})}
-      style={{ flex: 1, flexDirection: "column", borderRadius: POPOVER_RADIUS, overflow: "hidden", backgroundColor: surface.card }}
+      style={{ flex: 1, flexDirection: "column" }}
     >
       {children}
     </View>

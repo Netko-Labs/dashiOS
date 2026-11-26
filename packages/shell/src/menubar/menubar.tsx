@@ -15,8 +15,8 @@
  * (voice/chip.tsx).
  */
 
-import { LOGO, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { CLEAR, Frosted, LOGO, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { Svg, Text, useWindowGlass, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { type AppMenuStore, useAppMenus } from "../app-menus/index.ts";
 import { type BarMenuId, barMenus, titleStop, useMenus } from "../menus/index.ts";
@@ -41,20 +41,22 @@ export interface MenuBarProps extends StatusSources {
   voice?: ChipSource;
 }
 
-/** The bar's row; the clock's pill has 8 of its own at the right. */
+/** The bar's row, on thin glass (DE-4, D780); the clock's pill has 8 of its own at the right. */
 const BAR = { flex: 1, flexDirection: "row", alignItems: "center", paddingLeft: SPACE.s, paddingRight: SPACE.s, position: "relative" } as const;
 
 /**
  * A hairline, not a shadow: a shadow needs a surface taller than the bar, and that would take clicks from the windows' top edge.
+ * On glass it is the compositor's (the pane's hairline under it), so this one is clear.
  * It spans the bar, so it says the bar's width too (Metal reports a root's children's layout, not the root's).
  */
 function BarEdge({ onWidth }: { onWidth: (width: number) => void }) {
   const colors = useColors();
+  const glass = useWindowGlass().available;
   return (
     <View
       testID="menu-bar-edge"
       onLayout={(bounds) => onWidth(bounds.width)}
-      style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: colors.menuBarEdge }}
+      style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: glass ? CLEAR : colors.menuBarEdge }}
     />
   );
 }
@@ -78,7 +80,17 @@ function useBarWidths() {
   return { barWidth, menusWidth, statusWidth, fullWidth, setBarWidth, setMenusWidth, setStatusWidth, setFullWidth };
 }
 
+/** The bar: thin glass (its solid twin where glass is off), its items drawn on it. */
 export function MenuBar(props: MenuBarProps) {
+  return (
+    <Frosted level="thin" testID="menu-bar" style={BAR}>
+      <BarRow {...props} />
+    </Frosted>
+  );
+}
+
+/** What sits on the bar's glass: the titles, the status side, the voice's chip. */
+function BarRow(props: MenuBarProps) {
   const { apps, toplevels, menus, appMenus, output, installed, accessible = () => false } = props;
   const colors = useColors();
   const label = { fontSize: TYPE.body.size, color: colors.text } as const;
@@ -107,7 +119,7 @@ export function MenuBar(props: MenuBarProps) {
   );
 
   return (
-    <View style={{ ...BAR, backgroundColor: colors.menuBar }}>
+    <>
       <BarEdge onWidth={setBarWidth} />
       {/* The app's menus never give way: the status side does (menubar-fit.ts). */}
       <View testID="menu-titles" onLayout={(bounds) => setMenusWidth(bounds.width)} style={{ flexDirection: "row", alignItems: "center", flexShrink: 0 }}>
@@ -153,6 +165,6 @@ export function MenuBar(props: MenuBarProps) {
           {...(props.reduceMotion ? { reduceMotion: props.reduceMotion } : {})}
         />
       )}
-    </View>
+    </>
   );
 }

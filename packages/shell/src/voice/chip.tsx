@@ -9,7 +9,7 @@
  * Dashi, or goes where a notice points.
  */
 
-import { BarItem, KeyedText, MOTION, OPACITY, pill, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { BarItem, KeyedText, MOTION, OPACITY, pill, SPACE, TYPE, useBarItemColors, useColors, useOnGlass, useSolidTwin, WEIGHT } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { MIC, SPARK, VOLUME } from "../shared/settings/index.ts";
@@ -140,11 +140,12 @@ function Dots({ still }: { still: boolean }) {
  * keeps nothing from the words before (its `render::one_line_tests`).
  */
 function Line({ children, bold, faint }: { children: string; bold?: boolean; faint?: boolean }) {
-  const colors = useColors();
+  // Primary on the bar's glass (D780), the agents' ink off it.
+  const { ink } = useBarItemColors("agent");
   return (
     <View style={{ flexShrink: 0, ...(faint ? { opacity: OPACITY.faint } : {}) }}>
       {/* A notice may name the key ("Hold ❖Space or the Copilot key to talk."): drawn at the text's size. */}
-      <KeyedText oneLine style={{ fontSize: VOICE_CHIP.fontSize, color: colors.agentInk, fontWeight: bold ? WEIGHT.semibold : WEIGHT.regular }}>
+      <KeyedText oneLine style={{ fontSize: VOICE_CHIP.fontSize, color: ink, fontWeight: bold ? WEIGHT.semibold : WEIGHT.regular }}>
         {children}
       </KeyedText>
     </View>
@@ -201,6 +202,8 @@ export interface VoiceChipProps {
 
 export function VoiceChip({ voice, bar, menus, status, reduceMotion = () => false }: VoiceChipProps) {
   const colors = useColors();
+  const onGlass = useOnGlass() !== null;
+  const thinTwin = useSolidTwin("thin");
   const chip = useSyncExternalStore(voice.subscribe, voice.getSnapshot);
   if (!chip || chip.kind === "open" || bar === null || menus === null) return null;
   const place = chipPlace(bar, menus, status ?? 0);
@@ -225,8 +228,8 @@ export function VoiceChip({ voice, bar, menus, status, reduceMotion = () => fals
         justifyContent: "center",
       }}
     >
-      {/* The bar's own color under the wash: over a neighbour's edge it still reads. */}
-      <View style={{ flexShrink: 1, minWidth: 0, borderRadius: VOICE_CHIP.height / 2, backgroundColor: colors.menuBar }}>
+      {/* The bar's own ground under the wash (thin glass's twin on glass): over a neighbour's edge it still reads. */}
+      <View style={{ flexShrink: 1, minWidth: 0, borderRadius: VOICE_CHIP.height / 2, backgroundColor: onGlass ? thinTwin : colors.menuBar }}>
         <BarItem testID={`voice-chip:${chip.kind}`} tone="agent" label={chipLabel(chip)} onPress={press} shrink endInset={SPACE.xxs}>
           <Words chip={chip} chars={chipChars(place.width)} still={reduceMotion()} level={voice.level} />
         </BarItem>

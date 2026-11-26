@@ -6,11 +6,14 @@
  * Dock's and a window's menus look alike. The pointer or the arrow keys
  * highlight a row; a click, Return or Space chooses it, and from the menu
  * bar ← → go to the next menu (bar-keys.ts). It stays on its screen
- * (place.ts).
+ * (place.ts). It is regular glass, radius 10 (DE-4, RA-1; D782): the
+ * compositor draws its rim and hairline, its rows the vibrant inks, the lit
+ * one the solid accent under onAccent words; where glass is off, the solid
+ * twin with the menu's edge.
  */
 
-import { MENU, MenuLine, MenuRow, menuHeight, SHADOW, type Size, useColors, useSurface } from "@dashi/ui";
-import { ScrollView, View, type ViewStyle } from "@mirinjs/metal";
+import { CLEAR, Frosted, MENU, MenuLine, MenuRow, menuHeight, SHADOW, type Size, useColors } from "@dashi/ui";
+import { ScrollView, useWindowGlass, View, type ViewStyle } from "@mirinjs/metal";
 import { useState } from "react";
 import { isEnabled, stepHighlight } from "../model.ts";
 import type { MenuEntry } from "../types.ts";
@@ -61,8 +64,8 @@ interface BarDropdownProps<A> {
   onClose: () => void;
 }
 
-/** The panel: where it was placed, solid, with the menu's edge. */
-function panelStyle(place: ReturnType<typeof placeDropdown>, ground: string, edge: string): ViewStyle {
+/** The panel: where it was placed, with the menu's edge where the compositor draws none (its width stays, so the rows don't move). */
+function panelStyle(place: ReturnType<typeof placeDropdown>, edge: string): ViewStyle {
   return {
     position: "absolute",
     left: place.left,
@@ -73,8 +76,6 @@ function panelStyle(place: ReturnType<typeof placeDropdown>, ground: string, edg
     maxWidth: DROPDOWN.maxWidth,
     flexDirection: "column",
     borderRadius: MENU.radius,
-    // Solid, as a window's menu: the window under it never ghosts through its rows (the menu's tint lies on the card ground).
-    backgroundColor: ground,
     borderWidth: MENU.edge,
     borderColor: edge,
     shadow: SHADOW.xl,
@@ -93,7 +94,7 @@ export function BarDropdown<A>({
   onClose,
 }: BarDropdownProps<A>) {
   const colors = useColors();
-  const surface = useSurface();
+  const glass = useWindowGlass().available;
   const [highlight, setHighlight] = useState<number | null>(() => (fromKeys ? stepHighlight(entries, null, "down") : null));
   // Its width as last drawn (its least until then), to keep it inside the screen.
   const [width, setWidth] = useState<number>(DROPDOWN.minWidth);
@@ -127,7 +128,8 @@ export function BarDropdown<A>({
   );
 
   return (
-    <View
+    <Frosted
+      level="regular"
       occlude
       testID="menu-panel"
       accessibilityRole="menu"
@@ -139,15 +141,13 @@ export function BarDropdown<A>({
         else if (command?.kind === "choose") choose();
         else if (command?.kind === "side") onSide?.(command.toward);
       }}
-      style={panelStyle(place, surface.card, colors.menuEdge)}
+      style={panelStyle(place, glass ? CLEAR : colors.menuEdge)}
     >
       <View
         style={{
           ...(place.maxHeight !== undefined ? { flex: 1, minHeight: 0 } : {}),
           flexDirection: "column",
           padding: MENU.padding,
-          borderRadius: MENU.radius - MENU.edge,
-          backgroundColor: colors.menu,
         }}
       >
         {place.maxHeight === undefined ? (
@@ -158,6 +158,6 @@ export function BarDropdown<A>({
           </ScrollView>
         )}
       </View>
-    </View>
+    </Frosted>
   );
 }

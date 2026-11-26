@@ -2,9 +2,11 @@
  * The on-screen display, macOS style: a rounded glass square with a big
  * glyph and, for volume and brightness, a bar of 16 segments. It is a Metal
  * overlay surface (no keyboard) a little above the bottom edge's center.
+ * Regular glass, square 28 or a pill, its segments ink, an off one the ink
+ * at 20 % (frost-objects board 11, D781).
  */
 
-import { pill, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { Frosted, pill, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT, withAlpha } from "@dashi/ui";
 import { type NativeHostOptions, render, Svg, Text, View } from "@mirinjs/metal";
 import { type BottomStack, bottomStack } from "../../capsule/index.ts";
 import { batteryGlyph, micGlyph, SUN, speakerGlyph, trackpadGlyph } from "../../glyphs.ts";
@@ -13,6 +15,14 @@ import { spawnShellHost } from "../../shared/metal/index.ts";
 import { litSegments, type OpenOsd, OSD, type OsdState, type OsdStore, useOsd } from "../osd-state.ts";
 
 const SEGMENT = { width: 8, height: 6, gap: SPACE.xxs } as const;
+/** A segment is the glass's primary ink, lit; an off one takes this much of it. */
+const SEGMENT_OFF = 0.2;
+
+/** The segments' colours on the glass: lit, and off. */
+function useSegmentInks(): { on: string; off: string } {
+  const colors = useColors();
+  return { on: colors.text, off: withAlpha(colors.text, SEGMENT_OFF) };
+}
 
 function glyphOf(state: OsdState): string {
   switch (state.kind) {
@@ -43,7 +53,7 @@ function caption(state: OsdState): string | null {
 }
 
 function LevelBar({ lit }: { lit: number }) {
-  const colors = useColors();
+  const ink = useSegmentInks();
   return (
     <View style={{ flexDirection: "row", gap: SEGMENT.gap }}>
       {Array.from({ length: OSD.segments }, (_, index) => (
@@ -53,7 +63,7 @@ function LevelBar({ lit }: { lit: number }) {
           style={{
             width: SEGMENT.width,
             height: SEGMENT.height,
-            backgroundColor: index < lit ? colors.osdOn : colors.osdOff,
+            backgroundColor: index < lit ? ink.on : ink.off,
           }}
         />
       ))}
@@ -62,12 +72,11 @@ function LevelBar({ lit }: { lit: number }) {
 }
 
 export function OsdPanel({ store }: { store: OsdStore }) {
-  const colors = useColors();
-  const state = useOsd(store);
-  const lit = litSegments(state);
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <View
+      <Frosted
+        level="regular"
+        testID="osd"
         style={{
           width: OSD.size,
           height: OSD.size,
@@ -77,27 +86,36 @@ export function OsdPanel({ store }: { store: OsdStore }) {
           paddingBottom: SPACE.xl,
           // The soft family (RA-2): 28; a HUD over the desktop floats on lg (DE-1).
           borderRadius: RADIUS.panel,
-          backgroundColor: colors.osd,
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
           shadow: SHADOW.lg,
         }}
       >
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          {/* The battery is twice as wide as it is tall; the other glyphs are square. */}
-          {state.kind === "power" ? (
-            <Svg markup={glyphOf(state)} width={112} height={56} color={colors.text} />
-          ) : (
-            <Svg markup={glyphOf(state)} size={96} color={colors.text} />
-          )}
-        </View>
-        {caption(state) !== null ? (
-          <Text style={{ fontSize: TYPE.panel.name.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{caption(state)}</Text>
+        <OsdBody store={store} />
+      </Frosted>
+    </View>
+  );
+}
+
+/** What the square shows, on its glass: the glyph, and the words or the level. */
+function OsdBody({ store }: { store: OsdStore }) {
+  const colors = useColors();
+  const state = useOsd(store);
+  const lit = litSegments(state);
+  return (
+    <>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        {/* The battery is twice as wide as it is tall; the other glyphs are square. */}
+        {state.kind === "power" ? (
+          <Svg markup={glyphOf(state)} width={112} height={56} color={colors.text} />
         ) : (
-          <LevelBar lit={lit} />
+          <Svg markup={glyphOf(state)} size={96} color={colors.text} />
         )}
       </View>
-    </View>
+      {caption(state) !== null ? (
+        <Text style={{ fontSize: TYPE.panel.name.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{caption(state)}</Text>
+      ) : (
+        <LevelBar lit={lit} />
+      )}
+    </>
   );
 }
 
@@ -106,13 +124,10 @@ export const SMALL_OSD = { height: 31, width: 196, glyph: 15, segment: 6, gap: S
 
 /** The indicator drawn small, for while the capsule or the card has the bottom centre (pill-v2 README, "Where it sits"): one row, above it. */
 export function SmallOsdPanel({ store }: { store: OsdStore }) {
-  const colors = useColors();
-  const state = useOsd(store);
-  const lit = litSegments(state);
-  const words = caption(state);
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <View
+      <Frosted
+        level="regular"
         testID="osd-small"
         style={{
           height: SMALL_OSD.height,
@@ -122,33 +137,44 @@ export function SmallOsdPanel({ store }: { store: OsdStore }) {
           paddingLeft: SPACE.inset,
           paddingRight: SPACE.inset,
           borderRadius: pill(SMALL_OSD.height),
-          backgroundColor: colors.osd,
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
           shadow: SHADOW.lg,
         }}
       >
-        <Svg markup={glyphOf(state)} size={SMALL_OSD.glyph} color={colors.text} />
-        {words !== null ? (
-          <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{words}</Text>
-        ) : (
-          <View style={{ flexDirection: "row", gap: SMALL_OSD.gap }}>
-            {Array.from({ length: OSD.segments }, (_, index) => (
-              // The segments never reorder.
-              <View
-                key={index}
-                style={{
-                  width: SMALL_OSD.segment,
-                  height: SMALL_OSD.segment,
-                  borderRadius: RADIUS.thumb,
-                  backgroundColor: index < lit ? colors.osdOn : colors.osdOff,
-                }}
-              />
-            ))}
-          </View>
-        )}
-      </View>
+        <SmallOsdBody store={store} />
+      </Frosted>
     </View>
+  );
+}
+
+/** The small row's glyph, and its words or its level. */
+function SmallOsdBody({ store }: { store: OsdStore }) {
+  const colors = useColors();
+  const ink = useSegmentInks();
+  const state = useOsd(store);
+  const lit = litSegments(state);
+  const words = caption(state);
+  return (
+    <>
+      <Svg markup={glyphOf(state)} size={SMALL_OSD.glyph} color={colors.text} />
+      {words !== null ? (
+        <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{words}</Text>
+      ) : (
+        <View style={{ flexDirection: "row", gap: SMALL_OSD.gap }}>
+          {Array.from({ length: OSD.segments }, (_, index) => (
+            // The segments never reorder.
+            <View
+              key={index}
+              style={{
+                width: SMALL_OSD.segment,
+                height: SMALL_OSD.segment,
+                borderRadius: RADIUS.thumb,
+                backgroundColor: index < lit ? ink.on : ink.off,
+              }}
+            />
+          ))}
+        </View>
+      )}
+    </>
   );
 }
 

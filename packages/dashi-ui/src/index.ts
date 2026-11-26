@@ -15,7 +15,7 @@ export {
   toneColors,
 } from "./alert.tsx";
 export { ALERT_WINDOW, type AlertContent, alertButtonsWidth, alertWindowHeight, alertWordsWidth, wrappedLines } from "./alert-size.ts";
-export { BAR_ITEM, BarItem, type BarItemProps, type BarItemTone, barItemColors } from "./bar-item.tsx";
+export { BAR_ITEM, BAR_ITEM_WASH, BarItem, type BarItemProps, type BarItemTone, barItemColors, useBarItemColors } from "./bar-item.tsx";
 export { BareField, type BareFieldProps } from "./bare-field.tsx";
 export { Button } from "./button.tsx";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
@@ -103,6 +103,10 @@ export {
   LimitBar,
   LOW_CHARGE,
   moreMenuOrigin,
+  NOW_PLAYING,
+  type NowPlayingGlyphs,
+  type NowPlayingLook,
+  NowPlayingTile,
   OnPanelCard,
   PANEL_EDGE_WIDTH,
   type PanelEdge,

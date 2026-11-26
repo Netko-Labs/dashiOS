@@ -5,9 +5,13 @@
  * row. The compositor draws each window's live picture over its frame here
  * (`window-thumbnails`, in the rects layout.ts gives); this draws the frames,
  * titles, and badges. The pointer chooses too: hover selects, a click picks.
+ * The panel is regular glass, radius 14 (RA-2, D781): the chosen app on the
+ * accent's wash, the chosen window ringed in the accent, a count an ink
+ * badge (frost-objects board 12). Its parts are laid out in the panel's own
+ * place (layout.ts gives them in the surface's), so they sit on its glass.
  */
 
-import { Chip, CLEAR, OPACITY, pill, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { Chip, CLEAR, Frosted, OPACITY, pill, RADIUS, SHADOW, SPACE, TYPE, useColors, useSolidTwin, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { Rect } from "../layout.ts";
@@ -44,7 +48,8 @@ export interface PanelProps {
 
 const at = (rect: Rect) => ({ position: "absolute" as const, left: rect.x, top: rect.y, width: rect.width, height: rect.height });
 const BADGE = 20;
-const RING = 2;
+/** The chosen window's ring: the accent, 2.5 (CO-9). */
+const RING = 2.5;
 const STATE_BADGE: Record<string, string> = { minimized: "Minimized", hidden: "Hidden" };
 
 interface CellProps {
@@ -65,6 +70,7 @@ function AppCell({
   onPoint,
   onPick,
 }: CellProps & { app: SwitcherApp; name: string; icon: string; cell: Rect; lit: boolean }) {
+  const paper = useSolidTwin("regular");
   const colors = useColors();
   return (
     <View
@@ -95,10 +101,10 @@ function AppCell({
             paddingHorizontal: SPACE.xs,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: colors.osdOn,
+            backgroundColor: colors.text,
           }}
         >
-          <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.bold, color: colors.menu }}>{String(app.count)}</Text>
+          <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.bold, color: paper }}>{String(app.count)}</Text>
         </View>
       ) : null}
     </View>
@@ -143,24 +149,31 @@ function WindowCell({ testID, rect, titleAt, title, badge, chosen, onPoint, onPi
   );
 }
 
-export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) {
+export function SwitcherPanel(props: PanelProps) {
+  const { apps, windows, size } = useSyncExternalStore(props.store.subscribe, props.store.getSnapshot);
+  const layout = switcherLayout(size.width, apps.length, windows?.length ?? 0);
+  return (
+    <View style={{ width: size.width, height: size.height }}>
+      <Frosted level="regular" testID="switcher-panel" style={{ ...at(layout.panel), borderRadius: RADIUS.panelList, shadow: SHADOW.xl }}>
+        <SwitcherBody {...props} />
+      </Frosted>
+    </View>
+  );
+}
+
+/** A rect of the surface, in the panel's own place. */
+const inPanel = (rect: Rect, panel: Rect): Rect => ({ ...rect, x: rect.x - panel.x, y: rect.y - panel.y });
+
+/** What sits on the panel's glass: the apps, the chosen one's name, and its windows. */
+function SwitcherBody({ store, identify, onPoint, onPick }: PanelProps) {
   const colors = useColors();
   const { selected, apps, windows, windowStart, selectedWindow, query, size } = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const layout = switcherLayout(size.width, apps.length, windows?.length ?? 0);
+  const local = (rect: Rect): Rect => inPanel(rect, layout.panel);
   const current = apps[selected];
   const name = current ? identify(current).name : "";
   return (
-    <View style={{ width: size.width, height: size.height }}>
-      <View
-        style={{
-          ...at(layout.panel),
-          borderRadius: RADIUS.sheet,
-          backgroundColor: colors.launcher,
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
-          shadow: SHADOW.xl,
-        }}
-      />
+    <>
       {apps.map((app, index) => {
         const cell = layout.apps[index];
         if (!cell) return null;
@@ -171,14 +184,14 @@ export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) 
             app={app}
             name={identify(app).name}
             icon={identify(app).icon}
-            cell={cell}
+            cell={local(cell)}
             lit={index === selected && selectedWindow === null}
             onPoint={() => onPoint?.(index, null)}
             onPick={() => onPick?.(index, null)}
           />
         );
       })}
-      <View style={{ ...at(layout.name), alignItems: "center", justifyContent: "center" }}>
+      <View style={{ ...at(local(layout.name)), alignItems: "center", justifyContent: "center" }}>
         <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text, textAlign: "center" }}>
           {query ? `${name}  ·  “${query}”` : name}
         </Text>
@@ -191,8 +204,8 @@ export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) 
           <WindowCell
             key={`window-${window.id}`}
             testID={`switcher-window-${windowStart + index}`}
-            rect={rect}
-            titleAt={title}
+            rect={local(rect)}
+            titleAt={local(title)}
             title={window.title || name}
             badge={STATE_BADGE[window.state]}
             chosen={index === selectedWindow}
@@ -201,6 +214,6 @@ export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) 
           />
         );
       })}
-    </View>
+    </>
   );
 }

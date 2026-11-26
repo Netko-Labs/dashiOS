@@ -6,7 +6,7 @@ import pkg from "../../../package.json" with { type: "json" };
 import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
 import { appFor } from "../../apps.ts";
 import type { CompositorWindow, Output } from "../../compositor/index.ts";
-import { LayoutStore } from "../../control-center/index.ts";
+import { keepFocusTime, LayoutStore } from "../../control-center/index.ts";
 import { monitorLabel } from "../../display-config/monitors.ts";
 import { launchEntry } from "../../entries.ts";
 import { iconPath } from "../../shared/apps/index.ts";
@@ -76,6 +76,8 @@ export function aboutInfo(target: AboutTarget, icon: string | undefined): AboutI
 
 export function controlCenterProps(options: MenusOptions, stores: MenuStores, closeMenus: () => void, chargeLimit: () => number | null): ControlCenterStores {
   const { wifi, devices, sound, bluetooth, passwords } = stores;
+  // Focus turned on for a while turns off when its time comes (CC-6): the shell's one store keeps the time.
+  keepFocusTime(controlFlags());
   return {
     flags: controlFlags(),
     devices,

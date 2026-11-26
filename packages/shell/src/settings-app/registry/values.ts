@@ -6,7 +6,6 @@
  */
 
 import { DOCK_DEFAULTS, type DockSettings } from "../../dock/settings.ts";
-import type { Flags } from "../../shared/control-center/index.ts";
 import type { Change, SectionName } from "../sections.ts";
 import type { SettingsData } from "../types.ts";
 import type { Binding, ChoiceOption, RegistryStores, RowDef, SettingValue, ValueSchema } from "./types.ts";
@@ -120,7 +119,7 @@ export const storedNumber = <S extends SectionName>(
  * They live outside settings.json, so a change made through the registry is
  * told to the change log here (Settings › Recently changed, ❖Z).
  */
-export function flag(key: Exclude<keyof Flags, "accent">): Binding {
+export function flag(key: "dnd" | "dark" | "night"): Binding {
   return {
     schema: { type: "boolean" },
     key: `flags.${key}`,

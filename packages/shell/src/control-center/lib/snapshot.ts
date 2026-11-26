@@ -3,7 +3,8 @@
  * read from the stores the panel is given: the radios and sliders
  * (devices.ts), the switches (shared/control-center/flags.ts), the network and the battery
  * (system/store.ts), Bluetooth's devices, and the laptop's power modes,
- * keyboard light and graphics card, and whether the screens mirror.
+ * keyboard light and graphics card, whether the screens mirror, and what a
+ * player plays (the widgets' MPRIS source, for the Now Playing tile).
  */
 
 import { useSyncExternalStore } from "react";
@@ -37,6 +38,24 @@ export interface SnapshotSources {
   chargeLimit?: () => number | null;
   /** Mirroring the screens; without it there is no Mirroring tile. */
   mirror?: MirrorStore;
+  /** What a player plays (widgets/lib/sources/media.ts); without it there is no Now Playing tile. */
+  media?: NowPlayingSource;
+}
+
+/** The player Control Center reads and drives (CC-7): the widgets' `Media`. */
+export interface NowPlayingSource {
+  subscribe(listener: () => void): () => void;
+  getSnapshot(): { title: string; artist: string; name: string; playing: boolean; art: string } | null;
+  command(member: "PlayPause" | "Next" | "Previous"): Promise<void>;
+  /** Brings the player's window forward. */
+  raise?(): Promise<void>;
+}
+
+/** The tile's words and cover from what plays: "Harbour Lights · Helium"; a cover only as a local file. */
+export function nowPlaying(playing: ReturnType<NowPlayingSource["getSnapshot"]>): ControlSnapshot["playing"] {
+  if (!playing) return null;
+  const cover = playing.art.startsWith("file://") ? decodeURIComponent(playing.art.slice("file://".length)) : null;
+  return { title: playing.title, detail: [playing.artist, playing.name].filter((part) => part !== "").join(" · "), playing: playing.playing, cover };
 }
 
 /** The graphics tile's words, as the laptop row had them. */
@@ -66,6 +85,7 @@ export function useControlSnapshot(sources: SnapshotSources): ControlSnapshot {
   const light = machine?.laptop ? keyboardLight(machine) : null;
   const limit = sources.chargeLimit?.() ?? null;
   const mirror = useMirror(sources.mirror);
+  const playing = useStore(sources.media ?? null);
   return {
     wifi: devices.wifi,
     network: network ? (network.kind === "wifi" ? { kind: "wifi", ssid: network.ssid, bars: network.bars } : network) : null,
@@ -82,5 +102,6 @@ export function useControlSnapshot(sources: SnapshotSources): ControlSnapshot {
     battery: battery ? { percent: battery.percent, charging: battery.state === "charging", limit, time: batteryTime(battery, limit) } : null,
     hotspot: devices.hotspot,
     mirroring: sources.mirror && mirror.screens >= 2 ? mirror.on : null,
+    playing: nowPlaying(playing),
   };
 }

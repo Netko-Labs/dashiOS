@@ -3,7 +3,7 @@ import { parseManifest } from "@dashi/applet";
 import { AppletConnection } from "../src/applets/lib/connection.ts";
 import type { AppletContext } from "../src/applets/lib/connection-context.ts";
 import { AppletGrants } from "../src/applets/lib/grants.ts";
-import { EDGE_MARGIN, placePopover } from "../src/applets/lib/placement.ts";
+import { EDGE_MARGIN, POPOVER_FRAME, placePopover, popoverFrame } from "../src/applets/lib/placement.ts";
 import { flattenRows } from "../src/applets/lib/protocol.ts";
 import { AppletPopovers } from "../src/applets/popovers.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
@@ -117,7 +117,8 @@ test("a popover: placed under the click, granted before the applet hears where, 
     type: "popover",
     id: "w",
     x: 1060,
-    y: 32,
+    // 14 under the frame's top (LA-4): the frame is 4 under the bar.
+    y: 46,
     width: 280,
     height: 190,
     output: "eDP-1",
@@ -199,22 +200,24 @@ test("one popover at a time: another applet's, or a shell menu, closes the open 
   expect(clock.written.length).toBe(said);
 });
 
-test("popover placement at each screen edge", () => {
+test("popover placement at each screen edge: the shell's frame kept inside, the applet given the room in it (LA-4)", () => {
   const size = { width: 300, height: 260 };
-  // Under the item, centered.
-  expect(placePopover(size, 700, SCREEN)).toEqual({ x: 550, y: 32, width: 300, height: 260, output: "eDP-1" });
-  // An item at the left edge: kept inside.
-  expect(placePopover(size, 20, SCREEN).x).toBe(EDGE_MARGIN);
+  const pad = POPOVER_FRAME.padding;
+  // Under the item, centered; the applet gets what it asked for, inside the frame.
+  expect(placePopover(size, 700, SCREEN)).toEqual({ x: 550, y: 32 + pad, width: 300, height: 260, output: "eDP-1" });
+  expect(popoverFrame(placePopover(size, 700, SCREEN))).toEqual({ x: 550 - pad, y: 32, width: 300 + 2 * pad, height: 260 + 2 * pad });
+  // An item at the left edge: the frame kept inside.
+  expect(placePopover(size, 20, SCREEN).x).toBe(EDGE_MARGIN + pad);
   // At the right edge.
-  expect(placePopover(size, 1435, SCREEN).x).toBe(1440 - EDGE_MARGIN - 300);
+  expect(placePopover(size, 1435, SCREEN).x).toBe(1440 - EDGE_MARGIN - 300 - pad);
   // No click known: at the right, under the status area.
-  expect(placePopover(size, null, SCREEN).x).toBe(1440 - EDGE_MARGIN - 300);
+  expect(placePopover(size, null, SCREEN).x).toBe(1440 - EDGE_MARGIN - 300 - pad);
   // Taller than the screen below the bar: the room there is.
-  expect(placePopover({ width: 300, height: 900 }, 700, SCREEN)).toMatchObject({ y: 32, height: 900 - 32 - EDGE_MARGIN });
+  expect(placePopover({ width: 300, height: 900 }, 700, SCREEN)).toMatchObject({ y: 32 + pad, height: 900 - 32 - EDGE_MARGIN - 2 * pad });
   // Wider than a small screen: the screen's width, less the margins.
-  expect(placePopover({ width: 700, height: 200 }, 300, { ...SCREEN, width: 640 })).toMatchObject({ x: EDGE_MARGIN, width: 640 - 2 * EDGE_MARGIN });
+  expect(placePopover({ width: 700, height: 200 }, 300, { ...SCREEN, width: 640 })).toMatchObject({ x: EDGE_MARGIN + pad, width: 640 - 2 * EDGE_MARGIN - 2 * pad });
   // A taller bar (a bigger text size) moves it down.
-  expect(placePopover(size, 700, { ...SCREEN, barHeight: 36 }).y).toBe(40);
+  expect(placePopover(size, 700, { ...SCREEN, barHeight: 36 }).y).toBe(40 + pad);
 });
 
 test("submenus show as headings with their rows indented, as a tray item's", () => {

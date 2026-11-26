@@ -9,7 +9,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appletDataRoot, appletsRoot, appletsSocketPath, type InstalledApplet, type Placement, SDK_VERSION } from "@dashi/applet";
-import { CLEAR } from "@dashi/ui";
+import { CLEAR, Frosted, SHADOW } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { addOnsFor, watchKillSwitch, watchQuietUpdates } from "../applet-store/index.ts";
 import type { Compositor } from "../compositor/index.ts";
@@ -25,7 +25,7 @@ import { installAllFirstParty } from "./first-party.ts";
 import { AppletLauncher } from "./launcher.ts";
 import type { AppletContext } from "./lib/connection-context.ts";
 import { AppletGrants } from "./lib/grants.ts";
-import type { PopoverScreen } from "./lib/placement.ts";
+import { POPOVER_FRAME, type PopoverScreen, popoverFrame } from "./lib/placement.ts";
 import { serveApplets } from "./lib/server.ts";
 import type { AppletPopovers } from "./popovers.ts";
 import type { AppletPower } from "./power.ts";
@@ -62,7 +62,9 @@ export async function popoverScreen(compositor: Compositor | null, output: strin
 
 /**
  * Under the popover, over everything else below the bar: a click on it closes the popover.
- * The bar stays clickable, so the item again also closes it (connection.ts).
+ * The bar stays clickable, so the item again also closes it (connection.ts). It also draws
+ * the popover's frame, regular glass under the applet's own surface (LA-4, D784): an applet
+ * can't wear a material itself, so the shell frames it.
  */
 function popoverCatcher(openOverlay: OpenOverlay): AppletContext["catcher"] {
   return (placement: Placement, onOutside: () => void) => {
@@ -81,10 +83,34 @@ function popoverCatcher(openOverlay: OpenOverlay): AppletContext["catcher"] {
           ...(placement.output === null ? {} : { output: placement.output }),
         },
       },
-      <View accessibilityRole="group" accessibilityLabel="Close" testID="applet-catcher" style={{ flex: 1, backgroundColor: CLEAR }} onPress={onOutside} />,
+      <View accessibilityRole="group" accessibilityLabel="Close" testID="applet-catcher" style={{ flex: 1, backgroundColor: CLEAR }} onPress={onOutside}>
+        <PopoverFrame placement={placement} />
+      </View>,
     );
     return () => handle.close();
   };
+}
+
+/** The frame round an applet's popover, on the catcher (whose top is the bar's bottom edge). */
+function PopoverFrame({ placement }: { placement: Placement }) {
+  const frame = popoverFrame(placement);
+  return (
+    <Frosted
+      level="regular"
+      testID="applet-popover-frame"
+      // A press on the frame is the popover's, not outside it.
+      onPress={() => {}}
+      style={{
+        position: "absolute",
+        left: frame.x,
+        top: frame.y - MENU_BAR_HEIGHT,
+        width: frame.width,
+        height: frame.height,
+        borderRadius: POPOVER_FRAME.radius,
+        shadow: SHADOW.xl,
+      }}
+    />
+  );
 }
 
 /** Asks the person before an applet is added, or updated to ask for more. */

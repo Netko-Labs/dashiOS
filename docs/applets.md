@@ -103,9 +103,12 @@ layer-shell surface anchored at the screen's top-left with margins `y` and
 with mirin's `surface` option, which the Metal host supports), on the
 applet's warm host when one is ready (as a view is, under "Commands"). A
 screen reader calls it by the applet's name (`MIRIN_METAL_APP_NAME`). The
-SDK draws the applet's tree on a solid ground (`PopoverGround`: the card
-color, radius 12, clipped), so an applet's own glass tint never lets the
-window under it ghost through: a layer surface has no blur behind it. The layer
+SDK draws the applet's tree on a clear ground (`PopoverGround`), and the
+shell frames it (design.html LA-4, decisions.md D784): regular glass, radius
+12, 14 points round the tree, drawn on the shell's own surface under the
+applet's (an applet can't wear a material itself). The placement is the
+room inside the frame, the size the applet asked for; the frame is what is
+kept inside the screen. The layer
 shell is privileged: the shell grants it to that applet's processes for as
 long as the popover is open (`applet-clients`, docs/compositor-ipc.md), and
 the placement is sent only once the grant is in place. Under the popover the

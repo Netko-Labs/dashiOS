@@ -30,7 +30,7 @@ const laptop: ControlSnapshot = {
   graphics: null,
   battery: { percent: 84, charging: false, limit: 80, time: "5 h 10 min" },
   hotspot: false,
-  mirroring: null,
+  mirroring: null, playing: null,
 };
 
 const desktop: ControlSnapshot = {

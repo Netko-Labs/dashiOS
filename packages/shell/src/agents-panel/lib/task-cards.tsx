@@ -7,7 +7,7 @@
  * the launcher).
  */
 
-import { CHECK, CLOSE, OPACITY, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { CHECK, CLOSE, OPACITY, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { cut, type TaskView } from "../../agents/index.ts";
 import { SPARK } from "../../shared/settings/index.ts";
@@ -68,6 +68,7 @@ function TaskStep({ step }: { step: TaskView["steps"][number] }) {
 
 export function TaskCard({ task, first, focused, tasks }: { task: TaskView; first: boolean; focused: boolean; tasks: PanelTasks }) {
   const colors = useColors();
+  const surface = useSurface();
   const works = taskWorks(task);
   const undos = task.steps.flatMap((step, index) => (step.undo && !step.undone ? [{ index, undo: step.undo }] : []));
   return (
@@ -78,8 +79,9 @@ export function TaskCard({ task, first, focused, tasks }: { task: TaskView; firs
         gap: SPACE.gap,
         padding: SPACE.gap,
         borderRadius: RADIUS.card,
-        ...(first ? {} : { borderTopWidth: 1, borderColor: colors.separator }),
-        ...(focused ? { backgroundColor: colors.selectionWash } : {}),
+        // A card is a fill on the panel's glass (frost-objects board 03), a step apart from the one above.
+        ...(first ? {} : { marginTop: SPACE.s }),
+        backgroundColor: focused ? colors.selectionWash : surface.card,
         ...(works ? {} : { opacity: OPACITY.soft }),
       }}
     >

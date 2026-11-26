@@ -11,6 +11,7 @@ import { CLEAR, RADIUS, useColors } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type BarStop, MORE_STOP, type StopKind } from "../../menus/index.ts";
+import { barWashes } from "../../shared/glass/index.ts";
 import { fitStatus, MORE_WIDTH, STATUS_GAP, statusRow, UNMEASURED } from "./menubar-fit.ts";
 import { BarRing, MORE_LABEL, More } from "./menubar-items.tsx";
 
@@ -204,7 +205,7 @@ export function StatusSide({
     wrap,
     more,
     areaOpen,
-    colors.openWash,
+    barWashes(colors.text).open,
   );
   return (
     <View

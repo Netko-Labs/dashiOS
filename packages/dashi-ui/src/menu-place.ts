@@ -25,7 +25,7 @@ export const MENU = {
   tickGap: 6,
   keysGap: 24,
   keyColumn: 14,
-  radius: 9,
+  radius: 10,
   rowRadius: 5,
 } as const;
 

@@ -7,7 +7,7 @@
  * and the StoppedNote says so (consent.tsx).
  */
 
-import { Button, Chip, type ChipTone, ON_AGENT, pill, RADIUS, Shortcut, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { Button, Chip, type ChipTone, ON_AGENT, pill, RADIUS, Shortcut, SPACE, TYPE, useColors, useSolidTwin, useSurface, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type AgentEntry, accessWords, discGlyph, watchTime } from "../../agents/index.ts";
@@ -123,6 +123,8 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
     for (const agent of entry.agents ?? (entry.agent ? [entry.agent] : [])) actions.stopAgent(agent.id);
   };
   const colors = useColors();
+  const surface = useSurface();
+  const ground = useSolidTwin("regular");
   const line = rowLine(entry);
   const id = entry.agent?.id ?? entry.key;
   // "Show": go to the Desktop an agent works on (the screen slides there; the person asked to look).
@@ -152,7 +154,9 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
         gap: SPACE.gap,
         padding: SPACE.gap,
         borderRadius: RADIUS.card,
-        ...(first ? {} : { borderTopWidth: 1, borderColor: colors.separator }),
+        // A row is a fill on the panel's glass, as a run's card is (frost-objects board 03).
+        ...(first ? {} : { marginTop: SPACE.s }),
+        backgroundColor: surface.card,
       }}
     >
       <View
@@ -167,7 +171,7 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
         }}
       >
         <Svg markup={discGlyph(entry.harness)} size={18} color={ON_AGENT} />
-        {entry.watching && <TileDot ring={colors.menu.slice(0, 7)} />}
+        {entry.watching && <TileDot ring={ground} />}
       </View>
       {/* The buttons sit beside the title only, and the line under it has the row's whole width: nothing in it is cut. */}
       <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.xxs }}>
