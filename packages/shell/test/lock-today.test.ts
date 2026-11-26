@@ -27,4 +27,7 @@ test("Today's row: the weather, the battery, and the person's first widget that 
   expect(todayRow([placement("calendar"), placement("notes"), placement("timer")])).toEqual(["weather", "battery", "timer"]);
   // A narrow pane fits two (lock-v3 #narrow: under 520 inside).
   expect(todayRow([placement("timer")], 2)).toEqual(["weather", "battery"]);
+  // The widget on air takes the third place when it comes compact: a timer counting down glows there (CO-12).
+  expect(todayRow([placement("notes")], 3, "timer")).toEqual(["weather", "battery", "timer"]);
+  expect(todayRow([placement("timer")], 3, "media")).toEqual(["weather", "battery", "timer"]);
 });

@@ -7,6 +7,7 @@
 
 import { expect, test } from "bun:test";
 import { render, Text } from "@mirinjs/metal";
+import { Frosted } from "../src/frosted.tsx";
 import { clockBlock, clockFor, lockLayout, lockShape, paneWidth, WHO_HEIGHT } from "../src/lock-layout.ts";
 import { LoginScreen } from "../src/login-screen.tsx";
 import { initialsOf } from "../src/login-split.tsx";
@@ -124,4 +125,37 @@ test("drawn small and vertical: still hours over minutes, at the size the height
   // The ground is the mode's wash; no veil where the host draws no glass.
   expect(String(vertical.props.background).toLowerCase()).toBe(LOGIN_LIGHT.ground.toLowerCase());
   expect(vertical.props.material).toBeUndefined();
+});
+
+test("the veil counts as a glass layer: Today's regular glass is the second, a card on it the third, paper's solid twin (GL-2, D807)", async () => {
+  const host = fakeHost();
+  const root = render(
+    <LoginScreen
+      day="d"
+      time="4:48"
+      name="Alex Kim"
+      value=""
+      hint=""
+      onChangeText={() => {}}
+      onSubmit={() => {}}
+      mode="light"
+      today={() => (
+        <Frosted level="regular" testID="today">
+          <Frosted level="paper" testID="card" />
+        </Frosted>
+      )}
+    />,
+    host.transport,
+  );
+  host.emit({ type: "protocol", nodeId: "root", patches: 0, glass: true } as unknown as Parameters<typeof host.emit>[0]);
+  await settle();
+  const id = root.nodeId("login-screen");
+  if (id) host.emit({ type: "resize", nodeId: id, bounds: { x: 0, y: 0, width: 1646, height: 1029 } });
+  await settle();
+  const tree = JSON.parse(host.last()) as Node;
+  const byId = (testID: string) => all(tree, (node) => node.props.id === root.nodeId(testID))[0];
+  expect(byId("today")?.props.material).toBe("regular");
+  expect(byId("card")?.props.material).toBeUndefined();
+  expect(String(byId("card")?.props.background).toLowerCase()).toBe(GLASS.levels.paper.light.solid.toLowerCase());
+  root.unmount();
 });

@@ -15,13 +15,19 @@ import { widgetInfo } from "./catalog.ts";
 import { useWidgetEnv } from "./env.tsx";
 import { useSource } from "./lib/data.ts";
 import { lockNotes, PeekRow, TodayBody, type TodaySong } from "./lib/today-cards.tsx";
+import { kindOfKey } from "./lib/views/widget.tsx";
 import type { Placement, WidgetKind } from "./types.ts";
 
-/** Today's row of compacts: the weather and the battery, then the person's first widget that comes compact (a timer, a clock); `count` of them. */
-export function todayRow(placements: readonly Placement[], count: 2 | 3 = 3): WidgetKind[] {
+/**
+ * Today's row of compacts: the weather and the battery, then the widget on air when it comes compact (a
+ * timer counting down: CO-12 shows it glowing), else the person's first widget that comes compact (a
+ * timer, a clock); `count` of them.
+ */
+export function todayRow(placements: readonly Placement[], count: 2 | 3 = 3, holder: WidgetKind | null = null): WidgetKind[] {
   const first: WidgetKind[] = ["weather", "battery"];
-  const theirs = placements.find((each) => !first.includes(each.kind) && each.kind !== "calendar" && widgetInfo(each.kind)?.sizes.includes("compact"));
-  return [...first, theirs?.kind ?? "clock"].slice(0, count);
+  const compact = (kind: WidgetKind): boolean => !first.includes(kind) && kind !== "calendar" && (widgetInfo(kind)?.sizes.includes("compact") ?? false);
+  const third = holder && compact(holder) ? holder : (placements.find((each) => compact(each.kind))?.kind ?? "clock");
+  return [...first, third].slice(0, count);
 }
 
 interface LockTodayProps {
@@ -31,25 +37,26 @@ interface LockTodayProps {
 }
 
 /** What Today shows now: up to three apps' hidden notes, and the song. */
-function useTodayData(): { notes: ReturnType<typeof lockNotes>; song: TodaySong | null } {
-  const { hub } = useWidgetEnv();
+function useTodayData(): { notes: ReturnType<typeof lockNotes>; song: TodaySong | null; holder: WidgetKind | null } {
+  const { hub, tally } = useWidgetEnv();
   const notes = lockNotes(useSource(hub?.notices, [])).slice(0, 3);
   const playing = useSource(hub?.media, null);
-  return { notes, song: playing ? { title: playing.title, artist: playing.artist, playing: playing.playing } : null };
+  const holder = tally.holder ? kindOfKey(tally.holder) : null;
+  return { notes, song: playing ? { title: playing.title, artist: playing.artist, playing: playing.playing } : null, holder };
 }
 
 export function LockToday({ place, placements, onPress }: LockTodayProps) {
-  const data = useTodayData();
+  const { holder, ...data } = useTodayData();
   if (place.kind === "pane") {
     const inside = place.width - 2 * place.padding;
     return (
       <Frosted level="regular" testID="lock-today" style={{ flex: 1, paddingTop: place.top, paddingHorizontal: place.padding }}>
         <Title />
-        <TodayBody width={inside} row={todayRow(placements, place.smalls)} {...data} onPress={onPress} />
+        <TodayBody width={inside} row={todayRow(placements, place.smalls, holder)} {...data} onPress={onPress} />
       </Frosted>
     );
   }
-  return <TodayAtFoot open={place.open} width={place.width} placements={placements} onPress={onPress} {...data} />;
+  return <TodayAtFoot open={place.open} width={place.width} placements={placements} holder={holder} onPress={onPress} {...data} />;
 }
 
 function Title({ size = GLASS.lock.todayTitle }: { size?: number }) {
@@ -69,7 +76,7 @@ interface AtFootProps extends ReturnType<typeof useTodayData> {
  * so only the top corners show), open when the screen has room; else its peek, the title and a row of
  * cards, with a thin-glass chevron that opens it and closes it again.
  */
-function TodayAtFoot({ open: roomy, width, placements, onPress, notes, song }: AtFootProps) {
+function TodayAtFoot({ open: roomy, width, placements, onPress, notes, song, holder }: AtFootProps) {
   const [opened, setOpened] = useState(false);
   const open = roomy || opened;
   const { sheet } = GLASS.lock;
@@ -92,7 +99,7 @@ function TodayAtFoot({ open: roomy, width, placements, onPress, notes, song }: A
       {open ? (
         <>
           <SheetHead title={<Title />} chevron={roomy ? null : <Chevron up={false} onPress={() => setOpened(false)} />} />
-          <TodayBody width={inside} row={todayRow(placements)} notes={notes} song={song} onPress={onPress} />
+          <TodayBody width={inside} row={todayRow(placements, 3, holder)} notes={notes} song={song} onPress={onPress} />
         </>
       ) : (
         <View style={{ height: sheet.peek - SPACE.gap - sheet.padding, flexDirection: "row", alignItems: "center", gap: SPACE.page }}>

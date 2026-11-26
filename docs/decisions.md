@@ -9516,5 +9516,10 @@ short words, as the rulebook is written.
   compact, the song): the lock has no live cards. The lock's Now bar went with the old column (D806), so
   nothing floods anywhere. Retired with it: the card's `glass` look and `floods`, the tally ring,
   `LOCK_GLASS`, the login colours' `fieldEdge` (the field is on glass, LK-1) and the inks' `lock` shift
-  (`INK_RULE.lockL`).
+  (`INK_RULE.lockL`). The VM showed the cards vanish: on the lock they are the third glass layer (the
+  veil, Today's regular, then paper), which GL-2 draws as its solid twin, but the veil is a `material` on
+  the screen's root, not a `Frosted`, so the kit didn't count it. `GlassLayer` (`@dashi/ui`) counts such a
+  glass; the split wears it, so Today's cards are paper's solid twin (as lock-v3 draws them) while Today
+  and who signs in stay glass. Today's third compact is the widget on air when it comes compact (a timer
+  counting down glows there).
 - **Undo:** bring back `look.glass` and `LOCK_GLASS` from git; nothing else reads them.

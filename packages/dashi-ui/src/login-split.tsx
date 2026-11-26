@@ -14,7 +14,7 @@
 
 import { Svg, Text, useWindowGlass, View } from "@mirinjs/metal";
 import { createContext, type ReactNode } from "react";
-import { Frosted } from "./frosted.tsx";
+import { Frosted, GlassLayer } from "./frosted.tsx";
 import { RESTART, SHUT_DOWN, SLEEP } from "./glyphs.ts";
 import { LockClock } from "./inks-clock.tsx";
 import { type LockLayout, lockLayout, type TodayPlace } from "./lock-layout.ts";
@@ -83,16 +83,19 @@ export function SplitLogin(props: SplitLoginProps): ReactNode {
   return (
     // Its glass and inks in the screen's own mode: the login screen is Dark in any session (LK-3).
     <Appearance dark={colors !== LOGIN_LIGHT}>
-      <View {...(bare ? {} : { testID, ...veil })} style={{ flex: 1, ...(bare ? {} : { backgroundColor: colors.ground, focusRingColor: colors.focusRing }) }}>
-        <View testID="lock-half" style={{ position: "absolute", left: layout.inset, top: layout.top }}>
-          <LockClock day={props.day} time={props.time} ink={colors.ink} display={props.display} clock={layout.clock} testID="lock-clock" />
+      {/* The veil is the first glass layer: Today's the second, its cards the third (GL-2). */}
+      <GlassLayer>
+        <View {...(bare ? {} : { testID, ...veil })} style={{ flex: 1, ...(bare ? {} : { backgroundColor: colors.ground, focusRingColor: colors.focusRing }) }}>
+          <View testID="lock-half" style={{ position: "absolute", left: layout.inset, top: layout.top }}>
+            <LockClock day={props.day} time={props.time} ink={colors.ink} display={props.display} clock={layout.clock} testID="lock-clock" />
+          </View>
+          <View style={{ position: "absolute", left: layout.inset, top: layout.who.top }}>
+            <InSplit.Provider value>{props.who}</InSplit.Provider>
+          </View>
+          {props.today ? <TodaySlot layout={layout}>{props.today(layout.today)}</TodaySlot> : null}
+          {press ? <PowerPills layout={layout} arming={arming} press={press} colors={colors} /> : null}
         </View>
-        <View style={{ position: "absolute", left: layout.inset, top: layout.who.top }}>
-          <InSplit.Provider value>{props.who}</InSplit.Provider>
-        </View>
-        {props.today ? <TodaySlot layout={layout}>{props.today(layout.today)}</TodaySlot> : null}
-        {press ? <PowerPills layout={layout} arming={arming} press={press} colors={colors} /> : null}
-      </View>
+      </GlassLayer>
     </Appearance>
   );
 }

@@ -50,6 +50,16 @@ export function Frosted({ level, solid = false, style, children, ...rest }: Fros
   );
 }
 
+/**
+ * A glass that isn't a `Frosted` (the lock's veil, a `material` on the screen's root) still counts as a layer
+ * for what sits on it (GL-2): on the lock, Today's regular glass is the second layer and its cards, paper, the
+ * third, drawn as paper's solid twin.
+ */
+export function GlassLayer({ children }: { children?: ReactNode }) {
+  const depth = useContext(Depth);
+  return <Depth.Provider value={depth + 1}>{children}</Depth.Provider>;
+}
+
 /** Everything under it is on a window's ground again, whatever glass is above (GL-6: tooltips, a capture's chips). */
 export function OffGlass({ children }: { children?: ReactNode }) {
   return (
