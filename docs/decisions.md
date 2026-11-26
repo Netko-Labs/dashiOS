@@ -8801,6 +8801,20 @@ short words, as the rulebook is written.
   blur, which is why it is rare; the cost shows in `DASHI_GLASS_STATS`'s `cpu`.
 - **Undo:** a pixel buffer object read a frame later (no stall), if the stall ever shows.
 
+### D739. A new pane's tone is read at once; a due tone keeps the screen looking
+
+- **Date:** 2026-11-26. `v10/glass-tone` (a fix of D735, found by y4a's run,
+  `dashi-0.10.0-review/28-glass-kit/` and `29-glass-tone/`).
+- **What was wrong:** D735 read a pane's first tone only once its backdrop had been still for a
+  frosting. A pane whose backdrop changed on every frame from its first (a video, a live wallpaper,
+  anything moving behind) never got one: the once-a-second rule for moving backdrops only applied
+  after a first read. The client heard `drawing(1)` and no `tone`, and its words stayed neutral.
+- **Choice:** a pane never read is read on its first frosting, right after its first blur (one
+  read-back per new pane); after that D735's rules hold. A tone that is due but not read yet (inside
+  the 120 ms) pokes the screens (wakes.rs), so a screen that falls still can't leave it unsaid. A
+  surface's last tone is kept, and a new `dashi_glass_v1` for it hears it at once.
+- **Undo:** `Tone::wants`'s first case back to `!changed`.
+
 ### D736. The floor stays per pixel, now counting the grain
 
 - **Date:** 2026-11-25. `v10/glass-comp`.

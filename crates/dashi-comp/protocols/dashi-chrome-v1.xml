@@ -217,7 +217,9 @@
       <description summary="the backdrop's colour">
         The mean colour behind the surface's first pane, blurred and lifted, before
         the tint, as 0xRRGGBB (sRGB): words on the glass lean toward its hue.
-        Sent when it settles after a change, at most every 120 ms.
+        Sent at once for a surface's new panes and to a new dashi_glass_v1 of a
+        surface whose tone is known; then when it settles after a change, at
+        most every 120 ms, and once a second while it keeps changing.
       </description>
       <arg name="rgb" type="uint"/>
     </event>

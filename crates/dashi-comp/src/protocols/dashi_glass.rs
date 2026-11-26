@@ -43,6 +43,10 @@ pub(crate) fn make(
     let drawn = state.glass_material(client);
     object.drawing(drawing(drawn));
     state.glass.said.insert(object.id(), drawn);
+    // The surface's tone, if one was sent before: its panes' backdrop may not change again soon.
+    if let Some(rgb) = state.glass.tones.get(&surface.id()).filter(|_| drawn) {
+        object.tone(*rgb);
+    }
     state.glass.objects.push((surface.downgrade(), object));
 }
 
@@ -125,8 +129,12 @@ impl Dispatch<DashiGlassV1, GlassData> for Dashi {
         state: &mut Self,
         _client: smithay::reexports::wayland_server::backend::ClientId,
         object: &DashiGlassV1,
-        _data: &GlassData,
+        data: &GlassData,
     ) {
         state.glass.objects.retain(|(_, known)| known != object);
+        // Its surface gone too: its tone is no one's.
+        if data.surface.upgrade().is_err() {
+            state.glass.tones.remove(&data.surface.id());
+        }
     }
 }

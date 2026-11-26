@@ -24,6 +24,7 @@ use smithay::{
 use super::{
     element::{GlassElement, PaneKey},
     frost,
+    frost::Frame,
     style::Look,
 };
 use crate::render::DashiElement;
@@ -129,7 +130,11 @@ fn what_is_behind_comes_out_blurred_and_the_right_way_up() {
         &mut renderer,
         "test",
         Size::from((W, H)),
-        (1.0, None),
+        Frame {
+            scale: 1.0,
+            deepest: None,
+            now: Instant::now(),
+        },
         &mut elements,
     )
     .expect("frosted");
@@ -168,7 +173,11 @@ fn it_is_blurred_again_only_when_what_is_behind_changes() {
             &mut renderer,
             "test",
             Size::from((W, H)),
-            (1.0, None),
+            Frame {
+                scale: 1.0,
+                deepest: None,
+                now: Instant::now(),
+            },
             &mut elements,
         )
         .expect("frosted")
@@ -225,7 +234,11 @@ fn glass_costs() {
                     &mut renderer,
                     "cost",
                     Size::from((sw, sh)),
-                    (1.75, None),
+                    Frame {
+                        scale: 1.75,
+                        deepest: None,
+                        now: Instant::now(),
+                    },
                     &mut elements,
                 )
                 .expect("frosted");

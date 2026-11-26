@@ -1,8 +1,9 @@
 //! The backdrop's tone: the mean colour behind a pane, blurred and lifted,
 //! before the tint, so the words on it can lean toward its hue (Frost's
 //! vibrant inks). Read back from the blur's smallest picture, which waits for
-//! the GPU: so only when the backdrop has settled (or every second while it
-//! keeps moving), at most every 120 ms, and sent only when it changed.
+//! the GPU: a fresh pane's at once, on its first frosting, whatever moves
+//! behind it; after that only when the backdrop has settled (or every second
+//! while it keeps moving), at most every 120 ms, and sent only when it changed.
 
 use std::time::{Duration, Instant};
 
@@ -23,7 +24,9 @@ pub(super) struct Tone {
 }
 
 impl Tone {
-    /// After a frosting (`changed`: blurred again), whether to read the tone now.
+    /// After a frosting (`changed`: blurred again), whether to read the tone now. A pane
+    /// never read is read at once: waiting for its backdrop to settle left a pane over a video
+    /// or a live wallpaper without a tone for as long as it played (D739).
     pub(super) fn wants(&mut self, changed: bool, now: Instant) -> bool {
         self.due |= changed;
         if !self.due {
@@ -31,7 +34,7 @@ impl Tone {
         }
         let since = self.read.map(|at| now.saturating_duration_since(at));
         let ready = match since {
-            None => !changed,
+            None => true,
             Some(since) => since >= EVERY && (!changed || since >= MOVING),
         };
         if ready {
@@ -39,6 +42,11 @@ impl Tone {
             self.read = Some(now);
         }
         ready
+    }
+
+    /// A tone is due and not read yet: the screen must look again for it.
+    pub(super) fn pending(&self) -> bool {
+        self.due
     }
 
     /// The tone read: what to send (none when it hardly changed).
@@ -82,10 +90,8 @@ mod tests {
         let mut tone = Tone::default();
         // Nothing changed yet: nothing to read.
         assert!(!tone.wants(false, at(0)));
-        // Blurred again: not while it moves...
-        assert!(!tone.wants(true, at(10)));
-        // ...but once it is still.
-        assert!(tone.wants(false, at(20)));
+        // Blurred for the first time: read at once, moving or not.
+        assert!(tone.wants(true, at(20)));
         assert!(!tone.wants(false, at(30)));
         // A change soon after: due, but not before 120 ms have passed.
         assert!(!tone.wants(true, at(40)));
@@ -96,6 +102,29 @@ mod tests {
             assert!(!tone.wants(true, at(ms)), "{ms}");
         }
         assert!(tone.wants(true, at(1150)));
+    }
+
+    /// The kit's run (dashi-0.10.0-review/28-glass-kit): a fresh pane must hear its tone at
+    /// once, whether the screen is still or something moves behind it from the first frame
+    /// (a video, a live wallpaper): a pane frosted at 60 Hz, blurred again every time.
+    #[test]
+    fn a_fresh_pane_hears_its_tone_within_120_ms_still_or_moving() {
+        let start = Instant::now();
+        let frame = |n: u64| start + Duration::from_micros(16_667 * n);
+        // A still screen: blurred once (the first frosting), then nothing changes.
+        let mut still = Tone::default();
+        let first = (0..60).find(|&n| still.wants(n == 0, frame(n)));
+        assert!(
+            first.is_some_and(|n| frame(n) - start <= EVERY),
+            "still: {first:?}"
+        );
+        // A moving backdrop: blurred again on every frosting, from the first.
+        let mut moving = Tone::default();
+        let first = (0..120).find(|&n| moving.wants(true, frame(n)));
+        assert!(
+            first.is_some_and(|n| frame(n) - start <= EVERY),
+            "moving: {first:?}"
+        );
     }
 
     #[test]
