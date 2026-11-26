@@ -1,6 +1,6 @@
 /** The pieces every widget is printed from (round five's chrome.js): labels, words, the one number, buttons, rules and blanks. */
 
-import { Button, type ButtonInks, CLEAR, GlyphButton, ON_TINT, pill, RADIUS, SPACE, TYPE, WEIGHT } from "@dashi/ui";
+import { Button, type ButtonInks, CLEAR, GlyphButton, pill, RADIUS, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { type GlyphName, glyph } from "../shared/inks/index.ts";
@@ -222,32 +222,27 @@ export function Private({ what, width, children }: { what: string; width: number
   return useRedacted() ? <Blank what={what} width={width} /> : children;
 }
 
-/** The "Now" tag: 18 tall, its dot 6. */
-const NOW_TAG = { height: 18, dot: 6 } as const;
+/** The "Now" tag: 18 tall, the tally's dot 7 (CO-12). */
+const NOW_TAG = { height: 18, dot: 7 } as const;
 
 /** How the "Now" tag breathes, where the host can (round five: one opacity loop, still under Reduce Motion). */
 export const NOW_BREATH = { from: 0.4, to: 1, periodMs: 2000, fps: 4 } as const;
 
-/** The "Now" tag on the card on air: vermilion, its words white; it breathes on a host that takes `pulse`. */
+/**
+ * The "Now" tag on the card on air (CO-12, frost-objects board 22): the tally's 7-point vermilion dot
+ * beside "Now" in the card's ink, as the bar's capsule carries it; it breathes on a host that takes `pulse`.
+ */
 export function NowTag({ tally }: { tally: string }) {
   const { pulse } = useHostAbilities();
+  const c = useCard();
   return (
     <View
       testID="now-tag"
       {...(pulse ? { pulse: NOW_BREATH } : {})}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: SPACE.xs,
-        height: NOW_TAG.height,
-        paddingLeft: SPACE.s,
-        paddingRight: SPACE.m,
-        borderRadius: pill(NOW_TAG.height),
-        backgroundColor: tally,
-      }}
+      style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, height: NOW_TAG.height }}
     >
-      <View style={{ width: NOW_TAG.dot, height: NOW_TAG.dot, borderRadius: pill(NOW_TAG.dot), backgroundColor: ON_TINT }} />
-      <Text style={{ fontSize: TYPE.inks.small.size, fontWeight: WEIGHT.bold, color: ON_TINT }}>NOW</Text>
+      <View testID="now-dot" style={{ width: NOW_TAG.dot, height: NOW_TAG.dot, borderRadius: pill(NOW_TAG.dot), backgroundColor: tally }} />
+      <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: c.ink }}>Now</Text>
     </View>
   );
 }

@@ -81,6 +81,7 @@ export {
   glassInkTokens,
   glassRaised,
   glassSurface,
+  inkPick,
   type OnGlass,
   OnGlassContext,
   paintedPalette,

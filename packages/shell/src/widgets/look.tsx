@@ -1,18 +1,20 @@
 /**
  * How one card is printed: its paper and words, its ink, and whether it is
- * the card on air (it floods: paper and ink swap, round five #16), whether
- * the house lights are down, and whether it is on the lock screen hiding its
- * private parts. Every part below reads it, so a widget never picks a colour.
+ * the card on air, whether the house lights are down, and whether it is on
+ * the lock screen hiding its private parts. Every part below reads it, so a
+ * widget never picks a colour. On air the card keeps its paper and words and
+ * glows in its own ink (CO-12, D768: `onAirGlow`); only the lock's wash still
+ * floods (paper and ink swap, round five #16), until the lock moves to Frost.
  */
 
-import { type InkName, type InkTokens, LOCK_GLASS } from "@dashi/ui";
+import { GLASS, type InkName, type InkTokens, LOCK_GLASS, withAlpha } from "@dashi/ui";
 import { createContext, useContext } from "react";
 import { inkOf } from "../shared/inks/index.ts";
 
 export interface CardLook {
   inks: InkTokens;
   ink: InkName | null;
-  /** This card holds the tally: it floods with its ink. */
+  /** This card holds the tally: it glows in its ink (on the lock's wash it floods). */
   air: boolean;
   /** House lights are down (and this card is not on air): its ink is dimmed. */
   houseDown: boolean;
@@ -43,9 +45,24 @@ export const alpha = (hex: string, share: number): string =>
     .toString(16)
     .padStart(2, "0")}`;
 
+/** Whether the card floods with its ink: only on the lock's wash; on glass a card on air glows (CO-12). */
+export const floods = (look: CardLook): boolean => look.air && look.glass === true;
+
+/**
+ * The glow of a card on air (CO-12, `GLASS.onAir`): a shadow `0 0 30 3` in its own ink (plain ink for a
+ * widget printed in plain ink), at 60 % in Light and 55 % in Dark. Nothing off air, or where it floods.
+ */
+export function onAirGlow(look: CardLook): string | null {
+  if (!look.air || floods(look)) return null;
+  const { inks } = look;
+  const ink = look.ink ? inks.ink[look.ink] : inks.text.ink;
+  const { blur, spread } = GLASS.onAir;
+  return `0 0 ${blur} ${spread} ${withAlpha(ink, GLASS.onAir[inks.mode])}`;
+}
+
 export function cardColours(look: CardLook): CardColours {
   const { inks } = look;
-  if (look.air) {
+  if (floods(look)) {
     const on = inks.onInk;
     const ground = look.ink ? inks.ink[look.ink] : inks.text.ink;
     return {
@@ -63,7 +80,7 @@ export function cardColours(look: CardLook): CardColours {
   const text = inks.text;
   return {
     paper: look.glass ? LOCK_GLASS[inks.mode].paper : inks.paper,
-    value: inkOf(inks, look.ink, { down: look.houseDown, onAir: false }),
+    value: inkOf(inks, look.ink, { down: look.houseDown, onAir: look.air }),
     ink: text.ink,
     secondary: text.secondary,
     tertiary: text.tertiary,

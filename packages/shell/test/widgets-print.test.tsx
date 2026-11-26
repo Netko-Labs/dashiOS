@@ -1,13 +1,14 @@
 /**
- * How a card is printed (round five): private nodes are blanks while
- * locked; the card on air floods with its ink inside a ring of the tally's
- * colour; house lights dim every ink but the holder's; an extension's widget
- * prints in plain ink whatever its tree says.
+ * How a card is printed (round five, Frost): private nodes are blanks while
+ * locked; a card is paper glass, radius 18 (14 one row); the card on air keeps
+ * its glass and glows in its own ink (CO-12), and only on the lock's wash
+ * floods inside a ring of the tally's colour; house lights dim every ink but
+ * the holder's; an extension's widget prints in plain ink whatever its tree says.
  */
 
 import { describe, expect, test } from "bun:test";
 import type { ViewNode } from "@dashi/applet";
-import { inkTokens } from "@dashi/ui";
+import { GLASS, inkTokens, withAlpha } from "@dashi/ui";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import { Card, type CardLook, Num, Private, Title } from "../src/widgets/index.ts";
 import { ExtensionView } from "../src/widgets/lib/views/extension.tsx";
@@ -56,7 +57,20 @@ describe("a widget's print", () => {
     expect(tree).not.toContain(inks.tally.toLowerCase());
   });
 
-  test("on air it floods: the ink is the paper, a ring of the tally's colour goes round it", async () => {
+  test("a card is paper glass at radius 18, 14 for one row, with no shadow at rest (CO-11)", async () => {
+    const card = (compact: boolean) => (
+      <Card look={look()} width={172} height={80} compact={compact} testID="card">
+        <Num value="3" size={34} />
+      </Card>
+    );
+    const tall = await print(card(false));
+    expect(tall).toContain(`"background":"${GLASS.levels.paper.light.solid}","cornerRadius":18`);
+    expect(tall).not.toContain('"shadow"');
+    expect(tall).not.toContain('"borderWidth"');
+    expect(await print(card(true))).toContain('"cornerRadius":14');
+  });
+
+  test("on air it keeps its paper and words and glows in its own ink: no ring, no flood (CO-12)", async () => {
     const tree = (
       await print(
         <Card look={look({ air: true })} width={172} height={172}>
@@ -64,9 +78,36 @@ describe("a widget's print", () => {
         </Card>,
       )
     ).toLowerCase();
+    expect(tree).toContain(`"shadow":"0 0 30 3 ${withAlpha(inks.ink.miso, GLASS.onAir.light).toLowerCase()}"`);
+    expect(tree).toContain(`"background":"${inks.paper.toLowerCase()}"`);
+    expect(tree).not.toContain(`"background":"${inks.ink.miso.toLowerCase()}"`);
+    expect(tree).not.toContain(inks.onInk.toLowerCase());
+    expect(tree).not.toContain(inks.tally.toLowerCase());
+    // Its number keeps its ink on air.
+    expect(tree).toContain(`"color":"${inks.ink.miso.toLowerCase()}"`);
+  });
+
+  test("in Dark the glow is the ink at 55 %; a card in plain ink glows in plain ink", async () => {
+    const dark = inkTokens("dark");
+    const tree = await print(
+      <Card look={{ inks: dark, ink: null, air: true, houseDown: false, redact: false }} width={172} height={172}>
+        <Num value="4" size={64} />
+      </Card>,
+    );
+    expect(tree.toLowerCase()).toContain(`"shadow":"0 0 30 3 ${withAlpha(dark.text.ink, GLASS.onAir.dark).toLowerCase()}"`);
+  });
+
+  test("on the lock's wash the card on air still floods inside the tally's ring (the lock's Now bar, until it wears Frost)", async () => {
+    const tree = (
+      await print(
+        <Card look={look({ air: true, glass: true })} width={172} height={172}>
+          <Num value="3" size={64} />
+        </Card>,
+      )
+    ).toLowerCase();
     expect(tree).toContain(inks.tally.toLowerCase());
     expect(tree).toContain(`"background":"${inks.ink.miso.toLowerCase()}`);
-    expect(tree).toContain(inks.onInk.toLowerCase());
+    expect(tree).not.toContain('"shadow"');
   });
 
   test("house lights dim the inks of every card but the holder's", async () => {

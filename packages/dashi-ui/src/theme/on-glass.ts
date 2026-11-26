@@ -144,6 +144,14 @@ export function glassSurface(base: Surface, dark: boolean): Surface {
   return { ...base, field: fill, card: fill, stripe: glassFill(dark, -GLASS.fill[dark ? "dark" : "light"] / 2) };
 }
 
+/**
+ * A pick in ink, never the accent (CO-9's neutral look; a place the accent never paints, H23: the widget
+ * gallery's chosen kind): its wash, ink at 10 %, and its 3-point bar, ink at 55 %.
+ */
+export function inkPick(ink: string): { wash: string; bar: string } {
+  return { wash: withAlpha(ink, GLASS.selection.unfocusedWash), bar: withAlpha(ink, GLASS.selection.unfocusedBar) };
+}
+
 /** The Inks on glass (GL-5): in Light, matcha and wakame one step darker; the rest as on paper. */
 export function glassInkTokens(tokens: InkTokens): InkTokens {
   if (tokens.mode !== ("light" satisfies InkMode)) return tokens;

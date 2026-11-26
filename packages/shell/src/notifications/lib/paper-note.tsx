@@ -5,10 +5,11 @@
  * the inks look. The measures are the one card's (NO-1, card.tsx); its
  * paper and corner are a widget's (CO-11).
  * A group of several shows two hairline edges under it; a press on "+n"
- * opens the rest.
+ * opens the rest. The card is paper glass (NO-5, D766), no shadow at rest;
+ * the peeking edges are paper's solid twin, so a group is one glass layer (GL-2).
  */
 
-import { Button, RADIUS, SPACE } from "@dashi/ui";
+import { Button, RADIUS, SPACE, useSolidTwin } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { AppIcon } from "../../shared/apps/index.ts";
@@ -49,21 +50,7 @@ export function PaperNote({
   const actions = entry.closed ? [] : entry.actions.filter((action) => action.key !== "default").slice(0, 3);
   return (
     <View style={{ marginBottom: more > 0 ? SPACE.s : 0 }}>
-      {more > 0 ? (
-        <View
-          style={{
-            position: "absolute",
-            left: 10,
-            right: 10,
-            bottom: -5,
-            height: 12,
-            borderRadius: RADIUS.card,
-            borderWidth: 1,
-            borderColor: paper.hairline,
-            backgroundColor: paper.paper,
-          }}
-        />
-      ) : null}
+      {more > 0 ? <GroupEdge id={entry.id} hairline={paper.hairline} /> : null}
       <Card look={look} width={PAPER_NOTE.width} padding={NOTE_CARD.padding} testID={`nc-card:${entry.id}`} {...(onOpen ? { onPress: onOpen } : {})}>
         <View style={{ flexDirection: "row", gap: NOTE_CARD.gap }}>
           <AppIcon source={icon} resizeMode="contain" style={{ width: NOTE_CARD.icon, height: NOTE_CARD.icon, borderRadius: NOTE_CARD.iconRadius }} />
@@ -99,5 +86,25 @@ export function PaperNote({
         </View>
       </Card>
     </View>
+  );
+}
+
+/** A group's peeking edge under its newest card: paper's solid twin, so a group is one glass layer (GL-2). */
+function GroupEdge({ id, hairline }: { id: number; hairline: string }) {
+  return (
+    <View
+      testID={`nc-peek:${id}`}
+      style={{
+        position: "absolute",
+        left: 10,
+        right: 10,
+        bottom: -5,
+        height: 12,
+        borderRadius: RADIUS.card,
+        borderWidth: 1,
+        borderColor: hairline,
+        backgroundColor: useSolidTwin("paper"),
+      }}
+    />
   );
 }

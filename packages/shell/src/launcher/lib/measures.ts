@@ -18,8 +18,8 @@ import { createContext, useContext } from "react";
 /** The launcher's surface: the panel's width, and as tall as its most rows at any text size. */
 export const SURFACE = { width: 620, height: 600 } as const;
 
-/** The panel's frame: a 1 px border all round (and over the list), 4 px padding inside the list, 12 px corners. */
-export const PANEL = { border: 1, padding: SPACE.xs, radius: 12 } as const;
+/** The panel's frame: a 1 px line over the list, 4 px padding inside it, 14 px corners (RA-2: regular glass needs the room, D720). */
+export const PANEL = { border: 1, padding: SPACE.xs, radius: 14 } as const;
 
 /** At text size 1 (LA-1): the rows, icons and glyphs, which grow with the type. */
 const BASE = { field: 48, row: 40, head: 22, icon: 28, glyph: 16, chip: 26, searchGlyph: 18, emoji: 18 } as const;

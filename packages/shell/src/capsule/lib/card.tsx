@@ -6,9 +6,13 @@
  * at a time; Yes comes back once the end has been shown (decisions.md D82).
  * Its buttons arm a moment after it opens and after each scroll, so a click
  * meant for what was there before answers nothing.
+ * It is regular glass (CP-11, D766): the persona's colour is its 1.5 rim, which
+ * the 3-point purple focus rim replaces while it has the keyboard; its words
+ * are the glass's inks, its choices on fills, the yes filled in ink. Only the
+ * line under it (line.tsx) stays solid.
  */
 
-import { KeyedText, Button as KitButton, RADIUS, SHADOW, SPACE, WEIGHT } from "@dashi/ui";
+import { Frosted, KeyedText, Button as KitButton, type Palette, RADIUS, SHADOW, SPACE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type Cell, STOP_KEYS } from "../../shared/pill/index.ts";
@@ -77,10 +81,10 @@ function useArmed(armsAt: number, now: () => number): boolean {
   return armed;
 }
 
-function Head({ content, colours, asks }: { content: CardContent; colours: CapsuleColours; asks: boolean }) {
+function Head({ content, colours, persona, asks }: { content: CardContent; colours: CapsuleColours; persona: CapsuleColours; asks: boolean }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, marginBottom: SPACE.xs }}>
-      <Disc colours={colours} size={CARD.disc} asks={asks} />
+      <Disc colours={persona} size={CARD.disc} asks={asks} filled />
       <View style={{ flexShrink: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: CARD.whoSize, fontWeight: WEIGHT.semibold, color: colours.text }}>
           {content.who}
@@ -190,8 +194,44 @@ function Choices({
   ));
 }
 
+/**
+ * The card's colours on its glass (frost-objects board 17): words in the glass's primary and secondary
+ * inks, buttons outlined in the glass control edge and the yes filled in ink, choices on a fill.
+ */
+export function glassCardColours(colors: Palette, persona: CapsuleColours): CapsuleColours {
+  return {
+    fill: colors.tile,
+    text: colors.text,
+    soft: colors.textMuted,
+    rim: colors.controlEdge,
+    primary: colors.primary,
+    onPrimary: colors.onPrimary,
+    ok: colors.moss,
+    amber: persona.amber,
+  };
+}
+
+/** The card's rim: the persona's colour, or the purple focus rim while it has the keyboard (CP-11). */
+export function cardRim(keyboard: boolean, persona: CapsuleColours, focusRing: string): { borderWidth: number; borderColor: string } {
+  return keyboard ? { borderWidth: CARD.focusRim, borderColor: focusRing } : { borderWidth: CARD.rim, borderColor: persona.fill };
+}
+
 export function Card(props: CardProps) {
-  const { card, colours } = props;
+  const rim = cardRim(props.card.keyboard, props.colours, useColors().focusRing);
+  return (
+    <Frosted
+      level="regular"
+      testID="card-glass"
+      style={{ flexShrink: 0, width: CARD.width, maxHeight: CARD.maxHeight, borderRadius: CARD.radius, overflow: "hidden", ...rim, shadow: SHADOW.xl }}
+    >
+      <CardInside {...props} />
+    </Frosted>
+  );
+}
+
+function CardInside(props: CardProps) {
+  const { card } = props;
+  const colours = glassCardColours(useColors(), props.colours);
   const content = cardContent(card.what, props.name, card.from);
   const armed = useArmed(card.armsAt, props.now);
   const asks = content.kind !== "reading";
@@ -201,24 +241,14 @@ export function Card(props: CardProps) {
       testID={`card:${content.kind}`}
       accessibilityLabel={[content.who, content.about, content.question, ...content.lines, content.more].filter(Boolean).join(". ")}
       style={{
-        flexShrink: 0,
         flexDirection: "column",
-        width: CARD.width,
-        maxHeight: CARD.maxHeight,
-        overflow: "hidden",
-        borderRadius: CARD.radius,
         paddingLeft: CARD.paddingX,
         paddingRight: CARD.paddingX,
         paddingTop: CARD.paddingTop,
         paddingBottom: CARD.paddingBottom,
-        backgroundColor: colours.fill,
-        // A thin light rim, as the capsule's; with the keyboard (its keys are heard on a surface of their own, card-keys.tsx), the white outline. The amber is the disc's and the Dock's.
-        borderWidth: card.keyboard ? CARD.focusRim : CARD.rim,
-        borderColor: colours.rim,
-        shadow: SHADOW.xl,
       }}
     >
-      <Head content={content} colours={colours} asks={asks} />
+      <Head content={content} colours={colours} persona={props.colours} asks={asks} />
       {content.question !== "" && <Text style={{ fontSize: CARD.questionSize, fontWeight: WEIGHT.semibold, color: colours.text }}>{content.question}</Text>}
       <Message content={content} colours={colours} />
       <Choices choices={content.choices} armed={armed} colours={colours} onAnswer={props.onAnswer} />

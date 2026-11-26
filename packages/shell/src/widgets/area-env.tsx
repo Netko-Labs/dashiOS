@@ -1,5 +1,10 @@
-/** The env every widget reads, made once per surface (the area, the lock screen, Glance). */
+/**
+ * The env every widget reads, made once per surface (the area, the lock screen, Glance). The area's cards
+ * are paper glass, so their inks are the glass ones (GL-5, CO-11: Light matcha and wakame one step darker,
+ * `glassInkTokens`); the lock's wash keeps its own shift.
+ */
 
+import { glassInkTokens } from "@dashi/ui";
 import { useMemo } from "react";
 import { useInks } from "../shared/inks/index.ts";
 import { useClockPrefs, useMinuteClock, usesHour24 } from "../shared/time/index.ts";
@@ -16,7 +21,8 @@ export function useWidgetEnvFor(
   const now = useMinuteClock().getTime();
   const prefs = useClockPrefs();
   const tally = useTally();
-  const inks = useInks({ ...(options.dark === undefined ? {} : { dark: options.dark }), ...(options.lock ? { lock: true } : {}) });
+  const base = useInks({ ...(options.dark === undefined ? {} : { dark: options.dark }), ...(options.lock ? { lock: true } : {}) });
+  const inks = useMemo(() => (options.lock ? base : glassInkTokens(base)), [base, options.lock]);
   const kinds = options.placements.map((each) => each.kind).join(",");
   return useMemo(
     () => ({ hub, now, hour24: usesHour24(prefs), tally, inks, locked: options.locked, placedKinds: kinds === "" ? [] : kinds.split(","), open: options.open }),

@@ -131,8 +131,21 @@ export function Button({ label, colours, onPress, primary = false, square = fals
   );
 }
 
-/** Dashi's disc: its mark on white; a question mark on amber when it needs the person. */
-export function Disc({ colours, size = CAPSULE.disc, asks = false }: { colours: CapsuleColours; size?: number; asks?: boolean }) {
+/**
+ * Dashi's disc: its mark on white (on the solid line); `filled`, white on the persona's colour (on the
+ * card's glass, board 17); a question mark on amber when it needs the person.
+ */
+export function Disc({
+  colours,
+  size = CAPSULE.disc,
+  asks = false,
+  filled = false,
+}: {
+  colours: CapsuleColours;
+  size?: number;
+  asks?: boolean;
+  filled?: boolean;
+}) {
   const mark = useFaceMark();
   return (
     <View
@@ -144,13 +157,13 @@ export function Disc({ colours, size = CAPSULE.disc, asks = false }: { colours: 
         borderRadius: size / 2,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: asks ? colours.amber : CAPSULE_INKS.white,
+        backgroundColor: asks ? colours.amber : filled ? colours.fill : CAPSULE_INKS.white,
       }}
     >
       {asks ? (
         <Svg markup={QUESTION} size={Math.round(size * 0.62)} color={AMBER.ink} />
       ) : (
-        <Svg markup={mark} size={Math.round(size * 0.58)} color={colours.fill} />
+        <Svg markup={mark} size={Math.round(size * 0.58)} color={filled ? CAPSULE_INKS.white : colours.fill} />
       )}
     </View>
   );

@@ -31,10 +31,11 @@ import {
   type WidgetHub,
   Words,
 } from "../widgets/index.ts";
+import { AREA } from "./lib/area.ts";
 import { foldGroups } from "./lib/ceiling.ts";
 import { groupByApp } from "./lib/group.ts";
 import { PaperNote } from "./lib/paper-note.tsx";
-import { AREA, type AreaPlace, areaBottom, galleryPlace } from "./lib/place.ts";
+import { type AreaPlace, areaBottom, galleryPlace } from "./lib/place.ts";
 import { useNotifications } from "./store.ts";
 import type { HistoryEntry } from "./types.ts";
 

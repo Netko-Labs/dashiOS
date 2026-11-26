@@ -9070,3 +9070,111 @@ short words, as the rulebook is written.
   window was opaque over its own panes, and a surface offering only `Inherit` got straight alpha.
   Proof: `dashi-0.10.0-review/28-glass-kit/`.
 - **Undo:** revert the shader's cut; surfaces drop their shadows instead.
+
+### D790. The launcher and its conversation wear regular glass
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; DE-4, D721, frost-objects boards 14 to 16).
+- **Choice:** the launcher's panel is `Frosted level="regular"`, radius 14 (was 12, RA-2), shadow xl, no
+  fill or border of its own (the compositor draws the rim and hairline). Everything inside reads the glass
+  palettes (`useColors` under `Frosted`): the vibrant inks, fills for icons, chips and bubbles, the
+  selection as the accent at 22 % under primary words. Words on a fill in the conversation are primary
+  ink (GL-1, D729): the bubble's "Said" is now 11 SemiBold primary (it was 10.5 secondary, under GL-1's 11).
+- **Not done, on purpose:** the board's hover tint (ink 7 %): the pointer moves the selection in the
+  launcher (one mark only), so a hovered row is the selected one. RA-2's "rows 8 inside 5" is off RA-1's
+  scale (H21a knows no 8); rows stay 7 inside 4 until the rulebook names the token.
+- **Undo:** back to the solid `colors.launcher` panel with its border.
+
+### D791. Widgets are paper glass at 18; the area's inks are the glass ones
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; CO-11, GL-5, board 20 and 21).
+- **Choice:** a widget's card is `Frosted level="paper"`, radius 18, 14 for one row (`RADIUS.inkCard`
+  18, `inkCardRow` 14), padding 14, no shadow at rest and no border (the compositor's rim and hairline).
+  The area makes its widget env with `glassInkTokens` (Light matcha `#5F6305`, wakame `#00737E`) always,
+  glass or its twin: the stepped inks pass on the solid paper too. The lock's wash (`look.glass`, y4d's)
+  keeps its opaque paper and hairline until the lock moves to Frost; it takes the new radii, which CO-11
+  gives every widget.
+- **Undo:** the card's plain view with the paper fill and hairline; the tokens back to 14 and 12.
+
+### D792. On air is a glow of the card's ink and the Now dot (CO-12, D768)
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; the owner's answer, frost-v2 frame 6).
+- **Choice:** a card on air (a widget, a live card, an agent's critical question) keeps its paper glass
+  and words as off air and casts `0 0 30 3` in its own ink at 60 % (Light) / 55 % (Dark), plain ink for
+  a widget printed in plain ink (`onAirGlow`); the "Now" tag is the tally's 7-point dot beside "Now" in
+  the card's ink, 11 SemiBold, breathing as before. No ring, no flood, no lift. The glow needs a shadow
+  in a colour, which mirin's presets didn't have: mirin now takes one shadow spelled out
+  (`"0 0 30 3 #rrggbbaa"`, `SpelledShadow`; an older host draws none). The lock's Now bar (y4d's) still
+  floods with the tally's ring on its wash (`floods`: only `look.glass`), until the lock wears Frost.
+- **Undo:** `cardColours`' flood for every card on air, and the ring.
+
+### D793. Edit mode and the gallery on glass, the accent kept out (H23)
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; board 22).
+- **Choice:** the card being edited is ringed in ink, 2 wide and 3 out (`EDIT_RING`; was 4 out), and so is
+  the gallery's picked size; the tag stays an ink pill 20. The header is thin glass, Add · Done a capsule
+  of regular glass (Add outlined in the glass control edge, Done filled in ink). The gallery is regular
+  glass, radius 18, shadow xl; its previews are paper's solid twin (GL-2: `Card solid`). The board draws
+  the chosen kind in the selection look; the accent never paints `widgets/` (H23), so it wears the
+  neutral selection instead: ink at 10 % and a 3-point ink bar at 55 % (CO-9's look without focus).
+- **Undo:** the opaque paper header, bar and gallery; the 2-point ink edge on the chosen row.
+
+### D794. Banners: regular glass in their lane, newest on top
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; NO-5, NO-6, D729, board 18).
+- **Choice:** a banner is `Frosted level="regular"`, 356 wide, radius 18, shadow xl (was 344, 12, lg),
+  its words and small Buttons on the glass palettes. The lane (`bannerLane`): top-aligned with the widget
+  column, its right edge where the column's is (16 from the screen's edge) while the column is hidden, and
+  12 left of the column while it shows. The area hides banners while it is open (store.ts), so today a
+  banner always takes the column's place and can never cover a widget. Newest on top, 8 apart (was oldest
+  on top, 12 apart). The surface keeps 16 of shadow room at its sides, 12 above, 24 below.
+- **Not done:** the hover ✕ the board draws (a new control: the kit has none for it yet) and "Your turn"'s
+  pill (the agents' engineer's).
+- **Undo:** the old size, the top-right anchor and the order.
+
+### D795. The area's notes are paper glass; a group's edges paper's twin
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; NO-5, GL-2, board 19).
+- **Choice:** the area's notification cards are the widgets' `Card` (paper glass, no shadow); the peeking
+  edge under a group is paper's solid twin (`useSolidTwin("paper")`), so a group is one glass layer. "N
+  more" is a paper card too.
+- **Undo:** the edge back to the paper colour; cards are the widgets' either way.
+
+### D796. The capsule's card is regular glass with the persona's rim
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; CP-11, D766, board 17).
+- **Choice:** the card is `Frosted level="regular"`, radius 17.5, shadow xl, its rim 1.5 in the persona's
+  colour (`dashiFill`: the colour darkened until white reads on it, the disc's); with the keyboard a 3-point
+  rim in the focus purple replaces it (was a white 3-point outline inside a 1.5 ink line). Its words are
+  the glass's inks (`glassCardColours`), buttons outlined in the glass edge with the yes filled in ink,
+  choices on a fill; the disc is filled in the persona's colour with a white mark. The line under it stays
+  solid (GL-6).
+- **Undo:** `dashiColours` for the card again, and the white outline.
+
+### D797. The widgets' small words stay as the boards draw them
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; TY-1's inks row, GL-1).
+- **Question:** GL-1 says words on glass are never under 11; a widget's label is 10.5 SemiBold capitals
+  (`TYPE.inks.small`) and Calendar's weekday letters 9.5 (`TYPE.inks.label`), on paper glass now.
+- **Choice:** keep them: frost-objects draws the labels at 10.5 (`c-launcher.js`, `b-cc.js`) and the owner
+  approved those boards; the area's paper is the most opaque glass (α ≥ 0.64, floored). The "Now" tag, new
+  here, is 11 SemiBold as the board draws it. For the rulebook: GL-1 should name the inks' small capitals as
+  its exception, or TY-1's inks row should move to 11.
+- **Undo:** `TYPE.inks.small` and `label` to 11.
+
+### D798. A shadow spelled out, in mirin
+
+- **Date:** 2026-11-26. mirin `v10-glass-launcher` (reversible; Part A: fix it where it starts).
+- **Choice:** `shadow` takes a preset or one shadow spelled out as CSS's `box-shadow` is, without units:
+  `"x y blur spread #rrggbbaa"` (`SpelledShadow`). The host parses it (`edges.rs` `spelled_shadow`); a bad
+  one, or a host from before it, draws nothing. H21a still counts a bare preset word only; a spelled shadow
+  comes from a token (`GLASS.onAir`).
+- **Undo:** drop the parse; the glow is gone, nothing else changes.
+
+### D799. Coloured inks can't yet be named to the floor per surface
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (left for the compositor; GL-5).
+- **Finding:** the floor (`glass-style`'s `floor`) holds one ink for every surface; nothing lets a surface
+  name its coloured inks (a widget's category ink, the conversation's purple and moss, ume). GL-5's floor
+  lists need the compositor and `material` to carry them. Meanwhile the five stepped inks keep their
+  contrast on the twins (`dashi-ui/test/glass.test.tsx`), and the area's widgets read them.
+- **Undo:** nothing to undo.

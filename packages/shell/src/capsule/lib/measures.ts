@@ -37,12 +37,9 @@ export const CARD = {
   maxWidth: 520,
   maxHeight: 240,
   radius: 17.5,
-  /** Its rim, and the outline it wears while it has the keyboard. */
+  /** Its rim in the persona's colour, and the purple focus rim that replaces it while it has the keyboard (CP-11). */
   rim: 1.5,
   focusRim: 3,
-  /** The ink line outside that outline (it shows the outline on a white window). */
-  focusLine: 1.5,
-  focusInk: CAPSULE_INKS.ink,
   paddingX: 12,
   paddingTop: SPACE.m,
   paddingBottom: SPACE.gap,

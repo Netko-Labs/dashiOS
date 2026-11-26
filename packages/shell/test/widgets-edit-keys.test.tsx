@@ -129,7 +129,7 @@ describe("editing widgets by keyboard, with the host's key names", () => {
     expect(root.nodeId("widget-edit-keys")).toBeDefined();
   });
 
-  test("the picked size and the chosen row are ringed in ink, never the focus ring's purple (CO-9, KB-2)", async () => {
+  test("the picked size is ringed in ink and the chosen row wears an ink bar, never the accent or the focus ring's purple (CO-9, KB-2, H23)", async () => {
     await press("edit-widgets");
     await press("edit-add");
     interface Node {
@@ -139,10 +139,18 @@ describe("editing widgets by keyboard, with the host's key names", () => {
     const byId = (node: Node, nodeId: string): Node | null =>
       node.props?.id === nodeId ? node : ((node.children ?? []).map((child) => byId(child, nodeId)).find(Boolean) ?? null);
     const tree = JSON.parse(trees.at(-1) ?? "{}") as Node;
-    const edgeOf = (testID: string): string => String(byId(tree, id(testID))?.props?.borderColor ?? "").toLowerCase();
-    for (const testID of ["picked:weather:compact", "gallery:weather"]) {
-      expect(edgeOf(testID)).toBe(INK_TEXT.light.ink.toLowerCase());
-      expect(edgeOf(testID)).not.toBe(lightColors.focusRing.toLowerCase());
+    const prop = (testID: string, name: string): string => String(byId(tree, id(testID))?.props?.[name] ?? "").toLowerCase();
+    const ink = INK_TEXT.light.ink.toLowerCase();
+    expect(prop("picked:weather:compact", "borderColor")).toBe(ink);
+    expect(prop("picked:weather:compact", "borderWidth")).toBe("2");
+    // The chosen kind: ink at 10 % under an ink bar at 55 % (CO-9's neutral selection), never the accent.
+    expect(prop("gallery:weather", "background")).toBe(`${ink}1a`);
+    expect(prop("gallery-bar:weather", "background")).toBe(`${ink}8c`);
+    for (const testID of ["picked:weather:compact", "gallery:weather", "gallery-bar:weather"]) {
+      for (const name of ["borderColor", "background"]) {
+        expect(prop(testID, name)).not.toBe(lightColors.focusRing.toLowerCase());
+        expect(prop(testID, name)).not.toContain(lightColors.selection.toLowerCase());
+      }
     }
   });
 });
