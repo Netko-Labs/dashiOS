@@ -9127,8 +9127,9 @@ short words, as the rulebook is written.
   12 left of the column while it shows. The area hides banners while it is open (store.ts), so today a
   banner always takes the column's place and can never cover a widget. Newest on top, 8 apart (was oldest
   on top, 12 apart). The surface keeps 16 of shadow room at its sides, 12 above, 24 below.
-- **Not done:** the hover ✕ the board draws (a new control: the kit has none for it yet) and "Your turn"'s
-  pill (the agents' engineer's).
+  Under the pointer a ✕ shows over its top-left corner, the kit's small filled `GlyphButton` (18: the
+  board's 20 is no kit size), solid (`OffGlass`, GL-6); a press dismisses the banner, never opens it.
+- **Not done:** "Your turn"'s pill (the agents' engineer's).
 - **Undo:** the old size, the top-right anchor and the order.
 
 ### D795. The area's notes are paper glass; a group's edges paper's twin

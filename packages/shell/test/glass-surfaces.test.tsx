@@ -100,6 +100,29 @@ describe("banners (NO-5, NO-6)", () => {
     expect(props("banner")).toMatchObject({ material: "regular", width: 356, cornerRadius: 18, shadow: "xl" });
   });
 
+  test("under the pointer a solid ✕ shows at its corner, and a press on it dismisses it, never opens it", async () => {
+    const store = new NotificationStore({ schedule: () => () => {} });
+    const invoked: string[] = [];
+    store.onEvent((event) => invoked.push(JSON.stringify(event)));
+    const id = store.notify({
+      ...{ appName: "Mail", appIcon: "", summary: "Alex Kim", body: "", actions: [{ key: "default", label: "" }], urgency: "normal" as const },
+      ...{ expireTimeout: -1, imagePath: "", desktopEntry: "", category: "", transient: false, resident: false },
+    });
+    const host = fakeHost();
+    const root = render(<Banner store={store} id={id} />, host.transport);
+    await settle();
+    expect(root.nodeId("banner-dismiss")).toBeUndefined();
+    host.emit({ type: "hover", nodeId: root.nodeId("banner") ?? "", hovered: true });
+    await settle();
+    const dismiss = root.nodeId("banner-dismiss");
+    expect(dismiss).toBeDefined();
+    host.emit({ type: "press", nodeId: dismiss ?? "" });
+    await settle();
+    expect(store.getSnapshot().live.some((each) => each.id === id)).toBe(false);
+    expect(invoked.some((event) => event.includes(`"type":"action"`))).toBe(false);
+    root.unmount();
+  });
+
   test("the lane: the column's own place at the edge, or left of the widget column, never over it", () => {
     const edge = bannerLane(false);
     const beside = bannerLane(true);

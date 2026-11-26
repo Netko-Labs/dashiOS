@@ -8,8 +8,9 @@
  * how tall to make it so the stack (stack.ts) can place them in their lane.
  */
 
-import { Button, Frosted, GLASS, SHADOW, SPACE } from "@dashi/ui";
+import { Button, CLOSE, Frosted, GLASS, GlyphButton, OffGlass, SHADOW, SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
+import { useState } from "react";
 import { type NotificationStore, useNotifications } from "../store.ts";
 import { ellipsize } from "../text.ts";
 import type { Notification, NotificationAction } from "../types.ts";
@@ -57,6 +58,7 @@ export function bannerSurface(notification: Pick<Notification, "body" | "actions
 
 /** The banner for notification `id`, following the store while it lives. */
 export function Banner({ store, id }: { store: NotificationStore; id: number }) {
+  const [hovered, setHovered] = useState(false);
   const notification = useNotifications(store).live.find((candidate) => candidate.id === id);
   if (!notification) return null;
   const buttons = buttonsFor(notification);
@@ -72,7 +74,10 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
         testID="banner"
         style={{ width: BANNER.width, height: bannerHeight(notification), borderRadius: BANNER.radius, shadow: SHADOW.xl }}
         onPress={press}
-        onHoverChange={(hovered) => store.hold(id, hovered)}
+        onHoverChange={(over) => {
+          setHovered(over);
+          store.hold(id, over);
+        }}
       >
         <NoteCard
           testID="banner-card"
@@ -96,7 +101,22 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
               }
             : {})}
         />
+        {hovered ? <Dismiss onPress={() => store.dismiss(id)} /> : null}
       </Frosted>
+    </View>
+  );
+}
+
+/** Where the hover ✕ sits: over the panel's top-left corner (frost-objects board 18). */
+const DISMISS = { at: -SPACE.s } as const;
+
+/** The ✕ under the pointer: a solid disc, never glass (GL-6, as a tooltip), that dismisses the banner. */
+function Dismiss({ onPress }: { onPress: () => void }) {
+  return (
+    <View style={{ position: "absolute", left: DISMISS.at, top: DISMISS.at }}>
+      <OffGlass>
+        <GlyphButton testID="banner-dismiss" glyph={CLOSE} label="Dismiss" size="small" filled onPress={onPress} />
+      </OffGlass>
     </View>
   );
 }
