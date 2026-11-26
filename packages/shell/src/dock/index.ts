@@ -1,12 +1,15 @@
 export { AnimationTargets, dockScreen } from "./animation-targets.ts";
 export { AttentionStore } from "./attention.ts";
+export { DockBadges } from "./badges.ts";
 export { DockController } from "./controller.ts";
+export { type DockExtras, startDockExtras } from "./extras.ts";
 export { matchEntry } from "./layout.ts";
 export { PinStore } from "./pins.ts";
 export { DockPrefs } from "./prefs.ts";
 export { bottomInset } from "./presenter.ts";
 export { DOCK_DEFAULTS, DOCK_STYLES, type DockSettings, resolveDock } from "./settings.ts";
 export { ASK_RIM, type DockPlace, dockSign } from "./sign.ts";
-export { startDock } from "./start.tsx";
+export { type DockRuntime, startDock } from "./start.tsx";
 export { TileStore } from "./tiles.ts";
+export { DockTrash } from "./trash.ts";
 export type { DockMenuAction } from "./types.ts";

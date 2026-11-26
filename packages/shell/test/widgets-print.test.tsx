@@ -1,8 +1,7 @@
 /**
  * How a card is printed (round five, Frost): private nodes are blanks while
  * locked; a card is paper glass, radius 18 (14 one row); the card on air keeps
- * its glass and glows in its own ink (CO-12), and only on the lock's wash
- * floods inside a ring of the tally's colour; house lights dim every ink but
+ * its glass and glows in its own ink (CO-12), the lock's too (D807); house lights dim every ink but
  * the holder's; an extension's widget prints in plain ink whatever its tree says.
  */
 
@@ -97,17 +96,17 @@ describe("a widget's print", () => {
     expect(tree.toLowerCase()).toContain(`"shadow":"0 0 30 3 ${withAlpha(dark.text.ink, GLASS.onAir.dark).toLowerCase()}"`);
   });
 
-  test("on the lock's wash the card on air still floods inside the tally's ring (the lock's Now bar, until it wears Frost)", async () => {
+  test("on the lock a card on air glows as anywhere: no flood, no tally ring (CO-12, D807)", async () => {
     const tree = (
       await print(
-        <Card look={look({ air: true, glass: true })} width={172} height={172}>
+        <Card look={look({ air: true, redact: true })} width={172} height={172}>
           <Num value="3" size={64} />
         </Card>,
       )
     ).toLowerCase();
-    expect(tree).toContain(inks.tally.toLowerCase());
-    expect(tree).toContain(`"background":"${inks.ink.miso.toLowerCase()}`);
-    expect(tree).not.toContain('"shadow"');
+    expect(tree).toContain('"shadow"');
+    expect(tree).not.toContain('"tally-ring"');
+    expect(tree).not.toContain(`"background":"${inks.ink.miso.toLowerCase()}`);
   });
 
   test("house lights dim the inks of every card but the holder's", async () => {

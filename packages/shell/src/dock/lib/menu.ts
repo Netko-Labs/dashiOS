@@ -68,3 +68,8 @@ export function buildDockOptionsMenu(settings: DockSettings): MenuEntry<DockMenu
     item("Dock Settings…", { kind: "dock-settings" }),
   ];
 }
+
+/** The Trash's menu (DK-4): Open, and Empty Trash…, which asks first. */
+export function buildTrashMenu(): MenuEntry<DockMenuAction>[] {
+  return [item("Open", { kind: "trash-open" }), SEPARATOR, item("Empty Trash…", { kind: "trash-empty" })];
+}

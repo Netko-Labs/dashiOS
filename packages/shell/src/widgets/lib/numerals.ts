@@ -2,7 +2,7 @@
  * How the Inks print a number (round five, #12 to #14): Inter Display, its
  * weight following the value in steps of 100 from 300 to 500, never under
  * 400 below 40 points; units Regular. The lock's, the login screen's and
- * Glance's clock is @dashi/ui's InksClock, at 200 (D670).
+ * Glance's clock is @dashi/ui's LockClock, at 200 (D670, D806).
  * Only on a host that draws light weights and the display cut (mirin PR #55,
  * `fontWeights` and `displayFont`); an older host refuses the tree, so there
  * the number is Regular, and Medium when big and near its end, as before.

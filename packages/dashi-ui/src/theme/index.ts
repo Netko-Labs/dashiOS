@@ -24,7 +24,6 @@ export {
   HIT_AREA,
   INK_TILE,
   KNOB,
-  LOCK_GLASS,
   LOGIN,
   LOGIN_LIGHT,
   type LoginColors,

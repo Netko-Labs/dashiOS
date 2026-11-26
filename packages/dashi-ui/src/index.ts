@@ -32,7 +32,7 @@ export { EMPTY_STATE, EmptyState, NoResults, noResultsMessage } from "./empty-st
 export { ERROR_STATE, ErrorState } from "./error-state.tsx";
 export { FoldedChoices, type FoldedChoicesProps } from "./folded.tsx";
 export { FormSheet, type FormSheetProps } from "./form-sheet.tsx";
-export { Frosted, type FrostedProps, OffGlass, useFocusGap, useGlassTone, useOnGlass, useSolidTwin } from "./frosted.tsx";
+export { Frosted, type FrostedProps, GlassLayer, OffGlass, useFocusGap, useGlassTone, useOnGlass, useSolidTwin } from "./frosted.tsx";
 export { GLYPH_BUTTON, GlyphButton, type GlyphButtonProps } from "./glyph-button.tsx";
 export * as glyphs from "./glyphs.ts";
 export {
@@ -59,23 +59,35 @@ export {
   STOP,
   WARNING,
 } from "./glyphs.ts";
-export { CLOCK_DAY, ClockHead, type ClockHeadProps, clockFace, clockParts, InksClock, type InksClockProps } from "./inks-clock.tsx";
+export {
+  CLOCK_DAY,
+  ClockHead,
+  type ClockHeadProps,
+  clockFace,
+  clockParts,
+  InksClock,
+  type InksClockProps,
+  LockClock,
+  type LockClockProps,
+} from "./inks-clock.tsx";
 export { InlineField, type InlineFieldProps } from "./inline-field.tsx";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { KeyedText, type KeyedTextStyle, keyGlyphSize, namesKeys } from "./keyed-text.tsx";
 export { KEYPAD_KEY, KeypadKey, type KeypadKeyProps, type KeypadKeyTone } from "./keypad-key.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
+export { clockBlock, clockFor, type LockLayout, type LockShape, lockLayout, lockShape, paneWidth, type TodayPlace, WHO_HEIGHT } from "./lock-layout.ts";
 export { Avatar, LOGIN_PARTS, LoginBackLink, LoginChip, LoginPerson } from "./login-parts.tsx";
 export {
   LOGIN_FOCUS_RING,
   LOGIN_GROUND,
   LOGIN_INK,
   LOGIN_MUTED,
-  LOGIN_SCREEN,
   LoginScreen,
   type LoginScreenProps,
   type PowerAction,
 } from "./login-screen.tsx";
+export { initialsOf, SplitLogin, type SplitLoginProps, type SplitPower } from "./login-split.tsx";
+export { WhoSignsIn, type WhoSignsInProps } from "./login-who.tsx";
 export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, type Size } from "./menu-place.ts";
 export { type MenuHighlight, MenuHighlightContext, MenuLine, MenuRow, type MenuRowProps, menuHighlight } from "./menu-row.tsx";
 export { MONTH_GRID, MonthGrid, type MonthGridProps } from "./month-grid.tsx";

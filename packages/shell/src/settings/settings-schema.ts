@@ -101,7 +101,7 @@ export const WALLPAPER = {
   pauseOnBattery: bool(),
 };
 
-export const DOCK = { style: literal(...DOCK_STYLES), autohide: bool(), visible: bool() };
+export const DOCK = { style: literal(...DOCK_STYLES), autohide: bool(), visible: bool(), magnify: bool() };
 
 /** What each Desktop is called, tidied (spaces/names.ts). */
 const spaceNames: Shape<SpaceNames> = shape(

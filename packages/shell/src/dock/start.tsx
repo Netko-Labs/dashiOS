@@ -16,18 +16,20 @@ import { spawnShellHost } from "../shared/metal/index.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import type { AttentionStore } from "./attention.ts";
+import type { DockBadges } from "./badges.ts";
 import type { DockController } from "./controller.ts";
 import { Autohide } from "./lib/autohide.ts";
 import { compositorEdges } from "./lib/edges.ts";
 import { Slide } from "./lib/slide.tsx";
 import { type DockHandle, DockSurface } from "./lib/surface.ts";
 import { Taskbar } from "./lib/taskbar.tsx";
-import { Dock } from "./lib/view.tsx";
+import { DOCK_HEADROOM, Dock } from "./lib/view.tsx";
 import type { PinStore } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
 import { DockPresenter, specOf } from "./presenter.ts";
 import { dockSign } from "./sign.ts";
 import type { TileStore } from "./tiles.ts";
+import type { DockTrash } from "./trash.ts";
 
 export interface StartDockOptions {
   prefs: DockPrefs;
@@ -48,6 +50,10 @@ export interface StartDockOptions {
   reduceMotion?(): boolean;
   /** The screen under the pointer, when it reaches a bottom edge: the Dock follows the person there (presenter.ts, D555). */
   pointerScreen?(): Promise<string | undefined>;
+  /** What apps say on their icons (DK-3); none without it. */
+  badges?: DockBadges | null;
+  /** The Trash (DK-4); none without it. */
+  trash?: DockTrash | null;
 }
 
 export interface DockRuntime {
@@ -73,11 +79,12 @@ export function viewSurface(variant: string, output: string | undefined): { heig
   const height = taskbar ? TASKBAR.height : DOCK_HEIGHT;
   const margin = taskbar ? 0 : DOCK.margin;
   return {
-    height,
+    // The Dock's surface keeps room above its panel for a magnified icon and the label (DK-2, DK-6); it takes clicks only on the panel.
+    height: taskbar ? height : height + DOCK_HEADROOM,
     surface: {
       layer: "top",
       anchor: ["bottom", "left", "right"],
-      // Windows stop above the Dock; a hidden-until-needed one lies over them.
+      // Windows stop above the Dock's panel; a hidden-until-needed one lies over them.
       exclusiveZone: exclusive ? height + margin : 0,
       margin: { bottom: margin },
       namespace: DOCK_NAMESPACE,
@@ -179,7 +186,15 @@ export function startDock(options: StartDockOptions): DockRuntime {
       const element = taskbar ? (
         <Taskbar {...shared} autohide={autohide} />
       ) : (
-        <Dock {...shared} autohide={autohide} onPanel={(bounds) => clickable([bounds])} />
+        <Dock
+          {...shared}
+          autohide={autohide}
+          badges={options.badges ?? null}
+          trash={options.trash ?? null}
+          // Magnification is the setting's, and off under Reduce Motion (DK-6, MO-3).
+          magnify={() => prefs.snapshot.magnify && !(options.reduceMotion?.() ?? false)}
+          onPanel={(bounds) => clickable([bounds])}
+        />
       );
       return signed(taskbar ? "taskbar" : "dock", output, (closed) => open({ title: "Dock", width: 1, height, surface }, element, closed), onClosed);
     },

@@ -72,14 +72,13 @@ describe("widgets and the area's cards (CO-11, NO-5)", () => {
     expect(props("preview").background).toBe(GLASS.levels.paper.light.solid);
   });
 
-  test("the lock's wash is not glass: its cards stay opaque paper with a hairline", async () => {
+  test("the lock's cards are paper glass too (LK-4, D807)", async () => {
     const props = await onGlass(
-      <Card look={{ ...look, glass: true }} width={172} height={172} testID="card">
+      <Card look={{ ...look, redact: true }} width={172} height={172} testID="card">
         <Num value="86" size={64} />
       </Card>,
     );
-    expect(props("card").material).toBeUndefined();
-    expect(props("card").borderWidth).toBe(1);
+    expect(props("card").material).toBe("paper");
   });
 
   test("the edit ring stands 3 out in 2 of ink, its corner the card's plus that", () => {

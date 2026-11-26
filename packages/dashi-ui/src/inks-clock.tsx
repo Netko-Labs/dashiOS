@@ -11,6 +11,7 @@
 
 import { Text, type TextStyle, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { GLASS } from "./theme/glass.ts";
 import { SPACE, TYPE, WEIGHT } from "./theme/measures.ts";
 
 /** The clock's face: Inter Display ExtraLight, or the default face on a host that cannot draw it. */
@@ -74,6 +75,43 @@ export function ClockHead({ day, time, ink, display, after, children, testID }: 
       </View>
       <InksClock time={time} color={ink} display={display} testID="clock" />
       {children}
+    </View>
+  );
+}
+
+export interface LockClockProps {
+  /** The day as the host's shared formatter writes it; shown upper case. */
+  day: string;
+  time: string;
+  ink: string;
+  display: boolean;
+  /** Its size and line (lock-layout.ts `clockFor`): 264 / 216, or 30 % of a shorter screen's height. */
+  clock?: { size: number; line: number };
+  testID?: string;
+}
+
+/**
+ * The split lock's clock (LK-2, lock-v3 C): flush left, the day 13 SemiBold capitals `GLASS.lock.dayGap`
+ * above hours over minutes, 264 on a 216 line. The lock, the login screen, Glance and every other screen
+ * draw it at the same place (LK-3). Metal has no tracking or tabular figures yet: the frames' −0.02 em and
+ * 0.06 em are left out (D803).
+ */
+export function LockClock({ day, time, ink, display, clock = GLASS.lock.clock, testID }: LockClockProps): ReactNode {
+  const parts = clockParts(time) ?? [time];
+  const { size, line } = clock;
+  const style = { fontSize: size, lineHeight: line, color: ink, ...clockFace(display) };
+  return (
+    <View {...(testID ? { testID } : {})} style={{ flexDirection: "column", alignItems: "flex-start", gap: GLASS.lock.dayGap }}>
+      <View testID="clock-day">
+        <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: ink }}>{day.toLocaleUpperCase()}</Text>
+      </View>
+      <View testID="clock" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+        {parts.map((part, at) => (
+          <Text key={at === 0 ? "hours" : "minutes"} style={style}>
+            {part}
+          </Text>
+        ))}
+      </View>
     </View>
   );
 }

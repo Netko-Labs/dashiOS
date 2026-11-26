@@ -6,7 +6,7 @@
  * both read the file; the keys, defaults, and checks live here so they
  * cannot disagree.
  *
- *   "dock": { "style": "taskbar", "autohide": true, "visible": true }
+ *   "dock": { "style": "taskbar", "autohide": true, "visible": true, "magnify": true }
  */
 
 export const DOCK_STYLES = ["dock", "taskbar"] as const;
@@ -18,12 +18,14 @@ export interface DockSettings {
   autohide: boolean;
   /** Off: no Dock at all, until it is turned on again (System Settings, or the Dock's menu while it is up). */
   visible: boolean;
+  /** The icon under the pointer grows (DK-6); on by default, and never under Reduce Motion. */
+  magnify: boolean;
 }
 
-export const DOCK_DEFAULTS: Readonly<DockSettings> = { style: "dock", autohide: false, visible: true };
+export const DOCK_DEFAULTS: Readonly<DockSettings> = { style: "dock", autohide: false, visible: true, magnify: true };
 
 /** The keys `dock` may hold. */
-export const DOCK_KEYS = ["style", "autohide", "visible"] as const;
+export const DOCK_KEYS = ["style", "autohide", "visible", "magnify"] as const;
 
 export const isDockStyle = (value: unknown): value is DockStyle => DOCK_STYLES.some((style) => style === value);
 
@@ -33,7 +35,9 @@ export function resolveDock(section: Partial<Record<keyof DockSettings, unknown>
     style: isDockStyle(section.style) ? section.style : DOCK_DEFAULTS.style,
     autohide: typeof section.autohide === "boolean" ? section.autohide : DOCK_DEFAULTS.autohide,
     visible: typeof section.visible === "boolean" ? section.visible : DOCK_DEFAULTS.visible,
+    magnify: typeof section.magnify === "boolean" ? section.magnify : DOCK_DEFAULTS.magnify,
   };
 }
 
-export const sameDock = (a: DockSettings, b: DockSettings): boolean => a.style === b.style && a.autohide === b.autohide && a.visible === b.visible;
+export const sameDock = (a: DockSettings, b: DockSettings): boolean =>
+  a.style === b.style && a.autohide === b.autohide && a.visible === b.visible && a.magnify === b.magnify;

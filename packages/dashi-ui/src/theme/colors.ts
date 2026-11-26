@@ -53,20 +53,9 @@ export const AMBER = { fill: "#F0B93C", ink: "#1D1D1F", deep: "#86600A" } as con
 export const CAPTURE_AREA = { outside: "#00000059", edge: "#ffffffd9", labelGround: "#000000a6", labelInk: "#ffffff" } as const;
 
 /**
- * The lock screen's glass over the wallpaper, per mode (SH-27; Q2: the lock
- * follows the person's mode): a widget's paper and hairline on it. Dark is
- * the inks' frame 4 (a smoked glass), Light their frame 5 (a milky paper).
- */
-export const LOCK_GLASS = {
-  dark: { paper: "#00000047", hairline: "#FFFFFF33" },
-  light: { paper: "#FFFFFF5C", hairline: `${INK_TEXT.light.ink}38` },
-} as const;
-
-/**
  * The login screen's and the lock's words and controls over the wallpaper:
  * its ground (the wallpaper darkened, or lightened), the ink and 70% of it,
- * the field and its 1 px edge (the focus ring while it has the keyboard,
- * KB-2), the power buttons and one held, the initials' disc, the session
+ * the field (its edge the focus ring while it has the keyboard, KB-2), the power buttons and one held, the initials' disc, the session
  * chip, a wrong password's words (the mode's criticalInk) and the ring.
  */
 export interface LoginColors {
@@ -74,13 +63,14 @@ export interface LoginColors {
   ink: string;
   muted: string;
   field: string;
-  fieldEdge: string;
   button: string;
   buttonHeld: string;
   initialsGround: string;
   chip: string;
   wrong: string;
   focusRing: string;
+  /** A glyph on an ink fill (the field's go arrow). */
+  onInk: string;
 }
 
 /** The login screen (always: nobody has signed in to choose) and the lock in Dark: the wallpaper darkened to 72% black. */
@@ -89,13 +79,13 @@ export const LOGIN: LoginColors = {
   ink: TRUE_BLACK.ink,
   muted: `${TRUE_BLACK.ink}b3`,
   field: "#ffffff26",
-  fieldEdge: LOCK_GLASS.dark.hairline,
   button: "#ffffff26",
   buttonHeld: "#ffffff59",
   initialsGround: "#ffffff2e",
   chip: "#ffffff1a",
   wrong: darkColors.criticalInk,
   focusRing: darkColors.focusRing,
+  onInk: darkColors.onPrimary,
 };
 
 /**
@@ -108,13 +98,13 @@ export const LOGIN_LIGHT: LoginColors = {
   ink: INK_TEXT.light.ink,
   muted: `${INK_TEXT.light.ink}b3`,
   field: `${INK_TEXT.light.ink}1a`,
-  fieldEdge: LOCK_GLASS.light.hairline,
   button: `${INK_TEXT.light.ink}1a`,
   buttonHeld: `${INK_TEXT.light.ink}40`,
   initialsGround: `${INK_TEXT.light.ink}24`,
   chip: `${INK_TEXT.light.ink}14`,
   wrong: lightColors.criticalInk,
   focusRing: lightColors.focusRing,
+  onInk: lightColors.onPrimary,
 };
 
 /** The set for a mode: the login screen asks for "dark" always, the lock for the person's mode. */

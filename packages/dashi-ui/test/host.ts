@@ -15,3 +15,8 @@ export function fakeHost(): { transport: NativeTransport; trees: string[]; emit:
   };
   return { transport, trees, emit, last: () => trees.at(-1) ?? "" };
 }
+
+/** A root drawn on a screen this size: what the host says once it lays out a full-screen view (the lock, the login screen). */
+export function layOut(host: { emit: (event: NativeEvent) => void }, nodeId: string | undefined, width = 1646, height = 1029): void {
+  if (nodeId) host.emit({ type: "resize", nodeId, bounds: { x: 0, y: 0, width, height } });
+}

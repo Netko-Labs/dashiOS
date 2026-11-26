@@ -9392,3 +9392,134 @@ short words, as the rulebook is written.
   lists need the compositor and `material` to carry them. Meanwhile the five stepped inks keep their
   contrast on the twins (`dashi-ui/test/glass.test.tsx`), and the area's widgets read them.
 - **Undo:** nothing to undo.
+
+### D800. The Dock magnifies by icon, and names it on its own surface
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; DK-2, DK-6; frost-objects board 05).
+- **Question:** Metal tells a view that the pointer is over it (`onHoverChange`), not where it is, and has
+  no transforms. How does the Dock magnify and where does the label go?
+- **Choice:** by icon, as board 05 draws it: the icon under the pointer at `GLASS.dock.magnify.peak`, its
+  two neighbours at `.neighbour`, lifted; each icon's box grows with its picture (grown upward), so the row
+  widens and the icon under the pointer keeps its centre (its neighbours grow alike on both sides). The
+  Dock's surface keeps `DOCK_HEADROOM` above the panel (the tallest icon and the label); the windows' zone
+  stays the panel's, and clicks reach the lifted part only while it is lifted (`clickBounds`). Nothing
+  grows or is named while a drag, a Dock menu or a card asking is under way, or while the Dock moves; off
+  under Reduce Motion and by the new Settings › Desktop & Dock › Magnification row (`dock.magnify`, on).
+  The label is regular glass on the Dock's surface, radius 9 (frost-objects' table), and moves at once
+  from one icon to the next; only the first waits 300 ms.
+- **Why:** a smooth falloff needs the pointer's position, which no Metal host reports; the board drew
+  exactly three sizes. A label on its own surface would be a second host for a 26 pt pill.
+- **Undo:** `magnify` off; drop `DOCK_HEADROOM` and the label.
+
+### D801. Counts and downloads come from the launcher API apps already speak
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; DK-3).
+- **Choice:** the Dock listens on the session bus for `com.canonical.Unity.LauncherEntry` `Update`
+  (`count`, `count-visible`, `progress`, `progress-visible`), keyed by the `application://<id>.desktop`
+  URI, cleared when the sender leaves the bus (`dock/badges.ts`). Chromium (Helium), Firefox, Thunderbird
+  and Telegram send it; a download's progress is the same signal. Counts are ink pills with onPrimary
+  words ("99+" past 99), ringed in the thin twin; progress an ink bar on paper's solid twin. Not the
+  notifications' count: an app's own number is the one it means.
+- **Undo:** drop the listener; nothing else reads it.
+
+### D802. The Trash in the Dock takes drops, opens in Files, asks before it empties
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; DK-4).
+- **Choice:** full while the home Trash's `files` folder holds anything (watched); the icons are two new
+  SVGs in the app icons' style (empty, full), as board 05 draws them. A press opens Files on that folder
+  (Files shows it as the Trash). Its menu: Open, Empty Trash…, which asks through the person's own sheet
+  (`confirmPerson`, ume, "Empty the Trash?") and then empties every Trash (`gio trash --empty`). Files
+  dropped on it go to the Trash, except the home folder, the root and the folders the sidebar lists.
+- **Undo:** leave `trash` out of `startDock`.
+
+### D803. The lock is split on wide screens only; the narrow one waits for its drawing (superseded by D806)
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; LK-1 to LK-5, NO-7, MS-6; lock-v3 C).
+- **Choice:** a sign-in screen at least `GLASS.lock.splitMin` (1280) points wide is split (`SplitLogin`,
+  `@dashi/ui`): the day and the 264 / 216 clock flush left (88 in, 96 on a 1920-wide screen), who signs
+  in (initials on regular glass, the 280 field of regular glass with an ink go arrow, the hint) from
+  `GLASS.lock.footer` above the foot (it rides up on a short screen, never over the clock), Sleep, Restart
+  and Shut Down as thin pills `GLASS.lock.powerBottom` above it; on the lock where the person is, Today at
+  the right (`widgets/lock-today.tsx`): the Calendar widget wide, a row of three compacts (the weather,
+  the battery, the person's first compact widget), each app's notifications as one hidden note (its
+  count, the time, a lock glyph, NO-7), and the song with its buttons. The other screens, the login
+  screen and Glance draw the left half alone at the same place. The split's root wears the veil where the
+  host draws glass; dashi-comp now draws a lock surface's own panes (it drew none). Below 1280 points
+  (the VM's laptop screen at 1.75, a portrait monitor) everything is as it was: that layout is being drawn
+  for the owner and isn't approved.
+- **Left out, small:** Metal draws no tracking and no tabular figures, so the clock's −0.02 em and the
+  day's 0.06 em are missing; Today's notes show no app icon (the widgets know no catalog); the status
+  chip (Wi-Fi, the battery, an agent at work) needs a status source the lock doesn't have; the per-app
+  "Show previews" setting isn't built, so every app's words are hidden; Glance folds the next event as
+  the tally's on-air line (the event on air), not every next event.
+- **Undo:** `isSplitWidth` false: every screen is the column again.
+
+### D804. The split's veil only in the session's mode; the login screen keeps its Dark wash otherwise
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; LK-3, LK-4, GL-3; found in the VM).
+- **Question:** the compositor draws glass in the session's mode. The login screen is always Dark; in
+  a Light session (and in the greeter, whose compositor knows no mode) its veil came out Light under
+  Dark's white words.
+- **Choice:** `useVeil(mode)` sends the veil only when the screen's mode is the session's, as `Frosted`
+  gives its twin there; the split wraps itself in `Appearance` of its own mode, so its regular and thin
+  glass are their Dark twins too. The login screen then shows `LOGIN`'s Dark wash (GL-3's fallback)
+  until the compositor can be told to draw the greeter's glass in Dark.
+- **Undo:** drop the mode check.
+
+### D805. Hover ends when the pointer leaves a window (mirin, sumi)
+
+- **Date:** 2026-11-26. `v10/glass-dock`, mirin `v10-glass-dock` (reversible; found in the VM, DK-2, DK-6).
+- **Question:** the Dock's label and magnification stayed after the pointer left the Dock.
+- **Why:** sumi cleared hover on the leave, but the Dock reflows when its icon stops being hovered,
+  and the redraw hit-tested the pointer's last place, still over the icon, so it was hovered again.
+- **Choice:** sumi's window keeps that the pointer is outside from `MouseExited` until any other pointer
+  event, and hit-tests nothing meanwhile (mirin c9787d0, with a test that fails without it). Fixed at
+  the source (Part A); nothing in Dashi works around it.
+- **Undo:** revert the mirin commit.
+
+### D806. The split lock on every screen size: a narrower pane on landscape, a sheet only on vertical
+
+- **Date:** 2026-11-26. `v10/glass-dock` (the owner's answer on lock-v3 #narrow, 26 Nov; LK-1 to LK-3,
+  MS-6). Supersedes D803's "wide screens only".
+- **The owner chose:** on a landscape screen narrower than 1646 pt Today stays a side pane,
+  `clamp(W − 600, 400, 744)` wide (424 at 1024, 680 at 1280), the clock full size for the screen; the
+  bottom sheet only on a screen taller than it is wide; the clock hours over minutes everywhere (LK-1's
+  "and the clock one line" is gone).
+- **The designer's smaller calls, which stand:** the power pills beside who signs in on a vertical screen
+  (the sheet takes the foot); opening Today needs no password (its contents already show); a full band of
+  frost across the top 56 pt for the status row; on a vertical monitor the other screen's lock sits at the
+  top.
+- **How it is built:** one pure function, `lockLayout(W, H)` (`@dashi/ui` lock-layout.ts), gives every
+  place: `wide` (C's frame, 1646 and up), `pane` (the clock 30 % of the height, at most 264, its line 0.82,
+  64 in, 72 from 1280; who signs in 28 under it; the pills at the foot; Today the narrower pane, two
+  compacts under 520 inside) and `vertical` (the day from 120; the pills beside who signs in; the sheet
+  open when it leaves the left half whole above it, else its 104 peek: the title, the notifications in one
+  card and the song, a thin chevron that opens and closes it). The lock, its other screens, the login
+  screen and Glance all read it, so the old centred column, its 120 clock, the row under it, the side
+  column and the Now Bar are gone (`LockHead`, `LockSide`, `NowBar`, `noticeCounts`).
+- **Decided small, here:** Metal has no per-corner radius, so the sheet runs its 18 radius past the
+  screen's foot (the frame draws it 20 taller too); an opened peek covers the left half's lower part
+  rather than squeezing the clock (the landscape sheet that squeezed it was not chosen); the peek's row
+  holds the notifications as one card and the song, not the frame's five chips (the next event, the
+  weather and the battery need a chip of their own the widgets don't draw yet); the band of frost waits
+  for the status row (the lock has no status source, and the veil's tint is the compositor's, one even
+  tint).
+- **Undo:** `lockShape` returns `wide` for every screen.
+
+### D807. The lock's cards are paper glass and glow on air; its wash, its inks' shift and its Now bar go
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; LK-4, CO-11, CO-12; after D791 and D792 merged).
+- **Choice:** the lock wears Frost (D803, D806), so its widget cards are the area's: `Frosted
+  level="paper"` at 18 / 14, the env's inks `glassInkTokens` (no more lock shift), and the card on air
+  keeps its glass and glows in its own ink with the Now dot (`onAirGlow`, `NowTag`), never a flood or a
+  tally ring. On the lock the card holding the tally is whichever of Today's shows it (the calendar, a
+  compact, the song): the lock has no live cards. The lock's Now bar went with the old column (D806), so
+  nothing floods anywhere. Retired with it: the card's `glass` look and `floods`, the tally ring,
+  `LOCK_GLASS`, the login colours' `fieldEdge` (the field is on glass, LK-1) and the inks' `lock` shift
+  (`INK_RULE.lockL`). The VM showed the cards vanish: on the lock they are the third glass layer (the
+  veil, Today's regular, then paper), which GL-2 draws as its solid twin, but the veil is a `material` on
+  the screen's root, not a `Frosted`, so the kit didn't count it. `GlassLayer` (`@dashi/ui`) counts such a
+  glass; the split wears it, so Today's cards are paper's solid twin (as lock-v3 draws them) while Today
+  and who signs in stay glass. Today's third compact is the widget on air when it comes compact (a timer
+  counting down glows there).
+- **Undo:** bring back `look.glass` and `LOCK_GLASS` from git; nothing else reads them.

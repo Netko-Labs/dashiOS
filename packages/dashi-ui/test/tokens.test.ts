@@ -44,7 +44,7 @@ describe("the scales are design.html's", () => {
   test("TK-1: spacing, radii, shadows, opacity and motion", () => {
     expect(Object.values(SPACE)).toEqual([1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24]);
     expect([RADIUS.thumb, RADIUS.check, RADIUS.row, RADIUS.control, RADIUS.card, RADIUS.sheet]).toEqual([2, 4, 5, 7, 10, 12]);
-    expect([RADIUS.menu, RADIUS.panelCard, RADIUS.panel, RADIUS.capsuleCard, RADIUS.dock, RADIUS.icon]).toEqual([10, 24, 28, 17.5, 18, 10.5]);
+    expect([RADIUS.menu, RADIUS.panelCard, RADIUS.panel, RADIUS.capsuleCard, RADIUS.dock, RADIUS.icon]).toEqual([10, 24, 28, 17.5, 20, 10.5]);
     expect(Object.values(SHADOW).sort()).toEqual(["lg", "sm", "xl"]);
     expect(Object.values(OPACITY)).toEqual([0.4, 0.5, 0.6, 0.75, 0.85]);
     expect(MOTION.step).toBe(80);
