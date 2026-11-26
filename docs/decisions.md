@@ -9159,3 +9159,14 @@ short words, as the rulebook is written.
   plain white wash where glass can't be drawn or the shell is older. Its tone goes nowhere (no words).
 - **Why:** Rust displays, TypeScript decides: the look is the shell's, as every pane's is.
 - **Undo:** drop `preview`; the compositor draws its wash.
+
+### D818. A window's glass needs mirin to keep its opaque promise off on a configure
+
+- **Date:** 2026-11-26. `v10/glass-windows` (the VM's finding; mirin PR #61, branch `v10-glass-windows`).
+- **Question:** in the VM, Files' sidebar on thick glass was black. sumi's `update_window` (every
+  configure: a focus change, a resize) promised the whole surface opaque while a frame had glass
+  panes, so the compositor drew the window opaque. A window with panes from its first frames always
+  hit it; the gallery's Glass page escaped because its panes came after the configures.
+- **Choice:** fixed in mirin, where it starts (Part A): one rule, `promises_opaque`, for the frame and
+  the configure, with a test. Dashi needs mirin with PR #61 for any window's sidebar to show glass.
+- **Undo:** revert the mirin commit; sidebars show black where glass should be.
