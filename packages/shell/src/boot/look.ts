@@ -7,6 +7,7 @@
 import { AccentSync, type AppearanceDeps, ChromeStyle, CornerFeed, readPixels, sessionDeps, WindowStyleSync } from "../appearance/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import type { DockPrefs } from "../dock/index.ts";
+import { GlassSync } from "../glass-style.ts";
 import { IdlePolicy } from "../idle.ts";
 import { InputMethodRunner } from "../input-method.ts";
 import { PointerSync } from "../pointer.ts";
@@ -41,6 +42,8 @@ export interface Look {
   idle: IdlePolicy | null;
   chromeStyle: ChromeStyle | null;
   windowStyle: WindowStyleSync | null;
+  /** How glass looks and where it gives way (IPC `glass-style`, `glass-clients`; glass-style.ts). */
+  glass: GlassSync | null;
   gtkCorners: CornerFeed;
   wallpaper: WallpaperSync | null;
   appearanceDeps: AppearanceDeps;
@@ -75,6 +78,7 @@ function makeLook(compositor: Compositor | null, services: Services): Applied {
   const chromeStyle = compositor ? new ChromeStyle(compositor) : null;
   // The depth between windows: shadows, the hairline, the optional ring (IPC `window-style`; appearance/window-style.ts).
   const windowStyle = compositor ? new WindowStyleSync(compositor) : null;
+  const glass = compositor ? new GlassSync(compositor) : null;
   // GTK apps round their own windows to the same radius (shared/appearance/gtk-colors.ts).
   const gtkCorners = new CornerFeed();
   // The wallpaper behind the windows and the lock screen (IPC `wallpaper`; wallpaper/).
@@ -111,7 +115,7 @@ function makeLook(compositor: Compositor | null, services: Services): Applied {
   services.add("input method", () => inputMethod?.stop());
   // The accent's seed, the wallpaper's included, for every process to paint from (appearance/accent.ts).
   const accent = new AccentSync({ flags: controlFlags(), pixels: readPixels });
-  return { state, idle, chromeStyle, windowStyle, gtkCorners, wallpaper, appearanceDeps, pointer, textSize, inputMethod, accent };
+  return { state, idle, chromeStyle, windowStyle, glass, gtkCorners, wallpaper, appearanceDeps, pointer, textSize, inputMethod, accent };
 }
 
 /** settings.json, read or changed: every piece it drives follows. */
@@ -135,6 +139,8 @@ function applySettings(look: Applied, settings: Settings, desktops: Desktops, do
   chromeStyle?.setReduceMotion(settings.appearance.reduceMotion);
   hostAbilities.setReduceMotion(settings.appearance.reduceMotion);
   windowStyle?.set({ highlight: settings.appearance.highlightActiveWindow, reduceMotion: settings.appearance.reduceMotion });
+  look.glass?.set({ reduceTransparency: settings.appearance.reduceTransparency });
+  look.glass?.setApps(settings.appearance.glassForApps);
   state.wallpaperChoice = settings.appearance.wallpaper;
   if (state.liveWallpaper) state.liveWallpaper.apply(state.wallpaperChoice);
   else wallpaper?.apply(state.wallpaperChoice);

@@ -1,6 +1,6 @@
 /** The shell's chrome, its input claims, and its settings (docs/compositor-ipc.md, "Shell chrome and input claims"). */
 
-import { bool, int, list, map, num, obj, optional, record, str } from "@dashi/shape";
+import { bool, int, list, literal, map, num, obj, optional, record, str } from "@dashi/shape";
 import { FrameShape, PointersShape } from "../../wire.ts";
 import { Done, method } from "./spec.ts";
 
@@ -35,17 +35,42 @@ const WindowStyle = obj({
   fade: optional(num({ min: 0, max: 1000 })),
 });
 
-/** A pane of frosted glass behind a shell surface (render/glass/ in dashi-comp). */
+const GlassFloor = obj({ ink: str(), ratio: num({ min: 1, max: 21 }) });
+
+/** A material level (`glass-style`; dashi-chrome-v1's `level`). */
+const GlassLevel = literal("thin", "regular", "thick", "paper", "veil");
+
+/** A pane of frosted glass behind a shell surface (render/glass/ in dashi-comp): its level, or its own look. */
 const GlassPane = obj({
   rect: optional(obj({ x: num(), y: num(), width: num(), height: num() })),
   radius: num({ min: 0, max: 128 }),
-  blur: num({ min: 0, max: 128 }),
+  level: optional(GlassLevel),
+  blur: optional(num({ min: 0, max: 128 })),
   saturation: optional(num({ min: 0, max: 3 })),
   tint: optional(str()),
   noise: optional(num({ min: 0, max: 1 })),
   xray: optional(bool()),
   brightness: optional(num({ min: 0, max: 3 })),
-  floor: optional(obj({ ink: str(), ratio: num({ min: 1, max: 21 }) })),
+  floor: optional(GlassFloor),
+});
+
+const GlassLevelLook = obj({
+  blur: num({ min: 0, max: 128 }),
+  saturation: num({ min: 0, max: 3 }),
+  tint: str(),
+  solid: optional(str()),
+});
+
+/** How each level looks, and how glass is drawn (`glass-style`). */
+const GlassStyle = obj({
+  mode: literal("frosted", "xray", "solid"),
+  levels: obj({ thin: GlassLevelLook, regular: GlassLevelLook, thick: GlassLevelLook, paper: GlassLevelLook, veil: GlassLevelLook }),
+  grain: num({ min: 0, max: 1 }),
+  rim: obj({ width: num({ min: 0, max: 4 }), top: str(), middle: str(), bottom: str() }),
+  hairline: obj({ width: num({ min: 0, max: 4 }), color: str() }),
+  floor: optional(GlassFloor),
+  depth: num({ min: 1, max: 8 }),
+  apps: GlassLevel,
 });
 
 const Pointer = {
@@ -81,6 +106,8 @@ export const CHROME = {
   chrome: method("shell", obj({ dark: optional(bool()), radius: optional(num()), reduceMotion: optional(bool()) }), Done),
   "window-style": method("shell", WindowStyle, Done),
   glass: method("shell", obj({ namespace: str(), panes: list(GlassPane, { max: 8 }) }), obj({ frosted: bool() })),
+  "glass-style": method("shell", GlassStyle, obj({ frosted: bool() })),
+  "glass-clients": method("shell", obj({ others: bool(), deny: list(str()) }), Done),
   keymap: method("shell", Keymap, Done),
   "held-keys": method(
     "shell",

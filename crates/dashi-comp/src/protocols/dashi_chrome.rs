@@ -1,6 +1,7 @@
 //! dashi-chrome-v1 (protocols/dashi-chrome-v1.xml): an app asks for the
 //! "unified" style, its content running to the top edge with only the traffic
-//! lights over it (mirin's Metal host does, for `titleBar: "unified"`).
+//! lights over it (mirin's Metal host does, for `titleBar: "unified"`); and,
+//! from version 2, any surface's panes of glass (dashi_glass.rs).
 
 #![allow(
     non_upper_case_globals,
@@ -38,7 +39,7 @@ pub(crate) struct ChromeData {
 }
 
 pub(crate) fn create_global(dh: &DisplayHandle) {
-    dh.create_global::<Dashi, dashi_chrome_manager_v1::DashiChromeManagerV1, ()>(1, ());
+    dh.create_global::<Dashi, dashi_chrome_manager_v1::DashiChromeManagerV1, ()>(2, ());
 }
 
 impl GlobalDispatch<dashi_chrome_manager_v1::DashiChromeManagerV1, ()> for Dashi {
@@ -57,11 +58,11 @@ impl GlobalDispatch<dashi_chrome_manager_v1::DashiChromeManagerV1, ()> for Dashi
 impl Dispatch<dashi_chrome_manager_v1::DashiChromeManagerV1, ()> for Dashi {
     fn request(
         state: &mut Self,
-        _client: &Client,
+        client: &Client,
         manager: &dashi_chrome_manager_v1::DashiChromeManagerV1,
         request: dashi_chrome_manager_v1::Request,
         _data: &(),
-        _dh: &DisplayHandle,
+        dh: &DisplayHandle,
         data_init: &mut DataInit<'_, Self>,
     ) {
         match request {
@@ -86,6 +87,21 @@ impl Dispatch<dashi_chrome_manager_v1::DashiChromeManagerV1, ()> for Dashi {
                     },
                 );
                 state.chrome_objects.push((surface, chrome));
+            }
+            dashi_chrome_manager_v1::Request::GetGlass { id, surface } => {
+                let taken = state
+                    .glass
+                    .objects
+                    .iter()
+                    .any(|(known, _)| known == &surface.downgrade());
+                if taken {
+                    manager.post_error(
+                        dashi_chrome_manager_v1::Error::GlassExists,
+                        "the surface already has a dashi_glass_v1",
+                    );
+                    return;
+                }
+                super::dashi_glass::make(state, dh, client, id, &surface, data_init);
             }
             dashi_chrome_manager_v1::Request::Destroy => {}
         }

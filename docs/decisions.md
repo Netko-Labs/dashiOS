@@ -8611,3 +8611,217 @@ short words, as the rulebook is written.
   not compile) and the shell keeps the opaque fill. None of these is built in the spike beyond the
   answer and `xray`; they come with the shipped version.
 - **Undo:** each is one condition in the shell.
+
+### D720. Dashi's glass is Frost: four neutral materials, and the rulebook says so
+
+- **Date:** 2026-11-25. The owner's choice (`dashi-0.10.0-design/glass/owner-answers.md`); written into
+  the rulebook on `v10/glass-rules` (review: `dashi-0.10.0-review/25-glass-rules/`).
+- **Question:** three directions were drawn for "expressiveness, frosted glass": Frost (quiet glass,
+  `glass/frost/`), Tint and Prism. Which one, and how does it become rules the code can be held to?
+- **Choice:** Frost. Four neutral materials: thin (the menu bar, the Dock), regular (menus, Control
+  Center, the launcher and its conversation, banners, sheets, the lock's field), thick (the focused
+  window's sidebar), paper (widgets); and the lock's veil. Blur, saturation, a tint per mode with a
+  contrast floor, a grain, a light rim and a dark hairline; a window's content stays opaque; words on
+  glass a grey that leans to the backdrop's tone; titles of 20 and up in Inter Display SemiBold.
+  design.html takes Frost's "rules it changes" (DE-4, DE-2, CO-6, CO-10, CO-11, CO-12, RA-1, RA-2,
+  LA-1, UI-5, TY-1, TY-2, KB-2, MO-3, PA-9) and adds GL-1 to GL-4 and MO-4. Every number is a token in
+  `@dashi/ui`'s `theme/glass.ts`, one `GLASS` (`levels`, `veil`, `grain`, `rim`, `hairline`, `floor`,
+  `ink`, `depth`, `budget`, `frost`, `onAir`, `inks`), bound in design.html's Glass tables, so H24 holds
+  the page and the code together before anything reads them. Each rule the code doesn't follow yet says which workstream makes it
+  true: y2 (mirin's `material` on Linux), y3 (the compositor's levels, floor and fallbacks), y4 (the
+  shell and the kit wearing it).
+- **Why:** it keeps Dashi calm (the owner's principles) and lets the wallpaper be the colour; the floor
+  makes "readable on any wallpaper" a mechanism instead of a hope; the spike showed it is cheap.
+- **Cost:** radii change on sheets, the launcher, menus, widgets and the Dock (y4); the rulebook carries
+  "Not yet in code" on every glass rule until y2 to y4 land.
+- **Undo:** the materials are tokens; a different direction changes `theme/glass.ts` and the rules with it.
+
+### D721. Sheets and the launcher's conversation are frosted
+
+- **Date:** 2026-11-25. The owner's answer.
+- **Question:** both were made solid on purpose (UI-5's "solid ground"; LA-1's "glass made solid", D261)
+  so nothing read through. Frost makes them glass again because the floor now guarantees contrast.
+- **Choice:** frosted, regular glass. A sheet keeps its scrim, and the floor samples the ground
+  through it.
+- **Undo:** their material back to the solid twin (UI-5, LA-1).
+
+### D722. The lock screen is frosted
+
+- **Date:** 2026-11-25. The owner's answer.
+- **Choice:** the wallpaper under the veil (`GLASS.veil`: blur 10, saturation 1.15, a light tint),
+  frosted most in a band behind the clock and the password; the field on regular glass, the widgets
+  on paper glass. With glass off (GL-3) the lock is today's washes (`LOGIN`, `LOGIN_LIGHT`).
+- **Undo:** drop the veil; the washes stay.
+
+### D723. Battery saver keeps glass, wallpaper-only
+
+- **Date:** 2026-11-25. The owner's answer (Frost had proposed the solid twins).
+- **Choice:** x-ray: each material blurs the wallpaper alone, once, and keeps it; nothing is blurred
+  again while windows move (D715's `xray`, which the spike measured at 0 ms of GPU a frame with a video
+  playing). Reduce Transparency, a GPU that can't and a missed budget still give the solid twins.
+- **Undo:** one condition in the shell (GL-3).
+
+### D724. On air: a faint glow of its ink and the Now dot; no ring, no flood
+
+- **Date:** 2026-11-25. The owner's answer ("the Now dot is enough"), after "the flood looks like shit".
+- **Choice:** CO-12: the card on air is lit: 14% of its ink in its paper glass's tint (floored), lifted
+  2 points with the `lg` shadow in its ink at 50% (`GLASS.onAir`); its one number stays inked, its
+  words stay ink; the tally is the vermilion dot of the "Now" tag and the bar's capsule. The 3-point
+  ring and the flood (D401's) are gone; house lights, holders, cuts and timings are unchanged.
+- **Undo:** CO-12's old sentence; `ON_INK` is still in the code until y4 removes the flood.
+
+### D725. Light glass stays light over a dark wallpaper
+
+- **Date:** 2026-11-25. The owner's answer.
+- **Question:** Light's glass over a black or dark busy wallpaper ends near 80% white under the floor.
+  Accept that, or let the words flip between dark and light as macOS's do?
+- **Choice:** stays light: the glass whitens and its words never flip (GL-1). Dark mirrors it.
+- **Undo:** a vibrant ink that follows the backdrop's lightness instead of the mode.
+
+### D726. Matcha is one step darker on glass in Light
+
+- **Date:** 2026-11-25. The owner's answer.
+- **Question:** the Inks' Light matcha (`#6B6F03`, 5.2:1 on the paper) is the worst ink on paper glass:
+  it forced the battery widget's glass up to α 0.96 over a mid-dark photo.
+- **Choice:** on glass, Light matcha is OKLCH L 0.48 (from 0.52): `#606301`, 6.2:1 on the paper
+  (`GLASS.inks.matcha.light`). Dark and the other inks are unchanged; the Inks' own table (`INKS`) is
+  untouched, so widgets off glass print as before.
+- **Undo:** drop `GLASS.inks`.
+
+### D727. The cost is accepted: under 5% of a 120 Hz frame
+
+- **Date:** 2026-11-25. The owner's answer, from the spike's numbers (`dashi-0.10.0-review/24-blur-spike/`).
+- **Choice:** one pane 0.16 ms of GPU a frame over a playing video in the VM, three about 0.3 ms,
+  nothing at rest; the laptop is estimated under 5% of its 8.3 ms frame. The rulebook holds all glass
+  together under 1.5 ms (`GLASS.budget`); two misses in a row and the oldest layer is kept, then solid.
+- **Undo:** the budget is a token.
+
+### D728. The rulebook's own calls for glass
+
+- **Date:** 2026-11-25. `v10/glass-rules` (reversible; decided here, not asked).
+- **Choices:**
+  - **The tokens' shape.** One export, `GLASS` (the package's index is at H2's 300 lines, and y3 reads
+    one place): `levels`, one record per level (`blur`, `saturation`, and per mode `tint`, `least`,
+    `solid`), the veil apart (it has no solid twin), and the shared parts, numbers only, so design.html
+    binds every one with `data-token` (H24 reads numbers; a hex can't be bound, so the tints' hex are
+    written beside their bound α). Paper's tint is `INK_PAPER`, not a copy. `GLASS_TINTS` (the spike's launcher tint) stays until y4 moves the launcher to `regular`.
+  - **"Keel" is called the hairline** in the rules and the tokens (`GLASS.hairline`): one word for the
+    line at an edge across the page.
+  - **A window left out of a capture is left out of every backdrop in it** (GL-3, Frost's rule). D714
+    still holds (captures show the glass as the screen does); this removes its stated cost, a masked
+    window's colours bleeding into the glass in an agent's picture.
+  - **A rule the code doesn't follow keeps its target in words and today's value bound.** RA-1 says
+    "a menu 10 (today 9)" with the 9 bound to `RADIUS.menu`, so H24 stays true until y4 changes the
+    token and the page together.
+  - **Motion for glass is a new rule, MO-4**, rather than added to MO-1 (MO-1 is the 300 ms ceiling and
+    stays one sentence); MO-3 gains "glass appears at full frost".
+- **Undo:** each is an edit to `theme/glass.ts` or design.html.
+
+### D730. The compositor draws the whole material; the shell sends each level's look
+
+- **Date:** 2026-11-25. `v10/glass-comp` (reversible; decided here).
+- **Question:** who draws a material's tint, floor, grain, rim and hairline, and its solid twin: the
+  client over the blur, or the compositor under the client?
+- **Choice:** the compositor, from `glass-style {mode, levels, grain, rim, hairline, floor, depth,
+  apps}`, which the shell builds from `GLASS` (`packages/shell/src/glass-style.ts`) for the mode it is
+  in. A client names only a pane's rect, radius and level (dashi_glass_v1, D733) and paints no fill
+  there. The solid twin is the compositor's too, so Reduce Transparency changes no client: every
+  pane is drawn in its twin's colour, rim and hairline kept (GL-3).
+- **Why:** the floor needs the blurred backdrop, which only the compositor has; one place draws every
+  surface's glass the same way; no colour crosses the protocol (D713 still holds: the numbers are the
+  shell's).
+- **Undo:** clients tint themselves and `glass-style` carries only blur and saturation.
+
+### D731. Other apps get glass by default; the person turns it off
+
+- **Date:** 2026-11-25. `v10/glass-comp` (reversible; the brief asked to decide).
+- **Question:** `ext-background-effect-v1` and `dashi_glass_v1` are granted per client by the shell.
+  Dashi's own processes yes; other apps?
+- **Choice:** yes. The shell's own processes always; any other app that asks unless the person
+  turned it off: `appearance.glassForApps: false` in settings.json (a Settings › Appearance row is
+  y4's), Reduce Transparency (glass solid everywhere; an app's bare region is then not drawn at all),
+  or a program on the deny list `glass-clients {others, deny}` carries. A client not granted hears
+  `capabilities(0)` / `drawing(none)` (the protocols' own way to say "no blur here") and is drawn as
+  it would be without glass. The grant is read per frame, so turning it off takes effect at once.
+- **Why:** blur reveals nothing to the app (it never reads the pixels behind it) and costs what the
+  spike measured; KWin, Mutter and niri serve it to everyone. A terminal that asks for blur and gets
+  none looks broken.
+- **Undo:** `glass-clients {others: false}` from the shell by default.
+
+### D732. An app's bare blur region: a blur, no tint
+
+- **Date:** 2026-11-25. `v10/glass-comp`.
+- **Choice:** a surface with a blur region and no dashi_glass panes (foot, kitty) is blurred in each
+  of its rectangles with `regular`'s blur and saturation and the grain (`glass-style`'s `apps`), no
+  tint, no floor, no rim or hairline: the app paints its own translucent colour over it. A region
+  that subtracts, or holds more than 16 rectangles, is blurred in its bounds (the protocol leaves the
+  shape to the compositor). A window's glass is cut to its frame and Dashi's rounded corners; the
+  overview and a flight to the Dock draw windows small without glass.
+- **Undo:** `apps` names another level; a tinted look for apps is one more field.
+
+### D733. dashi_glass_v1 rides dashi-chrome-v1 version 2; Dashi owns the XML
+
+- **Date:** 2026-11-25. `v10/glass-comp` with y2 (`v10-glass-mirin`), through files only.
+- **Choice:** `dashi_chrome_manager_v1` v2 `get_glass(wl_surface)` → `dashi_glass_v1`: `add_pane(x, y,
+  width, height, radius, level)` (at most 16) and `clear`, double-buffered with the surface (smithay's
+  cached state), so a pane changes in the same commit as the buffer drawn on it; events `drawing(none
+  | material)` and `tone(0xRRGGBB)`. Where a surface has panes they are its glass and its blur region
+  isn't read (the region is for other compositors). The XML is
+  `crates/dashi-comp/protocols/dashi-chrome-v1.xml` with `PROTOCOL.md` beside it; mirin copies it.
+- **Why:** dashi-chrome-v1 is already the Dashi-private global mirin binds; a v2 is backward
+  compatible (mirin binds 1..=1 today). One object per surface, not per pane, keeps it like
+  ext-background-effect.
+- **Undo:** a protocol of its own (`dashi_glass_manager_v1`), the same requests.
+
+### D734. A third layer of glass is drawn solid, by overlap
+
+- **Date:** 2026-11-25. `v10/glass-comp` (GL-2).
+- **Choice:** frosting walks a screen's panes back to front; a pane's depth is one more than the
+  deepest pane it overlaps that is already frosted; past `glass-style`'s `depth` (2) it is drawn as its
+  level's solid twin. Touching is not overlapping (a menu under the bar is one layer). A capture uses
+  the depth the screens last used.
+- **Undo:** `depth: 8`.
+
+### D735. The backdrop's tone: read back when it settles, at most every 120 ms
+
+- **Date:** 2026-11-25. `v10/glass-comp` (GL-1's tone).
+- **Choice:** the mean colour of the blur's smallest picture (a few dozen texels), lifted as the pane
+  lifts it, read back with `glReadPixels` once what is behind has stopped changing, never twice in
+  120 ms, and once a second while it keeps changing (a video); sent only when it moved 2/255 or more.
+  The shell hears `glass-tone {namespace, tone}` for its own panes, a client `dashi_glass_v1.tone`;
+  a surface's first pane speaks for it. Reading back stalls the event loop until the GPU has done the
+  blur, which is why it is rare; the cost shows in `DASHI_GLASS_STATS`'s `cpu`.
+- **Undo:** a pixel buffer object read a frame later (no stall), if the stall ever shows.
+
+### D736. The floor stays per pixel, now counting the grain
+
+- **Date:** 2026-11-25. `v10/glass-comp`.
+- **Question:** Frost asks for one floor α per surface, eased (it rises at once, falls after 300 ms of
+  stillness, over `base`); the spike raises the tint per pixel.
+- **Choice:** per pixel, as the spike, with the grain at its worst for the words in the test (the
+  rule's "grain included"). The blurred backdrop changes smoothly, so the floor does too, and per
+  pixel never lets one dark patch force the whole pane opaque. The eased per-surface α (MO-4) needs a
+  reduction of the backdrop each frame; it is left for when a flicker is seen (design.html MO-4 says
+  so).
+- **Undo:** a min/max reduction pass and an α uniform eased on the CPU.
+
+### D737. Battery saver is the low-power mode; Reduce Transparency is a setting
+
+- **Date:** 2026-11-25. `v10/glass-comp` (GL-3, D723).
+- **Choice:** the shell sends `mode: "xray"` while the power mode in effect is low-power
+  (`ModeStore`'s `effective.mode`), and `mode: "solid"` while `appearance.reduceTransparency` is on
+  (Reduce Transparency wins). A GPU whose shaders don't compile answers `frosted: false`: no glass is
+  drawn, clients hear `drawing(none)` and paint their fills, and `GlassSync.frosted` tells the
+  shell's own surfaces (y4). `glass-style` is sent in every session, once Dark Mode is known; the
+  shell's own spike panes stay behind `DASHI_GLASS` until its surfaces wear `material` (y4).
+- **Undo:** the shell's `glassMode`.
+
+### D738. The second screen and the copied screen pay their own glass
+
+- **Date:** 2026-11-25. `v10/glass-comp`.
+- **Choice:** each screen frosts its own panes with textures of its own (keyed by the screen's
+  name). A screen composed on one GPU and copied to another (D513: the laptop's external screen,
+  drawn on the AMD and copied to the NVIDIA card) frosts on the drawing GPU, through the same
+  renderer as the rest of its frame; the copy carries the result and costs what it did. Nothing in
+  the glass knows about the copy.
+- **Undo:** nothing to undo; a per-screen opt-out would be a `glass-style` field.

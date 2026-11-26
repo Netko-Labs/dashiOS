@@ -86,6 +86,15 @@ impl Pyramid {
         self.levels.len()
     }
 
+    /// The mean colour of the blur's smallest picture (tone.rs), read back from the GPU.
+    pub(super) fn mean(&self, gles: &mut GlesRenderer) -> Option<[f32; 3]> {
+        let (texture, framebuffer) = match self.levels.last() {
+            Some(last) => (last, self.framebuffers[self.levels.len() - 1]),
+            None => (&self.out, self.framebuffers[0]),
+        };
+        gl::mean(gles, framebuffer, (texture.size().w, texture.size().h))
+    }
+
     /// Let its framebuffers go (its textures go with it).
     pub(super) fn free(self, gles: &mut GlesRenderer) {
         gl::forget(gles, &self.framebuffers);

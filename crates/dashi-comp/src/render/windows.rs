@@ -4,6 +4,7 @@
 //! flight to the Dock), or sliding in with its Space.
 
 use smithay::{
+    backend::renderer::utils::with_renderer_surface_state,
     backend::renderer::{
         ImportAll, ImportMem, Renderer,
         element::{
@@ -13,6 +14,7 @@ use smithay::{
         },
     },
     desktop::{PopupManager, Window},
+    reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Logical, Physical, Point, Rectangle, Scale, Size},
 };
 
@@ -41,16 +43,20 @@ pub(crate) struct Spot {
     pub depth: bool,
 }
 
+/// A popup's surface, where it is drawn, and its elements.
+type Popup<R> = (
+    WlSurface,
+    Point<i32, Physical>,
+    Vec<WaylandSurfaceRenderElement<R>>,
+);
+
 /// A window's surfaces as two lists, front to back: its popups, then its own tree.
 fn surface_layers<R>(
     renderer: &mut R,
     window: &Window,
     at: Point<i32, Physical>,
     scale: Scale<f64>,
-) -> (
-    Vec<WaylandSurfaceRenderElement<R>>,
-    Vec<WaylandSurfaceRenderElement<R>>,
-)
+) -> (Vec<Popup<R>>, Vec<WaylandSurfaceRenderElement<R>>)
 where
     R: Renderer + ImportAll,
     R::TextureId: Clone + 'static,
@@ -63,17 +69,15 @@ where
     for (popup, offset) in PopupManager::popups_for_surface(surface) {
         let offset = (window.geometry().loc + offset - popup.geometry().loc)
             .to_physical_precise_round(scale);
-        popups.extend(render_elements_from_surface_tree::<
-            _,
-            WaylandSurfaceRenderElement<R>,
-        >(
+        let drawn = render_elements_from_surface_tree::<_, WaylandSurfaceRenderElement<R>>(
             renderer,
             popup.wl_surface(),
             at + offset,
             scale,
             1.0,
             Kind::Unspecified,
-        ));
+        );
+        popups.push((popup.wl_surface().clone(), at + offset, drawn));
     }
     let tree = render_elements_from_surface_tree::<_, WaylandSurfaceRenderElement<R>>(
         renderer,
@@ -137,7 +141,11 @@ pub(crate) fn framed_window<R>(
     };
     let surface_at = on_view(at - window.geometry().loc);
     let (popups, tree) = surface_layers(renderer, window, surface_at, scale);
-    elements.extend(popups.into_iter().map(DashiElement::Surface));
+    // Each popup, its glass behind it (render/glass/).
+    for (surface, popup_at, drawn) in popups {
+        elements.extend(drawn.into_iter().map(DashiElement::Surface));
+        push_glass(state, &surface, popup_at, scale, None, elements);
+    }
     elements.extend(sides.front.map(DashiElement::Depth));
     if let (Decor::Unified, Some(image)) = (decor, image) {
         push_memory(
@@ -157,6 +165,25 @@ pub(crate) fn framed_window<R>(
         }
         _ => DashiElement::Surface(element),
     }));
+    // Its glass, behind its surfaces and cut to its frame.
+    if let Some(toplevel) = window.toplevel() {
+        let frame = Rectangle::new(on_view(at), size.to_physical_precise_round(scale));
+        let clip = rounding.as_ref().map_or(
+            crate::render::glass::Clip {
+                rect: frame,
+                radii: (0.0, 0.0),
+            },
+            |rounding| rounding.glass_clip(),
+        );
+        push_glass(
+            state,
+            toplevel.wl_surface(),
+            surface_at,
+            scale,
+            Some(clip),
+            elements,
+        );
+    }
     if let (Decor::Standard, Some(image)) = (decor, image) {
         push_memory(
             renderer,
@@ -167,6 +194,27 @@ pub(crate) fn framed_window<R>(
         );
     }
     elements.extend(sides.back.map(DashiElement::Depth));
+}
+
+/// The glass of `surface`, drawn at `at`, behind what is already in `elements`.
+fn push_glass<R>(
+    state: &Dashi,
+    surface: &WlSurface,
+    at: Point<i32, Physical>,
+    scale: Scale<f64>,
+    clip: Option<crate::render::glass::Clip>,
+    elements: &mut Vec<DashiElement<R>>,
+) where
+    R: Renderer + ImportAll + ImportMem + GlesAccess,
+    R::TextureId: Clone + Send + 'static,
+{
+    let Some(size) = with_renderer_surface_state(surface, |s| s.surface_size()).flatten() else {
+        return;
+    };
+    let panes = state
+        .glass
+        .surface_elements(surface, (at, size), scale, None, clip);
+    elements.extend(panes.into_iter().map(DashiElement::Glass));
 }
 
 /// A window drawn small where the overview puts it (`rect`: its outer frame there).

@@ -6,6 +6,7 @@
 use serde::{Deserialize, Serialize};
 use smithay::utils::{Logical, Rectangle};
 
+use super::style::{Level, Look};
 use crate::{handlers::layer_regions::RegionRect, ipc::protocol::Real, render::depth::style::hex};
 
 /// More panes than any surface of the shell's needs.
@@ -19,8 +20,9 @@ pub(crate) struct GlassParams {
     pub panes: Vec<PaneParams>,
 }
 
-/// One pane: where (surface coordinates; none is the whole surface), its corner radius, how
-/// thick the glass is (`blur`, logical pixels, about CSS's `backdrop-filter: blur()`), how much
+/// One pane: where (surface coordinates; none is the whole surface), its corner radius, and
+/// either its material `level` (its look from `glass-style`) or, the spike's way, how thick the
+/// glass is (`blur`, logical pixels, about CSS's `backdrop-filter: blur()`), how much
 /// it lifts the colours behind (`saturation`, 1 none), a `tint` laid over (`#rrggbbaa`) and
 /// grain (`noise`, 0 to 1 of a step either way); with `xray`, only the wallpaper shows through.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,7 +30,8 @@ pub(crate) struct GlassParams {
 pub(crate) struct PaneParams {
     pub rect: Option<RegionRect>,
     pub radius: Real<0, 128_000>,
-    pub blur: Real<0, 128_000>,
+    pub level: Option<Level>,
+    pub blur: Option<Real<0, 128_000>>,
     pub saturation: Option<Real<0, 3_000>>,
     pub tint: Option<String>,
     pub noise: Option<Real<0, 1_000>>,
@@ -56,28 +59,13 @@ pub(crate) struct GlassReply {
     pub frosted: bool,
 }
 
-/// A pane as the compositor keeps it.
+/// A pane as the compositor keeps it: its own look, or its level's (with its radius).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Pane {
     /// In surface coordinates; none: the whole surface.
     pub rect: Option<Rectangle<f64, Logical>>,
     pub look: Look,
-}
-
-/// How a pane looks, in logical pixels where it measures.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct Look {
-    pub radius: f64,
-    pub blur: f64,
-    pub saturation: f32,
-    /// Premultiplied RGBA.
-    pub tint: [f32; 4],
-    pub noise: f32,
-    /// Only the wallpaper behind.
-    pub xray: bool,
-    pub brightness: f32,
-    /// The words' relative luminance and the ratio they keep; a ratio of 0 is no floor.
-    pub floor: [f32; 2],
+    pub level: Option<Level>,
 }
 
 /// The panes `params` names, or why not.
@@ -99,6 +87,11 @@ fn pane(params: &PaneParams) -> Result<Pane, String> {
             (rect.width.get().max(0.0), rect.height.get().max(0.0)).into(),
         )
     });
+    let blur = match (params.level, params.blur) {
+        (_, Some(blur)) => blur.get(),
+        (Some(_), None) => 0.0,
+        (None, None) => return Err("glass: a pane needs a `level` or a `blur`".into()),
+    };
     let tint = match params.tint.as_deref() {
         None => [0.0; 4],
         Some(text) => {
@@ -108,9 +101,8 @@ fn pane(params: &PaneParams) -> Result<Pane, String> {
     };
     Ok(Pane {
         rect,
+        level: params.level,
         look: Look {
-            radius: params.radius.get(),
-            blur: params.blur.get(),
             saturation: params.saturation.map_or(1.0, |s| s.get() as f32),
             tint,
             noise: params.noise.map_or(0.0, |n| n.get() as f32),
@@ -118,13 +110,17 @@ fn pane(params: &PaneParams) -> Result<Pane, String> {
             brightness: params.brightness.map_or(1.0, |b| b.get() as f32),
             floor: match &params.floor {
                 None => [0.0; 2],
-                Some(floor) => {
-                    let ink = hex(&floor.ink).ok_or("glass: `floor.ink` must be #rrggbb")?;
-                    [luminance(ink), floor.ratio.get() as f32]
-                }
+                Some(f) => floor(f)?,
             },
+            ..Look::plain(params.radius.get(), blur)
         },
     })
+}
+
+/// A floor as the shader takes it: the ink's luminance and the ratio.
+pub(super) fn floor(params: &FloorParams) -> Result<[f32; 2], String> {
+    let ink = hex(&params.ink).ok_or("glass: `floor.ink` must be #rrggbb")?;
+    Ok([luminance(ink), params.ratio.get() as f32])
 }
 
 /// WCAG's relative luminance of a straight sRGB colour.
@@ -192,12 +188,23 @@ mod tests {
     }
 
     #[test]
+    fn a_pane_may_name_its_level_instead() {
+        let panes = parsed(
+            json!({ "namespace": "dashi.dock", "panes": [{ "radius": 20, "level": "thin" }] }),
+        )
+        .unwrap();
+        assert_eq!(panes[0].level, Some(Level::Thin));
+        assert_eq!(panes[0].look.radius, 20.0);
+    }
+
+    #[test]
     fn bad_params_change_nothing() {
         assert!(parsed(json!({ "namespace": "firefox", "panes": [] })).is_err());
         assert!(
             parsed(json!({ "namespace": "dashi.x", "panes": [{ "radius": -1, "blur": 2 }] }))
                 .is_err()
         );
+        assert!(parsed(json!({ "namespace": "dashi.x", "panes": [{ "radius": 1 }] })).is_err());
         assert!(
             parsed(json!({ "namespace": "dashi.x", "panes": [{ "radius": 1, "blur": 200 }] }))
                 .is_err()

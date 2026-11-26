@@ -168,6 +168,48 @@ pub(super) fn forget(gles: &mut GlesRenderer, framebuffers: &[ffi::types::GLuint
     });
 }
 
+/// The mean colour of the framebuffer `from` (`size` texels, a small one: the blur's last
+/// halving), read back. It waits for the GPU to finish drawing it: call it seldom (tone.rs).
+pub(super) fn mean(
+    gles: &mut GlesRenderer,
+    from: ffi::types::GLuint,
+    size: (i32, i32),
+) -> Option<[f32; 3]> {
+    let (w, h) = (size.0.clamp(1, 64), size.1.clamp(1, 64));
+    let mut pixels = vec![0u8; (w * h * 4) as usize];
+    gles.with_context(|gl| {
+        // SAFETY: the context is current; `from` is a framebuffer of ours, and `pixels` holds
+        // w × h RGBA bytes, all ReadPixels writes; the framebuffer is put back.
+        unsafe {
+            gl.BindFramebuffer(ffi::FRAMEBUFFER, from);
+            gl.ReadPixels(
+                0,
+                0,
+                w,
+                h,
+                ffi::RGBA,
+                ffi::UNSIGNED_BYTE,
+                pixels.as_mut_ptr().cast(),
+            );
+            gl.BindFramebuffer(ffi::FRAMEBUFFER, 0);
+        }
+    })
+    .ok()?;
+    Some(average(&pixels))
+}
+
+/// The mean of RGBA bytes, as fractions.
+pub(super) fn average(pixels: &[u8]) -> [f32; 3] {
+    let count = (pixels.len() / 4).max(1) as f32;
+    let mut sum = [0.0f32; 3];
+    for pixel in pixels.as_chunks::<4>().0 {
+        for (total, value) in sum.iter_mut().zip(pixel) {
+            *total += f32::from(*value) / 255.0;
+        }
+    }
+    sum.map(|total| total / count)
+}
+
 impl Passes {
     /// Run `steps` in order.
     pub(super) fn run(&self, gles: &mut GlesRenderer, steps: &[Step]) -> Result<(), GlesError> {

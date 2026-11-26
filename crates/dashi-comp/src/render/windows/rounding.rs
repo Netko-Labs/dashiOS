@@ -46,6 +46,14 @@ impl Rounding {
             .any(|(x, y)| at.overlaps(Rectangle::new((x, y).into(), (r, r).into())))
     }
 
+    /// What glass under the window is cut to: its frame, these corners round (render/glass/).
+    pub(super) fn glass_clip(&self) -> crate::render::glass::Clip {
+        crate::render::glass::Clip {
+            rect: self.window,
+            radii: (if self.top { self.radius } else { 0.0 }, self.radius),
+        }
+    }
+
     pub(super) fn element<R: Renderer + ImportAll>(
         &self,
         element: WaylandSurfaceRenderElement<R>,

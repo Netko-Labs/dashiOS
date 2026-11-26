@@ -8,7 +8,7 @@ import { CAPSULE } from "@dashi/ui";
 import { placedOutputs } from "../../arrange/index.ts";
 import type { Compositor } from "../../compositor/index.ts";
 import { openFile } from "../../file-manager.ts";
-import type { GlassPanes, GlassRect, GlassTint } from "../../glass.ts";
+import type { GlassPanes, GlassRect } from "../../glass.ts";
 import {
   LAUNCHER,
   Launcher,
@@ -150,7 +150,7 @@ export function launcherElement(view: LauncherView, { presented, scope, entries,
       {...(heightMs ? { heightTransitionMs: heightMs } : {})}
       {...(height !== undefined ? { height } : {})}
       onPictures={view.pictures}
-      {...(view.glass.on ? { onGlass: (panel: GlassRect, look: GlassTint) => view.glass.set([panel], LAUNCHER.radius, look) } : {})}
+      {...(view.glass.on ? { onGlass: (panel: GlassRect) => view.glass.set([panel], LAUNCHER.radius) } : {})}
       accessible={view.access.accessible}
       onClose={close}
     />

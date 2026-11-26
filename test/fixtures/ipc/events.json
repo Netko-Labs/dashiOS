@@ -169,6 +169,11 @@
     "event": "screen-capture"
   },
   {
+    "event": "glass-tone",
+    "namespace": "dashi.launcher",
+    "tone": "#7a8c9e"
+  },
+  {
     "event": "person-input",
     "window": null
   },

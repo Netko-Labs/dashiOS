@@ -13,6 +13,7 @@ mod agent;
 mod agent_direct;
 mod fixtures;
 mod fresh;
+mod glass;
 mod ipc;
 mod locks;
 mod pointer;

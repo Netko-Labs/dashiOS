@@ -266,6 +266,73 @@
     },
     "who": "shell"
   },
+  "glass-clients": {
+    "params": {
+      "deny": [
+        "/usr/bin/foot"
+      ],
+      "others": true
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "glass-style": {
+    "params": {
+      "apps": "regular",
+      "depth": 2.0,
+      "floor": {
+        "ink": "#5d5d63",
+        "ratio": 4.65
+      },
+      "grain": 0.035,
+      "hairline": {
+        "color": "#0000001a",
+        "width": 0.5
+      },
+      "levels": {
+        "paper": {
+          "blur": 30.0,
+          "saturation": 1.4,
+          "solid": "#fbfbf9",
+          "tint": "#fbfbf9a3"
+        },
+        "regular": {
+          "blur": 30.0,
+          "saturation": 1.6,
+          "solid": "#f7f7f9",
+          "tint": "#f8f8fa9e"
+        },
+        "thick": {
+          "blur": 44.0,
+          "saturation": 1.4,
+          "solid": "#e8e8ec",
+          "tint": "#eeeef2b8"
+        },
+        "thin": {
+          "blur": 18.0,
+          "saturation": 1.8,
+          "solid": "#ececef",
+          "tint": "#f6f6f870"
+        },
+        "veil": {
+          "blur": 10.0,
+          "saturation": 1.15,
+          "tint": "#f6f6f81f"
+        }
+      },
+      "mode": "frosted",
+      "rim": {
+        "bottom": "#ffffff26",
+        "middle": "#ffffff59",
+        "top": "#ffffffd9",
+        "width": 1.0
+      }
+    },
+    "reply": {
+      "frosted": true
+    },
+    "who": "shell"
+  },
   "gpu-keep": {
     "params": {
       "card": "card0",
