@@ -18,6 +18,7 @@ export function DesktopDockPane() {
         <Setting id="desktop-dock/show-dock" control="dock-visible" />
         <Setting id="desktop-dock/style" stack={false} control="dock-style" />
         <Setting id="desktop-dock/autohide" control="dock-autohide" />
+        <Setting id="desktop-dock/magnify" control="dock-magnify" />
       </Group>
       <Caption keys="⌥❖D">Hiding is also in the Dock's right-click menu, and on</Caption>
       <Group testID="spaces-settings">

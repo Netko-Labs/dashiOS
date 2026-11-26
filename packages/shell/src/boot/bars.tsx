@@ -8,7 +8,7 @@ import { placedScreens } from "../active-screen.ts";
 import { joinShellMenus } from "../applets/index.ts";
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
-import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";
+import { AnimationTargets, type DockRuntime, dockScreen, startDock, startDockExtras, TileStore } from "../dock/index.ts";
 import { screenAt } from "../layout.ts";
 import { type BarPill, barHold, MenuBar, MenuBars, startBarTips } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
@@ -137,23 +137,7 @@ export function startBars(needs: BarsNeeds): MenuBars {
   // Nothing of Dashi's agent in the bar at rest (decisions.md D261): its persona for the one indicator, and which of its turns are watched elsewhere.
   const pill: BarPill = barPill(late);
   const dockTiles = new TileStore();
-  const dockRuntime = startDock({
-    tiles: dockTiles,
-    prefs: stores.dockPrefs,
-    apps: needs.apps,
-    catalog: catalog.catalog,
-    pins: catalog.pins,
-    toplevels: stores.toplevels,
-    controller: catalog.dock,
-    menus: needs.menus.controller,
-    attention: needs.awake.attention,
-    compositor,
-    onLost: (output) => void primaryHostLost(output),
-    reduceMotion: () => needs.look.state.reduceMotion,
-    // The Dock follows the person to the screen whose bottom edge the pointer rests on (D555).
-    ...(compositor ? { pointerScreen: () => pointerScreen(compositor) } : {}),
-  });
-  services.add("dock", () => dockRuntime.close());
+  const dockRuntime = openDock(needs, dockTiles, (output) => void primaryHostLost(output));
   dockRuntime.place(needs.primaryScreen);
   // Windows minimize toward their Dock tiles: the compositor draws it, the Dock knows where the tiles are (dock/animation-targets.ts).
   const stopAnimationTargets = compositor
@@ -209,6 +193,34 @@ export function startBars(needs: BarsNeeds): MenuBars {
   state.xwaylandScaling = compositor ? startXwaylandScaling({ compositor, choice: () => state.xwaylandChoice }) : null;
   services.add("xwayland-scale", () => state.xwaylandScaling?.stop());
   return menuBars;
+}
+
+/** The Dock, with apps' counts and downloads and the Trash, which asks the person before it empties (DK-3, DK-4). */
+function openDock(needs: BarsNeeds, dockTiles: TileStore, onLost: (output: string | undefined) => void): DockRuntime {
+  const { compositor, stores, catalog, services } = needs;
+  const extras = startDockExtras((question) => needs.agents.agentUi.confirmPerson(question));
+  catalog.dock.trash = extras.trash;
+  services.add("dock badges and trash", () => extras.close());
+  const dockRuntime = startDock({
+    badges: extras.badges,
+    trash: extras.trash,
+    tiles: dockTiles,
+    prefs: stores.dockPrefs,
+    apps: needs.apps,
+    catalog: catalog.catalog,
+    pins: catalog.pins,
+    toplevels: stores.toplevels,
+    controller: catalog.dock,
+    menus: needs.menus.controller,
+    attention: needs.awake.attention,
+    compositor,
+    onLost,
+    reduceMotion: () => needs.look.state.reduceMotion,
+    // The Dock follows the person to the screen whose bottom edge the pointer rests on (D555).
+    ...(compositor ? { pointerScreen: () => pointerScreen(compositor) } : {}),
+  });
+  services.add("dock", () => dockRuntime.close());
+  return dockRuntime;
 }
 
 /** The screen under the pointer now, if the compositor says. */

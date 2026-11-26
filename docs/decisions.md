@@ -9070,3 +9070,42 @@ short words, as the rulebook is written.
   window was opaque over its own panes, and a surface offering only `Inherit` got straight alpha.
   Proof: `dashi-0.10.0-review/28-glass-kit/`.
 - **Undo:** revert the shader's cut; surfaces drop their shadows instead.
+
+### D800. The Dock magnifies by icon, and names it on its own surface
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; DK-2, DK-6; frost-objects board 05).
+- **Question:** Metal tells a view that the pointer is over it (`onHoverChange`), not where it is, and has
+  no transforms. How does the Dock magnify and where does the label go?
+- **Choice:** by icon, as board 05 draws it: the icon under the pointer at `GLASS.dock.magnify.peak`, its
+  two neighbours at `.neighbour`, lifted; each icon's box grows with its picture (grown upward), so the row
+  widens and the icon under the pointer keeps its centre (its neighbours grow alike on both sides). The
+  Dock's surface keeps `DOCK_HEADROOM` above the panel (the tallest icon and the label); the windows' zone
+  stays the panel's, and clicks reach the lifted part only while it is lifted (`clickBounds`). Nothing
+  grows or is named while a drag, a Dock menu or a card asking is under way, or while the Dock moves; off
+  under Reduce Motion and by the new Settings › Desktop & Dock › Magnification row (`dock.magnify`, on).
+  The label is regular glass on the Dock's surface, radius 9 (frost-objects' table), and moves at once
+  from one icon to the next; only the first waits 300 ms.
+- **Why:** a smooth falloff needs the pointer's position, which no Metal host reports; the board drew
+  exactly three sizes. A label on its own surface would be a second host for a 26 pt pill.
+- **Undo:** `magnify` off; drop `DOCK_HEADROOM` and the label.
+
+### D801. Counts and downloads come from the launcher API apps already speak
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; DK-3).
+- **Choice:** the Dock listens on the session bus for `com.canonical.Unity.LauncherEntry` `Update`
+  (`count`, `count-visible`, `progress`, `progress-visible`), keyed by the `application://<id>.desktop`
+  URI, cleared when the sender leaves the bus (`dock/badges.ts`). Chromium (Helium), Firefox, Thunderbird
+  and Telegram send it; a download's progress is the same signal. Counts are ink pills with onPrimary
+  words ("99+" past 99), ringed in the thin twin; progress an ink bar on paper's solid twin. Not the
+  notifications' count: an app's own number is the one it means.
+- **Undo:** drop the listener; nothing else reads it.
+
+### D802. The Trash in the Dock takes drops, opens in Files, asks before it empties
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; DK-4).
+- **Choice:** full while the home Trash's `files` folder holds anything (watched); the icons are two new
+  SVGs in the app icons' style (empty, full), as board 05 draws them. A press opens Files on that folder
+  (Files shows it as the Trash). Its menu: Open, Empty Trash…, which asks through the person's own sheet
+  (`confirmPerson`, ume, "Empty the Trash?") and then empties every Trash (`gio trash --empty`). Files
+  dropped on it go to the Trash, except the home folder, the root and the folders the sidebar lists.
+- **Undo:** leave `trash` out of `startDock`.

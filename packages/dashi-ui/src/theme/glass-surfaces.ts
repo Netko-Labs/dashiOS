@@ -28,12 +28,16 @@ const LOCK = {
  * the icon, after `label.delayMs`; a count badge and a download bar in ink; autohide shows nothing but a
  * `reveal.band` point band at the edge, which opens it after `reveal.restMs` at rest; magnification grows
  * the icon under the pointer to `magnify.peak` and its neighbours to `magnify.neighbour`, lifted
- * `magnify.lift`.
+ * `magnify.lift`. The label is `label.radius` round with `label.padding` at its sides and at most
+ * `label.maxWidth` wide; a count is a pill `badge.height` tall (at least as wide), `badge.padding` at its
+ * sides, `badge.offset` out past the icon's top right corner, ringed `badge.ring` in the Dock's twin; the
+ * download's plate sits `download.bottom` above the icon's foot, the bar `download.border` inside it.
  */
 const DOCK = {
   radius: 20,
-  label: { height: 26, gap: 8, delayMs: 300 },
-  download: { height: 6, inset: 6 },
+  label: { height: 26, gap: 8, delayMs: 300, radius: 9, padding: 11, maxWidth: 320 },
+  badge: { height: 18, padding: 5, offset: 5, ring: 2 },
+  download: { height: 6, inset: 6, bottom: 5, border: 1 },
   reveal: { band: 2, restMs: 250 },
   magnify: { peak: 1.42, neighbour: 1.18, lift: 12 },
 } as const;

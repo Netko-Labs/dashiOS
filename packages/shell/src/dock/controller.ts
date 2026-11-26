@@ -15,6 +15,7 @@ import { appKey, type DockEntry } from "./layout.ts";
 import { type TaskbarButton, taskbarClick } from "./lib/taskbar-model.ts";
 import type { PinStore } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
+import type { DockTrash } from "./trash.ts";
 import type { DockMenuAction } from "./types.ts";
 
 /** How long a started app shows its dot before a window appears. */
@@ -46,6 +47,8 @@ export interface DockControllerDeps {
 }
 
 export class DockController {
+  /** The Dock's Trash (DK-4), once the Dock is up: its menu's rows reach it. */
+  trash: Pick<DockTrash, "open" | "empty"> | null = null;
   private starting: ReadonlySet<string> = new Set();
   private readonly timers = new Set<ReturnType<typeof setTimeout>>();
   private readonly listeners = new Set<() => void>();
@@ -120,6 +123,11 @@ export class DockController {
         return deps.prefs?.set(action.change);
       case "dock-settings":
         return deps.openDockSettings?.();
+      case "trash-open":
+        return this.trash?.open();
+      case "trash-empty":
+        await this.trash?.empty();
+        return;
       case "hide": {
         // Hiding is the compositor's: one window of the app hides them all.
         const windows = await (deps.compositor?.windows() ?? Promise.resolve([]));

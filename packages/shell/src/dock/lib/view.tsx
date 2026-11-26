@@ -1,15 +1,18 @@
 /**
  * The Dock: the apps kept in it, then apps that are running without being
- * kept, then minimized windows, a thin divider between the groups and a dot
- * under running ones. A click starts an app, brings it forward, or restores a
- * minimized window. A right-click, or holding the button still, opens the
- * icon's menu above it (menu.ts); dragging a kept icon along the Dock moves
- * it, and dragging it up out of the Dock removes it.
+ * kept, then minimized windows, then the Trash, a thin divider between the
+ * groups and a dot under running ones (panel.tsx draws them). A click starts
+ * an app, brings it forward, or restores a minimized window. A right-click,
+ * or holding the button still, opens the icon's menu above it (menu.ts);
+ * dragging a kept icon along the Dock moves it, and dragging it up out of the
+ * Dock removes it. The icon under the pointer is named after a moment
+ * (label.tsx, DK-2) and magnified (magnify.ts, DK-6) unless a drag, a menu or
+ * a card asking is under way.
  */
 
-import { useColors } from "@dashi/ui";
+import { GLASS } from "@dashi/ui";
 import { type Bounds, type PointerInfo, View } from "@mirinjs/metal";
-import { useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { appFor } from "../../apps.ts";
 import type { MenuController } from "../../menus/index.ts";
 import type { Entry } from "../../shared/app-entries/index.ts";
@@ -17,18 +20,22 @@ import type { App } from "../../shared/apps/index.ts";
 import { DOCK, DOCK_HEIGHT } from "../../theme.ts";
 import { type ToplevelStore, useToplevels } from "../../toplevels.ts";
 import { type AttentionStore, useAttention } from "../attention.ts";
+import { type DockBadges, useBadges } from "../badges.ts";
 import { type DockController, useStarting } from "../controller.ts";
-import { type DockEntry, dockLayout, type MinimizedEntry, matchEntry } from "../layout.ts";
+import { type DockEntry, dockLayout, matchEntry } from "../layout.ts";
 import { type PinStore, usePins } from "../pins.ts";
 import type { DockPrefs } from "../prefs.ts";
-import { ASK_RIM, dockSign } from "../sign.ts";
+import { dockSign } from "../sign.ts";
 import type { TileStore } from "../tiles.ts";
+import { type DockTrash, useTrashFull } from "../trash.ts";
 import type { Autohide } from "./autohide.ts";
 import { reorderIndex } from "./gesture.ts";
-import { Divider, DockIcon } from "./icon.tsx";
-import { buildDockMenu, buildDockOptionsMenu } from "./menu.ts";
+import { DockLabel, type LabelAim } from "./label.tsx";
+import { magnified, magnifiedSize, magnifyHeadroom } from "./magnify.ts";
+import { buildDockMenu, buildDockOptionsMenu, buildTrashMenu } from "./menu.ts";
+import { DockPanel, type Hovered } from "./panel.tsx";
 import { inPreviewOrder, usePress } from "./press.ts";
-import { iconRise, Painted, panelOpacity, Slide, type SlideState, useSlide } from "./slide.tsx";
+import { Painted, Slide, type SlideState, useSlide } from "./slide.tsx";
 
 /** Distance between neighboring icons' left edges. */
 const SLOT = DOCK.icon + DOCK.gap;
@@ -58,27 +65,40 @@ interface DockProps {
   tiles?: Pick<TileStore, "set"> | null;
   /** Told where the panel is on the surface: only there does the Dock take clicks (start.tsx). */
   onPanel?: (bounds: Bounds) => void;
+  /** What apps say on their icons (DK-3). */
+  badges?: DockBadges | null;
+  /** The Trash (DK-4); none without it. */
+  trash?: DockTrash | null;
+  /** Whether the icon under the pointer grows (DK-6: the setting, and not under Reduce Motion). */
+  magnify?: () => boolean;
+}
+
+/** The room the Dock's surface keeps above its panel: a magnified icon, and the label over it (DK-2, DK-6). */
+export const DOCK_HEADROOM = magnifyHeadroom(DOCK.icon) + GLASS.dock.label.gap + GLASS.dock.label.height;
+
+/** The panel's bounds as clicks go: grown upward while an icon is magnified, so a press on its lifted part lands. */
+export function clickBounds(panel: Bounds, magnifying: boolean): Bounds {
+  if (!magnifying) return panel;
+  const up = magnifyHeadroom(DOCK.icon);
+  return { x: panel.x, y: panel.y - up, width: panel.width, height: panel.height + up };
+}
+
+/** Where the label aims for the icon under the pointer: its centre, and its top above the surface's foot as drawn. */
+export function labelAim(hovered: Hovered, magnifying: boolean): LabelAim | null {
+  if (!hovered.bounds) return null;
+  const look = magnified(hovered.index, magnifying ? hovered.index : null);
+  const grown = magnifiedSize(DOCK.icon, look) - DOCK.icon;
+  return { name: hovered.name, centerX: hovered.bounds.x + hovered.bounds.width / 2, iconTop: DOCK_HEIGHT - DOCK.paddingTop + grown + look.lift };
 }
 
 /** The Dock's surface: the panel at its foot, in the middle. */
 const DOCK_ROOM = { flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "flex-end", position: "relative" } as const;
 
-export function Dock({
-  apps,
-  catalog,
-  pins,
-  toplevels,
-  controller,
-  menus,
-  output,
-  attention = null,
-  prefs = null,
-  autohide = null,
-  slide = null,
-  tiles = null,
-  onPanel,
-}: DockProps) {
+export function Dock(props: DockProps) {
+  const { apps, catalog, pins, toplevels, controller, menus, output, attention = null, prefs = null, autohide = null } = props;
+  const { slide = null, tiles = null, onPanel, badges = null, trash = null, magnify = () => false } = props;
   const windows = useToplevels(toplevels);
+  const trashFull = useTrashFull(trash);
   const starting = useStarting(controller);
   const wanting = useAttention(attention);
   const layout = dockLayout(usePins(pins), catalog, windows);
@@ -92,11 +112,7 @@ export function Dock({
   const latest = useRef({ layout, appName });
   latest.current = { layout, appName };
 
-  // A right-click on an icon opens the icon's menu only: Metal gives it to the innermost view.
-  const openMenu = (key: string, centerX: number) => {
-    const entry = [...latest.current.layout.pinned, ...latest.current.layout.running].find((each) => each.key === key);
-    if (entry) void menus.openDockMenu(centerX, buildDockMenu(entry), latest.current.appName, output);
-  };
+  const { openMenu, openOptions, openTrashMenu } = dockMenus(menus, latest, { output, prefs, trash });
 
   const pointer = (entry: DockEntry, place: number | null, centerX: number, event: PointerInfo) =>
     press(entry, place, event, {
@@ -105,10 +121,6 @@ export function Dock({
       onHold: () => openMenu(entry.key, centerX),
     });
 
-  const openOptions = (x: number) => {
-    if (prefs) void menus.openDockMenu(x, buildDockOptionsMenu(prefs.snapshot), latest.current.appName, output);
-  };
-
   const click = (entry: DockEntry) => {
     if (!swallows(entry.key)) controller.press(entry);
   };
@@ -116,6 +128,12 @@ export function Dock({
   // While an icon is dragged the others make room for it.
   const pinned = inPreviewOrder(layout.pinned, preview);
   const opacityOf = (key: string) => (preview?.dragging === key ? (preview.pulledOut ? 0.3 : 0.6) : 1);
+
+  // Nothing grows or is named while a drag, a menu or a card asking is under way, nor while the Dock moves.
+  const still = useStill(menus, Boolean(preview?.dragging), slid);
+  const [hovered, onHover] = useHovered();
+  const magnifying = still && hovered !== null && magnify();
+  const panelBounds = useClickBounds(onPanel, magnifying);
 
   return (
     <View
@@ -131,110 +149,71 @@ export function Dock({
         starting={starting}
         wanting={wanting}
         opacityOf={opacityOf}
+        badges={useBadges(badges)}
+        trash={trash ? { full: trashFull } : null}
+        magnifyAt={magnifying && hovered ? hovered.index : null}
         tiles={tiles}
-        onPanel={onPanel}
+        onPanel={(bounds) => {
+          panelBounds.current = bounds;
+          onPanel?.(clickBounds(bounds, magnifying));
+        }}
+        onHover={onHover}
         onPress={click}
         onPointer={pointer}
         onMenu={openMenu}
         onOptions={openOptions}
         onRestore={(id) => toplevels.act(id, "activate")}
+        onTrash={() => trash?.open()}
+        onTrashMenu={openTrashMenu}
+        onTrashDrop={(paths) => void trash?.drop(paths)}
       />
+      <DockLabel aim={still && hovered ? labelAim(hovered, magnifying) : null} />
     </View>
   );
 }
 
-/** The Dock's icons in their three groups, on the panel the Dock draws. */
-interface DockPanelProps {
-  /** The kept apps, in the order they show now (a dragged one moved). */
-  pinned: readonly DockEntry[];
-  running: readonly DockEntry[];
-  minimized: readonly MinimizedEntry[];
-  slid: SlideState;
-  starting: ReadonlySet<string>;
-  wanting: ReadonlySet<string>;
-  opacityOf(key: string): number;
-  tiles: Pick<TileStore, "set"> | null;
-  onPanel?: (bounds: Bounds) => void;
-  onPress(entry: DockEntry): void;
-  onPointer(entry: DockEntry, place: number | null, centerX: number, event: PointerInfo): void;
-  onMenu(key: string, centerX: number): void;
-  onOptions(x: number): void;
-  onRestore(id: number): void;
-}
-
-function DockPanel(props: DockPanelProps) {
-  const colors = useColors();
-  // A card asks (sign.ts): the icons dim under an amber rim, a sign no window can draw.
+/** Whether the Dock is still: no drag, none of its menus open, no card asking, not moving. Only then is an icon named or magnified. */
+function useStill(menus: MenuController, dragging: boolean, slid: SlideState): boolean {
+  const menuOpen = useSyncExternalStore(menus.subscribe, () => menus.getSnapshot().popover?.kind === "dock-menu");
   const asking = useSyncExternalStore(dockSign.asking.subscribe, dockSign.asking.getSnapshot);
-  const dim = asking ? ASK_RIM.dim : 1;
-  const { pinned, running, minimized, slid, tiles } = props;
-  return (
-    <View
-      testID="dock-panel"
-      onContextMenu={(event) => props.onOptions(event.x)}
-      onLayout={props.onPanel}
-      // Past the Dock's edge Metal reports nothing more, not even the release.
-      style={{
-        opacity: panelOpacity(slid),
-        flexDirection: "row",
-        alignItems: "flex-start",
-        gap: DOCK.gap,
-        paddingLeft: DOCK.paddingX,
-        paddingRight: DOCK.paddingX,
-        paddingTop: DOCK.paddingTop,
-        paddingBottom: DOCK.paddingBottom,
-        borderRadius: DOCK.radius,
-        backgroundColor: colors.dock,
-        borderWidth: asking ? ASK_RIM.width : 1,
-        borderColor: asking ? ASK_RIM.color : colors.dockBorder,
-      }}
-    >
-      {pinned.map((entry, index) => (
-        <DockIcon
-          key={entry.key}
-          label={entry.app.name}
-          icon={entry.app.icon}
-          running={entry.windows.length > 0 || props.starting.has(entry.key)}
-          attention={props.wanting.has(entry.key)}
-          opacity={props.opacityOf(entry.key) * dim}
-          onPress={() => props.onPress(entry)}
-          onPointer={(event, centerX) => props.onPointer(entry, index, centerX, event)}
-          onMenu={(centerX) => props.onMenu(entry.key, centerX)}
-          onTile={(bounds) => tiles?.set(entry.key, bounds)}
-          rise={iconRise(slid.rise, index)}
-          testID={`dock-${entry.app.name}`}
-        />
-      ))}
-      {running.length > 0 && <Divider />}
-      {running.map((entry, index) => (
-        <DockIcon
-          key={entry.key}
-          label={entry.app.name}
-          icon={entry.app.icon}
-          running
-          attention={props.wanting.has(entry.key)}
-          opacity={dim}
-          onPress={() => props.onPress(entry)}
-          onPointer={(event, centerX) => props.onPointer(entry, null, centerX, event)}
-          onMenu={(centerX) => props.onMenu(entry.key, centerX)}
-          onTile={(bounds) => tiles?.set(entry.key, bounds)}
-          rise={iconRise(slid.rise, pinned.length + index)}
-          testID={`dock-${entry.app.name}`}
-        />
-      ))}
-      {minimized.length > 0 && <Divider />}
-      {minimized.map(({ window, app }, index) => (
-        <DockIcon
-          key={`minimized:${window.id}`}
-          label={window.title ? `${app.name}: ${window.title}` : app.name}
-          icon={app.icon}
-          running={false}
-          opacity={0.82 * dim}
-          onPress={() => props.onRestore(window.id)}
-          rise={iconRise(slid.rise, pinned.length + running.length + index)}
-          testID={`dock-minimized-${window.id}`}
-        />
-      ))}
-    </View>
-  );
+  return !dragging && !menuOpen && !asking && slid.position === 0 && slid.rise >= 1;
+}
+
+/** The panel's last bounds, told again as clicks go whenever magnification starts or ends: the lifted icon takes clicks only while lifted. */
+function useClickBounds(onPanel: ((bounds: Bounds) => void) | undefined, magnifying: boolean) {
+  const panelBounds = useRef<Bounds | null>(null);
+  useEffect(() => {
+    if (panelBounds.current) onPanel?.(clickBounds(panelBounds.current, magnifying));
+  }, [magnifying, onPanel]);
+  return panelBounds;
+}
+
+/** The Dock's menus: an icon's (a right-click opens only the innermost view's), the Dock's own, the Trash's. */
+function dockMenus(
+  menus: MenuController,
+  latest: { current: { layout: ReturnType<typeof dockLayout>; appName: string } },
+  { output, prefs, trash }: { output: string | undefined; prefs: Pick<DockPrefs, "snapshot"> | null; trash: DockTrash | null },
+) {
+  const open = (x: number, entries: Parameters<MenuController["openDockMenu"]>[1]) => void menus.openDockMenu(x, entries, latest.current.appName, output);
+  return {
+    openMenu: (key: string, centerX: number) => {
+      const entry = [...latest.current.layout.pinned, ...latest.current.layout.running].find((each) => each.key === key);
+      if (entry) open(centerX, buildDockMenu(entry));
+    },
+    openOptions: (x: number) => {
+      if (prefs) open(x, buildDockOptionsMenu(prefs.snapshot));
+    },
+    openTrashMenu: (centerX: number) => {
+      if (!trash) return;
+      void trash.refresh();
+      open(centerX, buildTrashMenu());
+    },
+  };
+}
+
+/** The icon under the pointer: set when the pointer comes onto one, cleared when it leaves that one. */
+function useHovered(): [Hovered | null, (hovered: Hovered | null, key: string) => void] {
+  const [hovered, setHovered] = useState<Hovered | null>(null);
+  const onHover = (next: Hovered | null, key: string): void => setHovered((now) => (next ? next : now?.key === key ? null : now));
+  return [hovered, onHover];
 }

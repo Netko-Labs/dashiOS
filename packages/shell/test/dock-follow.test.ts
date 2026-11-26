@@ -7,7 +7,7 @@
 import { expect, test } from "bun:test";
 import { Autohide } from "../src/dock/lib/autohide.ts";
 import type { Slide } from "../src/dock/lib/slide.tsx";
-import { DockPresenter, FOLLOW_MS } from "../src/dock/presenter.ts";
+import { DockPresenter, EDGE_BAND, FOLLOW_MS } from "../src/dock/presenter.ts";
 import type { DockSettings } from "../src/dock/settings.ts";
 import { settle } from "./support/time.ts";
 
@@ -66,7 +66,7 @@ function harness(settings: DockSettings, pointer: { screen: string | undefined }
   return { presenter, view, shownOn, claims, advance };
 }
 
-const shown: DockSettings = { style: "dock", autohide: false, visible: true };
+const shown: DockSettings = { style: "dock", autohide: false, visible: true, magnify: true };
 
 test("a Dock that stays shown moves to the screen whose bottom edge the pointer rests on", async () => {
   const pointer = { screen: "HDMI-A-1" as string | undefined };
@@ -74,7 +74,7 @@ test("a Dock that stays shown moves to the screen whose bottom edge the pointer 
   run.presenter.place("eDP-1", ["eDP-1", "HDMI-A-1"]);
   expect(run.shownOn).toEqual(["eDP-1"]);
   // Every screen's edge is heard, not only its own.
-  expect(run.claims.at(-1)).toEqual([1, undefined]);
+  expect(run.claims.at(-1)).toEqual([EDGE_BAND, undefined]);
   run.presenter.edge(true);
   await settle();
   run.advance(FOLLOW_MS - 1);

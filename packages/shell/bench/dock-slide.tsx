@@ -47,7 +47,7 @@ const edge = (inside: boolean): void => {
 };
 
 const prefs = new DockPrefs(() => {});
-prefs.apply({ style: process.env.DOCK_BENCH_STYLE === "taskbar" ? "taskbar" : "dock", autohide: true, visible: true });
+prefs.apply({ style: process.env.DOCK_BENCH_STYLE === "taskbar" ? "taskbar" : "dock", autohide: true, visible: true, magnify: true });
 const pins = new PinStore({ defaults: pinned, path: null });
 const toplevels = new ToplevelStore();
 const controller = new DockController({ catalog, pins, toplevels, compositor: null, launch: () => null });

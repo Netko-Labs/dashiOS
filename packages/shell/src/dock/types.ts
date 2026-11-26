@@ -19,4 +19,8 @@ export type DockMenuAction =
   /** Change the Dock's own settings (settings/settings.ts). */
   | { kind: "dock-prefs"; change: Partial<DockSettings> }
   /** Open System Settings on the Desktop & Dock pane. */
-  | { kind: "dock-settings" };
+  | { kind: "dock-settings" }
+  /** Open the Trash in Files (DK-4). */
+  | { kind: "trash-open" }
+  /** Empty the Trash, once the person said yes (DK-4, UI-5). */
+  | { kind: "trash-empty" };

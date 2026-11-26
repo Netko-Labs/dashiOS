@@ -65,6 +65,16 @@ export const DESKTOP_ROWS = [
     agent: "dock_autohide",
   },
   {
+    id: "desktop-dock/magnify",
+    glyph: DOCK,
+    title: "Magnification",
+    name: "Dock magnification",
+    detail: "The icon under the pointer grows, and its neighbours a little. Off while Reduce Motion is on.",
+    keywords: ["dock", "magnify", "magnification", "zoom icons"],
+    kind: "switch",
+    value: dockSetting("magnify", { type: "boolean" }),
+  },
+  {
     id: "desktop-dock/show-dock",
     glyph: DOCK,
     title: "Show the Dock",

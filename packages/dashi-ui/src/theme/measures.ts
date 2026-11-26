@@ -122,8 +122,8 @@ export const RADIUS = {
   inkCardRow: 12,
   /** 17.5: the capsule's card (pill-v2). */
   capsuleCard: 17.5,
-  /** 18: the Dock. */
-  dock: 18,
+  /** 20: the Dock (RA-1, DK-1). */
+  dock: 20,
   /** 10.5: an app icon on its 44 tile. */
   icon: 10.5,
   /** 24: Settings' cards (the panel look). */

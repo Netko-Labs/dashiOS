@@ -17,7 +17,7 @@
  * The Dock follows the person (decisions.md D555): it lives on the main
  * display, and the pointer resting against the bottom edge of another
  * screen for `FOLLOW_MS` brings it there, as on a Mac. So while it is not
- * out, the one-pixel band is claimed along every screen's bottom edge (a
+ * out, the two-point band is claimed along every screen's bottom edge (a
  * Dock that stays shown claims it too), and an edge on another screen moves
  * it before it comes out. It goes back to the main display when that
  * changes or its screen goes away.
@@ -25,6 +25,7 @@
  * Nothing here knows Metal; start.tsx hands in the surfaces.
  */
 
+import { GLASS } from "@dashi/ui";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import type { Autohide } from "./lib/autohide.ts";
 import type { EdgeClaim } from "./lib/edges.ts";
@@ -66,10 +67,10 @@ export function bandFor(settings: DockSettings, revealed: boolean): number {
 }
 
 /** Where the pointer must be to bring an autohidden Dock: against the edge. */
-export const EDGE_BAND = 1;
+export const EDGE_BAND = GLASS.dock.reveal.band;
 
 /** How long the pointer rests against another screen's bottom edge before the Dock moves there (a brush past does nothing). */
-export const FOLLOW_MS = 250;
+export const FOLLOW_MS = GLASS.dock.reveal.restMs;
 
 /** The variant name of a view (surface.ts): what its host opens as. */
 export const variantOf = (spec: ViewSpec): string => `${spec.style}:${spec.exclusive ? "zone" : "float"}`;
