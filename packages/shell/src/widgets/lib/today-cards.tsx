@@ -199,7 +199,7 @@ function SongWords({ song }: { song: TodaySong }) {
   );
 }
 
-/** The sheet's peek row (lock-v3 #narrow): the notifications in one card, the song, as room allows. */
+/** The sheet's peek row (lock-v3 #narrow): the notifications in one card (named by its app, or "Notifications" for several), the song. */
 export function PeekRow({ width, notes, song, onPress }: { width: number; notes: readonly LockNote[]; song: TodaySong | null; onPress: Press }) {
   const total = notes.reduce((sum, note) => sum + note.count, 0);
   const first = notes[0];
@@ -207,7 +207,7 @@ export function PeekRow({ width, notes, song, onPress }: { width: number; notes:
   const each = cards > 0 ? (width - (cards - 1) * SPACE.gap) / cards : width;
   return (
     <View testID="lock-peek-row" style={{ flex: 1, flexDirection: "row", gap: SPACE.gap }}>
-      {first ? <NoteCard note={{ app: first.app, count: total, time: first.time }} width={each} /> : null}
+      {first ? <NoteCard note={{ app: notes.length > 1 ? "Notifications" : first.app, count: total, time: first.time }} width={each} /> : null}
       {song ? <PlayingCard song={song} width={each} compact onPress={() => onPress({ kind: "media" })} /> : null}
     </View>
   );
