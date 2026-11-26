@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { LIGHT_SURFACE, lightColors, MENU } from "@dashi/ui";
+import { GLASS, lightColors, MENU } from "@dashi/ui";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import { BarDropdown } from "../src/menus/lib/view.tsx";
 import type { MenuEntry } from "../src/menus/types.ts";
@@ -35,10 +35,11 @@ test("the menu bar's dropdown draws every menu's rows and edge, inside the scree
   await settle();
   const tree = JSON.parse(trees.at(-1) ?? "{}") as Drawn;
   const panel = find(tree, root.nodeId("menu-panel") ?? "");
-  // Solid: the card ground under the menu's tint, so the window under it never ghosts through.
-  expect(panel?.props).toMatchObject({ cornerRadius: MENU.radius, borderColor: lightColors.menuEdge, background: LIGHT_SURFACE.card });
+  // Regular glass (D782): its solid twin where the host draws none, with the menu's edge; the rows on it.
+  expect(panel?.props).toMatchObject({ cornerRadius: MENU.radius, borderColor: lightColors.menuEdge, background: GLASS.levels.regular.light.solid });
   const inner = (panel?.children ?? []).filter(isDrawn)[0];
-  expect(inner?.props).toMatchObject({ padding: MENU.padding, background: lightColors.menu });
+  expect(inner?.props).toMatchObject({ padding: MENU.padding });
+  expect(inner?.props.background).toBeUndefined();
   // Its least width (not drawn yet) kept 6 inside the screen's right side.
   expect(panel?.props.left).toBe(1280 - MENU.margin - 230);
   for (const label of ["Undo", "Show Sidebar", "Can't"]) {

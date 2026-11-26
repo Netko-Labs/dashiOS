@@ -207,7 +207,7 @@ test("a popover or view opens on the warm host when one is ready, else on a new 
   warm.stop();
 });
 
-test("an applet's popover draws on a solid ground, clipped to its corners, whatever its own tint", async () => {
+test("an applet's popover draws on a clear ground: the shell frames it in glass (LA-4)", async () => {
   const sent: string[] = [];
   const host = {
     send: (frame: string) => sent.push(frame),
@@ -234,8 +234,9 @@ test("an applet's popover draws on a solid ground, clipped to its corners, whate
   });
   await flush();
   const tree = JSON.parse(sent.at(-1) ?? "{}") as { props: Record<string, unknown>; children: { props: Record<string, unknown> }[] };
-  // The ground (solid card, the popover's radius, clipping), then the applet's own glass on it.
-  expect(tree.props).toMatchObject({ background: "#ffffff", cornerRadius: 12, clip: true });
+  // The ground is clear and unclipped (the shell's frame is the glass round it), then the applet's own tree on it.
+  expect(tree.props.background ?? "#00000000").toBe("#00000000");
+  expect(tree.props.cornerRadius).toBeUndefined();
   expect(tree.children[0]?.props.background).toBe("#f5f5f7f5");
   popover.close();
 });

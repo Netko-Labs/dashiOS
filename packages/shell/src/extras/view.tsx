@@ -9,6 +9,7 @@
 import { CLEAR, Picture, pill, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useRef } from "react";
+import { barWashes } from "../shared/glass/index.ts";
 import type { MenuBarExtra } from "./types.ts";
 
 /** Nothing to draw (an icon no theme has, a file the host cannot draw): the name's first letter, so it can still be found and clicked. */
@@ -54,6 +55,7 @@ export interface ExtraItemProps {
 
 export function ExtraItem({ extra, open, onMenu, onActivate, tile = false, accessible = false }: ExtraItemProps) {
   const colors = useColors();
+  const washes = barWashes(colors.text);
   // Events carry the pill's bounds; the last layout stands in for one that does not.
   const laid = useRef<Bounds | null>(null);
   const boxOf = (bounds?: Bounds): Bounds => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
@@ -82,7 +84,8 @@ export function ExtraItem({ extra, open, onMenu, onActivate, tile = false, acces
         gap: SPACE.xs,
         borderRadius: tile ? RADIUS.sheet : RADIUS.row,
         position: "relative",
-        backgroundColor: open ? colors.openWash : tile ? colors.button : CLEAR,
+        backgroundColor: open ? washes.open : tile ? colors.button : CLEAR,
+        hoverBackgroundColor: open ? washes.open : tile ? colors.tileHover : washes.hover,
       }}
     >
       {extra.icon?.kind === "glyph" && <Svg markup={extra.icon.markup} size={SIZE} color={colors.text} />}

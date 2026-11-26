@@ -180,6 +180,10 @@ function TitleDropdown({ popover, entries, room, fromKeys: fromBar, controller, 
   );
 }
 
+/** What a player plays, for the Now Playing tile (CC-7): the widgets' source, unless Control Center was given one. */
+const withMedia = (props: PopoverRootProps["controlCenter"], hub: ReturnType<typeof widgetHub>): { media?: NonNullable<ControlCenterProps["media"]> } =>
+  props.media === undefined && hub ? { media: hub.media } : {};
+
 export function PopoverRoot({
   controller,
   appMenus,
@@ -244,6 +248,7 @@ export function PopoverRoot({
       {popover?.kind === "control-center" && (
         <ControlCenterPanel
           {...controlCenter}
+          {...withMedia(controlCenter, area.hub)}
           page={popover.page}
           onPage={(page) => controller.setControlPage(page)}
           onBattery={() => controller.showBatteryFromControlCenter()}

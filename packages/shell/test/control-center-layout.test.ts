@@ -26,7 +26,8 @@ import {
   tileAt,
 } from "../src/control-center/layout.ts";
 
-const at = (layout: Layout, isThere: (id: string) => boolean = (id) => id !== "ethernet") =>
+// No player plays in these: the Now Playing tile keeps its place unshown (CC-7).
+const at = (layout: Layout, isThere: (id: string) => boolean = (id) => id !== "ethernet" && id !== "nowplaying") =>
   pack(shown(layout, isThere)).map(({ id, col, row, cols, rows }) => `${id} ${col},${row} ${cols}x${rows}`);
 
 test("the default layout on a laptop packs as drawn: Wi-Fi and the sliders, Bluetooth, Focus and Dark, Power and Keyboard, the battery", () => {
@@ -42,13 +43,13 @@ test("the default layout on a laptop packs as drawn: Wi-Fi and the sliders, Blue
     "battery 0,4 4x1",
   ]);
   // Five rows of 56 with 8 between, inside 12 of padding: the 344 × 336 panel.
-  const placed = pack(shown(DEFAULT_LAYOUT, (id) => id !== "ethernet"));
+  const placed = pack(shown(DEFAULT_LAYOUT, (id) => id !== "ethernet" && id !== "nowplaying"));
   expect(gridHeight(placed) + 2 * GRID.padding).toBe(336);
   expect(frameOf({ col: 2, row: 0, cols: 1, rows: 3 })).toEqual({ left: 164, top: 0, width: 74, height: 184 });
 });
 
 test("a machine without Wi-Fi shows Ethernet in its place; one without a battery or a keyboard light just closes up", () => {
-  const desktop = (id: string) => !["wifi", "power", "keyboard", "battery"].includes(id);
+  const desktop = (id: string) => !["wifi", "power", "keyboard", "battery", "nowplaying"].includes(id);
   expect(at(DEFAULT_LAYOUT, desktop)).toEqual([
     "ethernet 0,0 2x1",
     "brightness 2,0 1x3",
@@ -96,7 +97,7 @@ test("dragging over a tile takes its place, either way; hidden tiles stay where 
 });
 
 test("the arrows go to the nearest tile that way, overlapping first; ⌥ and an arrow trade places", () => {
-  const placed = pack(shown(DEFAULT_LAYOUT, (id) => id !== "ethernet"));
+  const placed = pack(shown(DEFAULT_LAYOUT, (id) => id !== "ethernet" && id !== "nowplaying"));
   expect(neighbor(placed, "wifi", "right")).toBe("brightness");
   expect(neighbor(placed, "brightness", "right")).toBe("volume");
   expect(neighbor(placed, "wifi", "down")).toBe("bluetooth");
@@ -110,7 +111,7 @@ test("the arrows go to the nearest tile that way, overlapping first; ⌥ and an 
 });
 
 test("a point in the grid names the tile under it, or none between tiles", () => {
-  const placed = pack(shown(DEFAULT_LAYOUT, (id) => id !== "ethernet"));
+  const placed = pack(shown(DEFAULT_LAYOUT, (id) => id !== "ethernet" && id !== "nowplaying"));
   expect(tileAt(placed, 10, 10)).toBe("wifi");
   expect(tileAt(placed, 170, 150)).toBe("brightness");
   expect(tileAt(placed, 158, 10)).toBeNull();

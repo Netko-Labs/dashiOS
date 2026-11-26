@@ -8,15 +8,18 @@
  * Return opens, ⇧ and an arrow move a slider, Esc goes back or closes; in
  * edit mode ⌥ and an arrow move the tile, Space resizes it, ⌫ removes it.
  * On a tile's page ↑ and ↓ move between its rows and Space or Return
- * presses one (page-keys.ts), with the same ring.
+ * presses one (page-keys.ts), with the same ring. Hung under the bar it is
+ * regular glass, radius 28 (DE-4, D781): its tiles and rows fills, an off
+ * knob the glass edge; embedded in Settings it is the window's card.
  */
 
-import { SHADOW, TILE, useControlColors, usePanelEdge } from "@dashi/ui";
-import { type KeyDownInfo, View, type ViewStyle } from "@mirinjs/metal";
+import { Frosted, SHADOW, TILE, useControlColors } from "@dashi/ui";
+import { type KeyDownInfo, View, type ViewProps, type ViewStyle } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { Laptop } from "../laptop/start.ts";
 import type { FlagsStore } from "../shared/control-center/index.ts";
+import { useGlassPanelEdge } from "../shared/glass/index.ts";
 import type { AppMixer, SoundStore } from "../sound/index.ts";
 import type { SystemStore } from "../system/store.ts";
 import type { WifiStore } from "../wifi/store.ts";
@@ -31,6 +34,7 @@ import { PanelEditor } from "./lib/edit.tsx";
 import { ControlGrid } from "./lib/grid.tsx";
 import { PageView } from "./lib/pages.tsx";
 import { panelKey } from "./lib/panel-keys.ts";
+import type { NowPlayingSource } from "./lib/snapshot.ts";
 import { PageOrigin } from "./page-parts.tsx";
 import { PageKeysContext, usePageKeys } from "./page-stops.ts";
 
@@ -51,6 +55,8 @@ export interface ControlCenterProps {
   layout: LayoutStore;
   /** Applets' controls (applets/controls.ts). */
   applets?: AppletTileSource;
+  /** What a player plays (the widgets' MPRIS source); without it there is no Now Playing tile (CC-7). */
+  media?: NowPlayingSource;
   /** The charge limit in percent now; null without one (the battery row's tick). */
   chargeLimit?: () => number | null;
   page: ControlPage;
@@ -72,22 +78,21 @@ export interface ControlCenterProps {
   embedded?: boolean;
 }
 
-/** The panel's card: hung under the bar's right end, or, embedded in Settings, in the page. */
-function panelStyle(embedded: boolean, surface: string, edge: ReturnType<typeof usePanelEdge>): ViewStyle {
+/** The panel's card: hung under the bar's right end (on glass, which fills it), or, embedded in Settings, in the page. */
+function panelStyle(embedded: boolean, surface: string, edge: ReturnType<typeof useGlassPanelEdge>): ViewStyle {
   return {
     ...(embedded ? {} : { position: "absolute" as const, right: 8, top: 4 }),
     width: GRID.width,
     flexDirection: "column",
     borderRadius: GRID.radius,
-    backgroundColor: surface,
-    ...(embedded ? { padding: GRID.padding } : { shadow: SHADOW.xl, ...edge }),
+    ...(embedded ? { padding: GRID.padding, backgroundColor: surface } : { shadow: SHADOW.xl, ...edge }),
   };
 }
 
 export function ControlCenterPanel(props: ControlCenterProps) {
   const { page, onPage, onClose, embedded = false } = props;
   const colors = useControlColors();
-  const edge = usePanelEdge(GRID.padding);
+  const edge = useGlassPanelEdge(GRID.padding);
   const saved = useLayout(props.layout);
   /** The layout being edited; null outside edit mode. */
   const [editDraft, setDraft] = useState<Layout | null>(null);
@@ -128,8 +133,10 @@ export function ControlCenterPanel(props: ControlCenterProps) {
   const key = (event: KeyDownInfo): void =>
     panelKey({ page, embedded, draft, focus, placed, controls, pageKey, onPage, onClose, setDraft, setFocus, openPage }, event);
 
+  // Hung under the bar it wears regular glass; embedded, the window's ground.
+  const Card = embedded ? View : GlassCard;
   return (
-    <View
+    <Card
       occlude
       testID="control-center"
       onWindowKeyDown={key}
@@ -156,6 +163,11 @@ export function ControlCenterPanel(props: ControlCenterProps) {
           {draft && <PanelEditor draft={draft} layout={props.layout} controls={controls} embedded={embedded} setDraft={setDraft} onClose={onClose} />}
         </>
       )}
-    </View>
+    </Card>
   );
+}
+
+/** The panel's glass: regular (DE-4). */
+function GlassCard(props: ViewProps) {
+  return <Frosted level="regular" {...props} />;
 }

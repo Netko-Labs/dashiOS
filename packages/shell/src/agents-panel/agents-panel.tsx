@@ -11,7 +11,7 @@
  * all" stops them all, as ⌃❖Esc does.
  */
 
-import { CHECK, CLOSE, OPACITY, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { CHECK, CLOSE, Frosted, OPACITY, RADIUS, SHADOW, SPACE, TYPE, useColors, useSolidTwin, useSurface, WEIGHT } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useContext, useSyncExternalStore } from "react";
 import {
@@ -34,12 +34,9 @@ import { AccessChip, ConnectionRow, IdleLine, NoAgents, Small, StopAllFooter, Ti
 import { panelTaskList, TaskCard, taskCardFocus, taskWorks } from "./lib/task-cards.tsx";
 import { type PanelTasks, PanelTasksContext } from "./tasks.tsx";
 
-export const AGENTS_PANEL = { width: 380, padding: SPACE.s, radius: RADIUS.sheet } as const;
+export const AGENTS_PANEL = { width: 380, padding: SPACE.s, radius: RADIUS.panelList } as const;
 /** A step's done or failed mark: a glyph on the 16 grid (IC-3). */
 const STEP_MARK = 11;
-
-/** The panel's ground: the menu's tint without its alpha. */
-const PANEL_GROUND = (colors: ReturnType<typeof useColors>): string => colors.menu.slice(0, 7);
 
 export function useRuns(runs: Pick<AgentRuns, "subscribe" | "getSnapshot">): readonly RunView[] {
   return useSyncExternalStore(runs.subscribe, runs.getSnapshot);
@@ -130,6 +127,9 @@ interface RunCardProps {
 
 function RunCard({ run, entry, now, first, focused, actions }: RunCardProps) {
   const colors = useColors();
+  const surface = useSurface();
+  // The dot's ring: the panel's ground, regular glass's twin.
+  const ground = useSolidTwin("regular");
   const working = isWorking(run);
   const steps = run.steps.slice(-CARD_STEPS);
   const undos = run.undos.flatMap((entry, index) => (entry.undone ? [] : [{ index, title: entry.undo.title }]));
@@ -141,8 +141,9 @@ function RunCard({ run, entry, now, first, focused, actions }: RunCardProps) {
         gap: SPACE.gap,
         padding: SPACE.gap,
         borderRadius: RADIUS.card,
-        ...(first ? {} : { borderTopWidth: 1, borderColor: colors.separator }),
-        ...(focused ? { backgroundColor: colors.selectionWash } : {}),
+        // A card is a fill on the panel's glass (frost-objects board 03), a step apart from the one above.
+        ...(first ? {} : { marginTop: SPACE.s }),
+        backgroundColor: focused ? colors.selectionWash : surface.card,
         ...(working ? {} : { opacity: OPACITY.soft }),
       }}
     >
@@ -158,7 +159,7 @@ function RunCard({ run, entry, now, first, focused, actions }: RunCardProps) {
         }}
       >
         <Svg markup={harnessGlyph(run.harness)} size={15} color={colors.agent} />
-        {entry?.watching && <TileDot ring={PANEL_GROUND(colors)} />}
+        {entry?.watching && <TileDot ring={ground} />}
       </View>
       <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.xxs }}>
         <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
@@ -230,7 +231,6 @@ export function AgentsPanel({
   actions: PanelActions;
   onClose: () => void;
 }) {
-  const colors = useColors();
   const all = useRuns(runs);
   const connected = useSyncExternalStore(agents.subscribe, agents.getSnapshot);
   const now = Date.now();
@@ -242,7 +242,8 @@ export function AgentsPanel({
     <RunCard key={run.id} run={run} {...(entry ? { entry } : {})} now={now} first={index === 0} focused={run.id === focus && count > 1} actions={actions} />
   );
   return (
-    <View
+    <Frosted
+      level="regular"
       testID="agents-panel"
       style={{
         position: "absolute",
@@ -254,10 +255,7 @@ export function AgentsPanel({
         flexDirection: "column",
         padding: AGENTS_PANEL.padding,
         borderRadius: AGENTS_PANEL.radius,
-        borderWidth: 1,
-        borderColor: colors.menuEdge,
-        // Solid, as the menus and the notification center are (D114): the launcher's glass let a window's words read through it, in Dark most.
-        backgroundColor: PANEL_GROUND(colors),
+        // Regular glass, floored, so a window's words never read through it (DE-4, D781); the compositor draws its rim and hairline.
         shadow: SHADOW.xl,
       }}
     >
@@ -289,6 +287,6 @@ export function AgentsPanel({
           }
         />
       )}
-    </View>
+    </Frosted>
   );
 }

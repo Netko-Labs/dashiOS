@@ -13,6 +13,7 @@ import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { MOON } from "../../control-center/index.ts";
 import { batteryGlyph, CONTROL_CENTER, networkGlyph, speakerGlyph } from "../../glyphs.ts";
 import type { Popover } from "../../menus/index.ts";
+import { barWashes } from "../../shared/glass/index.ts";
 import type { SystemSnapshot } from "../../system/store.ts";
 import { GOES } from "./menubar-fit.ts";
 import { StatusItem } from "./menubar-items.tsx";
@@ -170,7 +171,8 @@ function clockSlot({ clock, popover, colors, on, accessible = false }: SlotConte
           paddingLeft: SPACE.m,
           paddingRight: SPACE.m,
           borderRadius: RADIUS.row,
-          backgroundColor: popover?.kind === "notification-center" ? colors.openWash : CLEAR,
+          backgroundColor: popover?.kind === "notification-center" ? barWashes(colors.text).open : CLEAR,
+          hoverBackgroundColor: barWashes(colors.text)[popover?.kind === "notification-center" ? "open" : "hover"],
         }}
       >
         <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.text }}>

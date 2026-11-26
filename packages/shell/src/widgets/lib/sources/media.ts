@@ -107,6 +107,14 @@ export class Media extends Source<Playing | null> {
     await bus.call({ destination: shown.player, path: PATH, interface: PLAYER, member });
   }
 
+  /** Brings the player shown forward (its root's Raise): Control Center's Now Playing tile, pressed (CC-7). */
+  async raise(): Promise<void> {
+    const shown = this.getSnapshot();
+    if (!shown) return;
+    const bus = await this.link.bus();
+    await bus.call({ destination: shown.player, path: PATH, interface: ROOT, member: "Raise" });
+  }
+
   private async look(): Promise<void> {
     const bus = await this.link.bus();
     const names = (await listNames(bus)).filter((name) => name.startsWith(PREFIX));

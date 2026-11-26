@@ -111,12 +111,14 @@ export const RADIUS = {
   row: 5,
   /** 7: a button, a field, a pop-up, a pick row, a sidebar row. */
   control: 7,
-  /** 9: menus and pop-up menus. */
-  menu: 9,
+  /** 10: menus and pop-up menus (RA-1). */
+  menu: 10,
   /** 10: a group or card, the alert tile. */
   card: 10,
   /** 12: a window (the person's choice), a sheet, the launcher, every panel that asks or lists (RA-2). */
   sheet: 12,
+  /** 14: a panel that asks or lists, on regular glass (RA-2): the agents' panel, the switcher, "…" (a sheet's 14 too, once it moves). */
+  panelList: 14,
   /** 14: a widget (CO-11); 12 for one row. */
   inkCard: 14,
   inkCardRow: 12,

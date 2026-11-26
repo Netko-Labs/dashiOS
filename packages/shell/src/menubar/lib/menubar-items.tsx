@@ -8,6 +8,7 @@ import { CLEAR, MORE, pill, RADIUS, SPACE, useColors, useControlColors } from "@
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
 import type { BarMenuId } from "../../menus/index.ts";
+import { barWashes } from "../../shared/glass/index.ts";
 import { MORE_WIDTH } from "./menubar-fit.ts";
 
 /** "…"'s name for a screen reader. */
@@ -51,6 +52,7 @@ export function StatusItem({
   children: ReactNode;
 }) {
   const colors = useColors();
+  const washes = barWashes(colors.text);
   return (
     <View
       testID={testID}
@@ -64,7 +66,8 @@ export function StatusItem({
         alignItems: "center",
         justifyContent: "center",
         borderRadius: RADIUS.row,
-        backgroundColor: open ? colors.openWash : CLEAR,
+        backgroundColor: open ? washes.open : CLEAR,
+        hoverBackgroundColor: open ? washes.open : washes.hover,
       }}
     >
       {children}
@@ -88,6 +91,7 @@ export function More({
   accessible: boolean;
 }) {
   const colors = useColors();
+  const washes = barWashes(colors.text);
   const laid = useRef<Bounds | null>(null);
   return (
     <View
@@ -109,7 +113,8 @@ export function More({
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        backgroundColor: open ? colors.openWash : CLEAR,
+        backgroundColor: open ? washes.open : CLEAR,
+        hoverBackgroundColor: open ? washes.open : washes.hover,
       }}
     >
       <Svg markup={MORE} size={16} color={colors.text} />
@@ -155,6 +160,7 @@ export function Title({
   children: ReactNode;
 }) {
   const colors = useColors();
+  const washes = barWashes(colors.text);
   // Events carry the pill's bounds; the last layout stands in for one that does not.
   const laid = useRef<Bounds | null>(null);
   return (
@@ -175,7 +181,8 @@ export function Title({
         paddingRight: SPACE.gap,
         borderRadius: RADIUS.row,
         position: "relative",
-        backgroundColor: open ? colors.openWash : CLEAR,
+        backgroundColor: open ? washes.open : CLEAR,
+        hoverBackgroundColor: open ? washes.open : washes.hover,
       }}
     >
       {children}

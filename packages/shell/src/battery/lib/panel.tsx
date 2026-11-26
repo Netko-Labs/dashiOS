@@ -6,13 +6,16 @@
  * dashed, where the watts go in rows that add up (panel-numbers.ts), then
  * what the laptop adds (a one-time full charge, the graphics card's holders,
  * what keeps the computer awake) and Battery Settings…. No power modes: they
- * are Control Center's. An app's row opens it in Activity Monitor.
+ * are Control Center's. An app's row opens it in Activity Monitor. It is
+ * regular glass, radius 28, its rows on fills, the charge an ink reading
+ * (frost-objects board 03, D781).
  */
 
-import { Button, LimitBar, RADIUS, SHADOW, SPACE, TYPE, tintFor, useControlColors, usePanelEdge, WEIGHT } from "@dashi/ui";
+import { Button, Frosted, LimitBar, RADIUS, SHADOW, SPACE, TYPE, tintFor, useControlColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { MenuEntry, StatusMenuAction } from "../../menus/index.ts";
+import { useGlassPanelEdge } from "../../shared/glass/index.ts";
 import { formatTime, useClockPrefs } from "../../shared/time/index.ts";
 import type { Battery } from "../../system/battery.ts";
 import { chargeLine } from "../chart.ts";
@@ -170,26 +173,29 @@ function Extras({ items, onAction }: { items: readonly ExtraItem[]; onAction: (a
   );
 }
 
-export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction, onSettings }: BatteryPanelProps) {
+/** The panel's glass; what is on it reads the glass palettes (`BatteryBody`). */
+export function BatteryPanel(props: BatteryPanelProps) {
+  const edge = useGlassPanelEdge(BATTERY_PANEL.padding);
+  return (
+    <Frosted
+      level="regular"
+      testID="battery-panel"
+      style={{ width: BATTERY_PANEL.width, flexDirection: "column", borderRadius: BATTERY_PANEL.radius, shadow: SHADOW.xl, ...edge }}
+    >
+      <BatteryBody {...props} />
+    </Frosted>
+  );
+}
+
+function BatteryBody({ battery, use, limit, extras, now, onApp, onAction, onSettings }: BatteryPanelProps) {
   const colors = useControlColors();
-  const edge = usePanelEdge(BATTERY_PANEL.padding);
   const rows = use
     ? wattRows({ battery, watts: use.watts, floor: idleFloor(use.samples), apps: use.apps, significant: use.significant, adapter: use.adapter })
     : [];
   const samples = use?.samples ?? [];
   const items = extras.flatMap((entry) => (entry.kind === "item" ? [entry] : []));
   return (
-    <View
-      testID="battery-panel"
-      style={{
-        width: BATTERY_PANEL.width,
-        flexDirection: "column",
-        borderRadius: BATTERY_PANEL.radius,
-        backgroundColor: colors.surface,
-        shadow: SHADOW.xl,
-        ...edge,
-      }}
-    >
+    <>
       <View
         style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, paddingHorizontal: SPACE.s, paddingTop: SPACE.xs, paddingBottom: SPACE.button }}
       >
@@ -214,6 +220,6 @@ export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction
         {/* It opens another window: an ellipsis (SH-32). */}
         <Button testID="battery-settings" look="panel" fill label="Battery Settings…" onPress={onSettings} />
       </View>
-    </View>
+    </>
   );
 }

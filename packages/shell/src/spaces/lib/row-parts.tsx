@@ -1,7 +1,9 @@
 /**
  * The parts the Desktops row draws (row.tsx): a picture's frame, a name, the
  * rename field that replaces a name, the × on a name, and the +. Each is a
- * plain view of what row.tsx decides; none keeps state of its own.
+ * plain view of what row.tsx decides; none keeps state of its own. They
+ * sit on the row's thin glass: a name is a fill, the current one the
+ * accent's wash (frost-objects board 13, D781).
  */
 
 import { ADD, CLOSE as CLOSE_GLYPH, GLYPH_BUTTON, GlyphButton, pill, RADIUS, SHADOW, SPACE, TextField, TYPE, useColors, WEIGHT } from "@dashi/ui";
@@ -101,10 +103,8 @@ export function RowName(props: {
         // Room for the × at the left end while it shows, so it never covers the name.
         paddingLeft: props.showsClose ? CLOSE : SPACE.gap,
         borderRadius: rect.height / 2,
-        backgroundColor: isCurrent ? colors.launcher : colors.dock,
-        borderWidth: isCurrent ? 2 : 1,
-        borderColor: isCurrent ? colors.selection : colors.dockBorder,
-        shadow: SHADOW.sm,
+        backgroundColor: isCurrent ? colors.selectionWash : colors.button,
+        hoverBackgroundColor: isCurrent ? colors.selectionWash : colors.tileHover,
       }}
     >
       <Text
@@ -149,7 +149,7 @@ export function RowClose(props: { testID: string; rect: Rect; onPress(): void; o
   );
 }
 
-/** The + at the row's right end: a new Desktop, its glyph on a disc of the Dock's glass so it reads on any wallpaper. */
+/** The + at the row's right end: a new Desktop, its glyph on a fill of the row's glass. */
 export function RowAdd(props: { rect: Rect; onPress(): void }) {
   const colors = useColors();
   const { rect } = props;
@@ -161,10 +161,7 @@ export function RowAdd(props: { rect: Rect; onPress(): void }) {
         borderRadius: pill(Math.min(rect.width, rect.height)),
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: colors.dock,
-        borderWidth: 1,
-        borderColor: colors.dockBorder,
-        shadow: SHADOW.sm,
+        backgroundColor: colors.button,
       }}
     >
       <GlyphButton testID="space-add" glyph={ADD} label="New Desktop" onPress={props.onPress} />

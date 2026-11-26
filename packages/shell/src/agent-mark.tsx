@@ -13,7 +13,7 @@
  * tooltip under the bar.
  */
 
-import { AMBER, CAPSULE, ON_AGENT, QUESTION, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { AMBER, CAPSULE, ON_AGENT, QUESTION, SPACE, TYPE, useBarItemColors, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef } from "react";
 import { discGlyph } from "./agents/index.ts";
@@ -105,13 +105,14 @@ function Outside({ sessions, harness, ink }: { sessions: number; harness: string
 
 /** Dashi's spark, and "Working" beside it while something works on its own. */
 function Working({ ink, glyph, working }: { ink: string; glyph: string; working: boolean }) {
-  const colors = useColors();
+  // Primary on the bar's glass (D780), the agents' ink off it.
+  const words = useBarItemColors("agent").ink;
   return (
     <>
       <Spark ink={ink} glyph={glyph} />
       {working && (
         <View testID="agent-mark-working">
-          <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: colors.agentInk }}>Working</Text>
+          <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: words }}>Working</Text>
         </View>
       )}
     </>
@@ -168,7 +169,7 @@ export function AgentMark(props: AgentMarkProps) {
   }, [tip]);
   const box = (bounds?: Bounds) => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
   const asking = need > 0;
-  const ink = colour ?? colors.agent;
+  const [ink, words] = [colour ?? colors.agent, useBarItemColors("agent").ink];
   // The agents' part is a press of its own; the spark keeps the field.
   const outside = !asking && agents !== undefined && agents.sessions > 0 ? agents : null;
   const press = (to: (right: number) => void) => (event: { bounds?: Bounds }) => {
@@ -217,7 +218,7 @@ export function AgentMark(props: AgentMarkProps) {
             onPress={press(onAgents ?? onPress)}
             style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, height: MARK.height }}
           >
-            <Outside sessions={outside.sessions} harness={outside.harness} ink={open ? ON_AGENT : colors.agentInk} />
+            <Outside sessions={outside.sessions} harness={outside.harness} ink={open ? ON_AGENT : words} />
           </View>
         </>
       ) : (

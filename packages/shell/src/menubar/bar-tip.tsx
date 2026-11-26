@@ -6,7 +6,7 @@
  * looks like @dashi/ui's tooltips (tooltip.tsx).
  */
 
-import { RADIUS, SHADOW, SPACE, TOOLTIP_DELAY_MS, TYPE, useColors } from "@dashi/ui";
+import { RADIUS, SHADOW, SPACE, TOOLTIP_DELAY_MS, TYPE, useColors, useSolidTwin } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
@@ -29,8 +29,10 @@ export function tipLeft(x: number, width: number, barWidth: number | undefined):
   return Math.max(MARGIN, Math.min(centered, right));
 }
 
+/** The tip: never glass, the regular material's solid twin, as the kit's tooltip (GL-6, T-1). */
 function Tip({ text }: { text: string }) {
   const colors = useColors();
+  const ground = useSolidTwin("regular");
   return (
     <View style={{ flex: 1, alignItems: "center", paddingTop: SPACE.xs }}>
       <View
@@ -42,7 +44,7 @@ function Tip({ text }: { text: string }) {
           borderRadius: RADIUS.row,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: colors.menu,
+          backgroundColor: ground,
           borderWidth: 1,
           borderColor: colors.separator,
           shadow: SHADOW.sm,
