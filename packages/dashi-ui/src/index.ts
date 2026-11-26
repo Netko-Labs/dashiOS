@@ -133,7 +133,7 @@ export { defaultScale, isBuiltIn, SCALES, type ScreenSize } from "./scale.ts";
 export { placeholderAt, SEARCH_FIELD, SearchField, type SearchFieldProps } from "./search-field.tsx";
 export { type MorePill, type PillsLaid, PillsWrapped, pillsWrapped, SEGMENTED, SEGMENTED_WINDOW, Segmented, type SegmentedProps } from "./segmented.tsx";
 export { type RowLook, rowLook, SELECTION_BAR, SelectionBar, selectionBarHeight, TextSelectionLook } from "./selection.tsx";
-export { SHEET_MARGIN, Sheet, SheetCard, type SheetPlace, type SheetProps, sheetBodyRoom, sheetWidth } from "./sheet.tsx";
+export { SHEET_MARGIN, SHEET_RADIUS, Sheet, SheetCard, type SheetPlace, type SheetProps, sheetBodyRoom, sheetWidth } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
 export { railTip, SIDEBAR, SIDEBAR_ROW_HEIGHT, SidebarItem, type SidebarItemProps } from "./sidebar.tsx";
 export { Slider, type SliderProps } from "./slider.tsx";
@@ -164,7 +164,9 @@ export { TextLink } from "./text-link.tsx";
 export * from "./theme/index.ts";
 export { TILE_SIZE, Tile } from "./tile.tsx";
 export { inksButtonColors } from "./tinted-button.tsx";
+export { titleFace, useTitleFace } from "./title-face.ts";
 export { TITLE_TAB, TitleTab, TitleTabMore, type TitleTabProps } from "./title-tab.tsx";
+export { ToolbarButton } from "./toolbar-button.tsx";
 export { TOOLTIP_DELAY_MS, type Tooltip, TooltipLayer, tooltipOrigin, useTooltip, useWindowLayer } from "./tooltip.tsx";
 export { JOIN_MS as UNDO_JOIN_MS, redoLabel, UNDO_LIMIT, type UndoAction, UndoStack, type UndoState, undoLabel, undoMenuItems, useUndo } from "./undo.ts";
 export {
@@ -173,7 +175,6 @@ export {
   SIDEBAR_WIDTH,
   SidebarSection,
   type TitleBarInset,
-  ToolbarButton,
   useTitleBarInset,
   WIZARD_PAGE,
 } from "./window.tsx";

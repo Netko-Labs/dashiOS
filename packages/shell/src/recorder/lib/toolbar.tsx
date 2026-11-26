@@ -8,9 +8,11 @@
  * button, which stops an agent's too); an agent's record_screen leaves the
  * toolbar opening as ever (start.ts), and Record then says "An agent is
  * recording the screen" in the toolbar instead of closing it on nothing.
+ * It is regular glass, radius 14 (DE-4, GL-6): a capture's area is never
+ * glass, but the toolbar is never in the picture (decisions.md D815).
  */
 
-import { Button, type Choice, GlyphButton, RADIUS, Segmented, SPACE, TYPE, useColors } from "@dashi/ui";
+import { Button, type Choice, Frosted, GlyphButton, Segmented, SHEET_RADIUS, SPACE, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { KeyCatcher, type OpenOverlay, type OverlayHandle } from "../../overlay.tsx";
@@ -80,7 +82,8 @@ function Toolbar({
     <View key={key} style={{ width: 1, height: DIVIDER, backgroundColor: colors.separator, marginLeft: SPACE.xs, marginRight: SPACE.xs }} />
   );
   return (
-    <View
+    <Frosted
+      level="regular"
       testID="capture-toolbar"
       style={{
         width: WIDTH,
@@ -89,10 +92,7 @@ function Toolbar({
         alignItems: "center",
         gap: SPACE.xxs,
         paddingHorizontal: SPACE.m,
-        borderRadius: RADIUS.sheet,
-        backgroundColor: colors.menu,
-        borderWidth: 1,
-        borderColor: colors.separator,
+        borderRadius: SHEET_RADIUS,
       }}
     >
       <KeyCatcher onKey={(key) => key === "Escape" && onDone(null)} onSubmit={go} />
@@ -114,7 +114,7 @@ function Toolbar({
         </Text>
       </View>
       <Button testID="capture-toolbar:go" label={ACTION[mode]} primary onPress={go} />
-    </View>
+    </Frosted>
   );
 }
 

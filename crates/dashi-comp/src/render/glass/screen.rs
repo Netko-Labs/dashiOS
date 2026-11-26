@@ -72,6 +72,7 @@ fn send_tone(state: &mut crate::state::Dashi, key: &PaneKey, rgb: [u8; 3]) {
             namespace: namespace.clone(),
             tone: tone::hex(rgb),
         }),
+        Owner::TilePreview => {}
         Owner::Surface(id) => {
             let object = state
                 .glass

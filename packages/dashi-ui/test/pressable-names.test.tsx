@@ -18,7 +18,7 @@ import { PopupMenu } from "../src/popup-menu.tsx";
 import { SearchField } from "../src/search-field.tsx";
 import { Segmented } from "../src/segmented.tsx";
 import { SidebarItem } from "../src/sidebar.tsx";
-import { ToolbarButton } from "../src/window.tsx";
+import { ToolbarButton } from "../src/toolbar-button.tsx";
 import { fakeHost } from "./host.ts";
 import { noop } from "./support/controls-view.ts";
 import { unnamedPressables } from "./support/names.ts";

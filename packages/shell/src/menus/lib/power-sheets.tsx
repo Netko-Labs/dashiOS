@@ -5,7 +5,7 @@
  * app that holds a log out while it asks its own question.
  */
 
-import { AlertSheet, Button, LOGO, Notice, RESTART, SHUT_DOWN, Sheet, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { AlertSheet, Button, LOGO, Notice, RESTART, SHUT_DOWN, Sheet, SPACE, TYPE, useColors, useTitleFace } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { holdingCopy } from "../../closing-apps.ts";
 import { KeyCatcher } from "../../overlay.tsx";
@@ -106,9 +106,10 @@ export interface AboutInfo {
   icon?: string;
 }
 
-/** About: an app's icon or Dashi's mark, its name as a page's title (TY-1), its lines, and OK, on the sheet card. */
+/** About: an app's icon or Dashi's mark, its name as a page's title (TY-1; Inter Display SemiBold, TY-2), its lines, and OK, on the sheet card. */
 export function AboutWindow({ info, onClose }: { info: AboutInfo; onClose: () => void }) {
   const colors = useColors();
+  const titleFace = useTitleFace();
   return (
     <Sheet testID="about" place="screen" onCancel={onClose} onConfirm={onClose}>
       <View style={{ flexDirection: "column", alignItems: "center", gap: SPACE.gap }}>
@@ -117,9 +118,7 @@ export function AboutWindow({ info, onClose }: { info: AboutInfo; onClose: () =>
         ) : (
           <Svg markup={LOGO} size={ABOUT_ICON.logo} color={colors.text} />
         )}
-        <Text style={{ fontSize: TYPE.title.size, lineHeight: TYPE.title.line, fontWeight: WEIGHT.bold, color: colors.text, textAlign: "center" }}>
-          {info.title}
-        </Text>
+        <Text style={{ fontSize: TYPE.title.size, lineHeight: TYPE.title.line, ...titleFace, color: colors.text, textAlign: "center" }}>{info.title}</Text>
         <View style={{ flexDirection: "column", alignItems: "center", gap: SPACE.xxs }}>
           {info.lines.map((line) => (
             <Text key={line} style={{ fontSize: TYPE.secondary.size, lineHeight: TYPE.secondary.line, color: colors.textMuted, textAlign: "center" }}>

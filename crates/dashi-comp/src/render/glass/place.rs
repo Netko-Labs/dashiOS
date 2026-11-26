@@ -90,6 +90,27 @@ impl Glass {
             .collect()
     }
 
+    /// The tile preview's pane (WI-10): `level` at `rect` (the screen's pixels), `radius` round
+    /// in points, at `scale`; none without a style, or once this GPU could not frost.
+    pub(crate) fn preview_element(
+        &self,
+        rect: Rectangle<i32, Physical>,
+        level: super::Level,
+        radius: f64,
+        scale: Scale<f64>,
+    ) -> Option<GlassElement> {
+        let style = self.style.as_ref().filter(|_| self.can())?;
+        let look = style.look(level, radius)?;
+        let key = PaneKey {
+            owner: Owner::TilePreview,
+            index: 0,
+        };
+        Some(
+            GlassElement::new(key, rect, at_scale(look, scale, 1.0), 1.0)
+                .clipped(None, style.twin(level)),
+        )
+    }
+
     /// A client surface's panes, when its client has glass: the surface drawn at `at`, `size`
     /// big, at `scale`, in `motion`, cut to `clip` (its window's frame).
     pub(crate) fn surface_elements(

@@ -4,7 +4,7 @@
  * Help menu there is no ❖ to release, so it closes on a click or Esc.
  * An app that publishes its menus (app-menus/) gets its own shortcuts in the
  * app column, as the Mac lists a menu's keys; any other app, the standard ones.
- * Drawn on the kit's sheet card (radius 12, solid, RA-2), its title 13 Bold
+ * Drawn on the kit's sheet card (regular glass, radius 14, UI-5), its title 13 Bold
  * as every sheet's (CD-2), its column heads captions (600, sentence case).
  */
 
@@ -121,7 +121,7 @@ export function ShortcutSheet({ appName, published = null, onClose }: { appName:
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }} onPress={onClose}>
       {onClose && <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />}
-      <SheetCard testID="shortcut-sheet" width={SHEET.width}>
+      <SheetCard testID="shortcut-sheet" width={SHEET.width} frosted>
         <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, marginBottom: SPACE.xs }}>
           <Text style={{ fontSize: TYPE.body.size, lineHeight: TYPE.body.line, fontWeight: WEIGHT.bold, color: colors.text }}>{appName}</Text>
           {onClose ? (

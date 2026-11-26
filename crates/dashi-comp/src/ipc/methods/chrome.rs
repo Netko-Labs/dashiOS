@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 use super::{Ask, done};
 use crate::{
     input::{InputParams, Pointers},
-    ipc::protocol::{Coord, Count, Done, Int, Millis, Nothing, Rect},
+    ipc::protocol::{Coord, Count, Done, Int, Millis, Nothing, Real, Rect},
     keys::{HeldKeysParams, KeyboardParams, Keymap, KeymapParams},
     render::{
         self,
         depth::WindowStyle,
-        glass::{GlassClients, GlassParams, GlassReply, GlassStyleParams},
+        glass::{GlassClients, GlassParams, GlassReply, GlassStyleParams, Level},
     },
     state::Dashi,
 };
@@ -49,12 +49,23 @@ pub(crate) struct Inside {
     pub inside: bool,
 }
 
-/// Drag-to-tile zones: resting `dwellMs` in `area` shows `frame`.
+/// Drag-to-tile zones: resting `dwellMs` in `area` shows `frame`, drawn as `preview` says.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct Layout {
     pub zones: Vec<Zone>,
     pub dwell_ms: Option<Count>,
+    pub preview: Option<TilePreview>,
+}
+
+/// How a tile's preview is drawn (design.html WI-10): a pane of the material `level`,
+/// `radius` round, `inset` in from the frame it shows, in logical pixels.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct TilePreview {
+    pub level: Level,
+    pub radius: Real<0, 64_000>,
+    pub inset: Real<0, 64_000>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

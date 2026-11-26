@@ -2,13 +2,13 @@
  * "Your turn": an agent handed a window to the person (hand_over). One pill
  * at the top of the screen, over the windows (no second bar): what the agent
  * asks, and Done. The agent is paused and its pictures blank that window
- * until Done is pressed by the person.
+ * until Done is pressed by the person. Regular glass, its edge the agents'
+ * purple (frost-objects 18; decisions.md D814).
  */
 
-import { Button, pill, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { Button, Frosted, pill, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Turn } from "../../agents/index.ts";
-import { opaque } from "../../consent.tsx";
 
 export const TURN = { width: 560, height: 96 } as const;
 /** The agents' dot beside the words: an indicator, in shiso. */
@@ -19,7 +19,8 @@ export function TurnBanner({ turn, onDone }: { turn: Turn; onDone: () => void })
   const subject = turn.who.remote ? "The agent" : turn.who.name;
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <View
+      <Frosted
+        level="regular"
         occlude
         style={{
           width: TURN.width - 2 * SPACE.sheet,
@@ -31,7 +32,6 @@ export function TurnBanner({ turn, onDone }: { turn: Turn; onDone: () => void })
           paddingLeft: SPACE.page,
           paddingRight: SPACE.gap,
           borderRadius: RADIUS.sheet,
-          backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.agent,
           shadow: SHADOW.lg,
@@ -47,7 +47,7 @@ export function TurnBanner({ turn, onDone }: { turn: Turn; onDone: () => void })
           </Text>
         </View>
         <Button testID="turn-done" label="Done" primary onPress={onDone} />
-      </View>
+      </Frosted>
     </View>
   );
 }

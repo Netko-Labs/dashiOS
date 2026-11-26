@@ -4,7 +4,9 @@
  * and letting go captures that area (screenshots.ts, IPC `capture` with a
  * `rect`). Space captures the focused window instead; Esc, or a click
  * without a drag, cancels. The overlay closes before the capture, so it
- * isn't in the picture.
+ * isn't in the picture. Nothing here is glass (GL-6): a capture shows what it
+ * takes, so outside the area is a black wash, inside it is clear, and its
+ * size and keys sit on solid chips (frost-objects 26; decisions.md D815).
  */
 
 import { CAPTURE_AREA, HIT_AREA, KeySink, RADIUS, SPACE, TYPE } from "@dashi/ui";
@@ -78,38 +80,65 @@ function Selector({ onDone }: { onDone: (choice: Choice) => void }) {
           else if (key.kind === "escape") onDone({ kind: "cancel" });
         }}
       />
-      {selection ? (
-        <View
-          style={{
-            position: "absolute",
-            left: selection.x,
-            top: selection.y,
-            width: selection.width,
-            height: selection.height,
-            backgroundColor: CAPTURE_AREA.wash,
-            borderWidth: 1,
-            borderColor: CAPTURE_AREA.edge,
-          }}
-        />
-      ) : null}
-      {selection ? (
-        <View
-          style={{
-            position: "absolute",
-            left: selection.x + selection.width + 6,
-            top: selection.y + selection.height + 6,
-            paddingLeft: SPACE.s,
-            paddingRight: SPACE.s,
-            paddingTop: SPACE.xxs,
-            paddingBottom: SPACE.xxs,
-            borderRadius: RADIUS.check,
-            backgroundColor: CAPTURE_AREA.labelGround,
-          }}
-        >
-          <Text style={{ fontSize: TYPE.caption.size, color: CAPTURE_AREA.labelInk }}>{`${selection.width} × ${selection.height}`}</Text>
-        </View>
-      ) : null}
+      {selection ? <Selection area={selection} /> : null}
     </View>
+  );
+}
+
+/** The wash's four bands round `area`: above, below, and either side of it. */
+export function washAround(area: Area): Array<{ key: string; left: number; top: number; width?: number; height?: number; right?: number; bottom?: number }> {
+  return [
+    { key: "above", left: 0, right: 0, top: 0, height: area.y },
+    { key: "below", left: 0, right: 0, top: area.y + area.height, bottom: 0 },
+    { key: "left", left: 0, top: area.y, width: area.x, height: area.height },
+    { key: "right", left: area.x + area.width, right: 0, top: area.y, height: area.height },
+  ];
+}
+
+/** Words by the area on a solid ground (never glass, GL-6). */
+function AreaWords({ words }: { words: string }) {
+  return (
+    <View
+      style={{
+        paddingLeft: SPACE.s,
+        paddingRight: SPACE.s,
+        paddingTop: SPACE.xxs,
+        paddingBottom: SPACE.xxs,
+        borderRadius: RADIUS.check,
+        backgroundColor: CAPTURE_AREA.labelGround,
+      }}
+    >
+      <Text style={{ fontSize: TYPE.caption.size, color: CAPTURE_AREA.labelInk }}>{words}</Text>
+    </View>
+  );
+}
+
+/** The area being drawn: the wash outside it, its edge, under it its keys at the start and its size at the end. */
+function Selection({ area }: { area: Area }) {
+  return (
+    <>
+      {washAround(area).map(({ key, ...band }) => (
+        <View key={key} testID={`screenshot-wash:${key}`} style={{ position: "absolute", ...band, backgroundColor: CAPTURE_AREA.outside }} />
+      ))}
+      <View
+        testID="screenshot-selection"
+        style={{ position: "absolute", left: area.x, top: area.y, width: area.width, height: area.height, borderWidth: 1, borderColor: CAPTURE_AREA.edge }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: area.x,
+          top: area.y + area.height + SPACE.s,
+          minWidth: area.width,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          gap: SPACE.s,
+        }}
+      >
+        <AreaWords words="Space: a window · Esc: cancel" />
+        <AreaWords words={`${area.width} × ${area.height}`} />
+      </View>
+    </>
   );
 }
 

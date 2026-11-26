@@ -13,7 +13,7 @@ import { Switch } from "../src/switch.tsx";
 import { Appearance } from "../src/theme/appearance.ts";
 import { contrastRatio } from "../src/theme/contrast.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
-import { ToolbarButton } from "../src/window.tsx";
+import { ToolbarButton } from "../src/toolbar-button.tsx";
 import { fakeHost } from "./host.ts";
 import { settle } from "./support/time.ts";
 

@@ -132,7 +132,16 @@ export const CHROME = {
     obj({ bottom: num(), output: optional(str()) }),
     map(obj({ inside: bool() }, { strict: false }), ({ inside }) => inside),
   ),
-  layout: method("shell", obj({ zones: list(obj({ area: FrameShape, frame: FrameShape })), dwellMs: optional(num({ min: 0 })) }), Done),
+  layout: method(
+    "shell",
+    obj({
+      zones: list(obj({ area: FrameShape, frame: FrameShape })),
+      dwellMs: optional(num({ min: 0 })),
+      // How the tile's preview is drawn (WI-10): a pane of `level`, `radius` round, `inset` in from its frame.
+      preview: optional(obj({ level: GlassLevel, radius: num({ min: 0, max: 64 }), inset: num({ min: 0, max: 64 }) })),
+    }),
+    Done,
+  ),
   gestures: method("shell", obj({ swipe: list(num({ min: 0, max: 10 })) }), Done),
   idle: method("shell", obj({ timeouts: list(num({ min: 0 })) }), Done),
   keyboard: method("shell", Keyboard, Done),

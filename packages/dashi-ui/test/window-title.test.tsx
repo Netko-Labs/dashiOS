@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
-import { AppWindow, ToolbarButton } from "../src/window.tsx";
+import { ToolbarButton } from "../src/toolbar-button.tsx";
+import { AppWindow } from "../src/window.tsx";
 import { titleRoom } from "../src/window-title.tsx";
 import { fakeHost } from "./host.ts";
 import { settle } from "./support/time.ts";
