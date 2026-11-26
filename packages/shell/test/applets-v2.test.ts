@@ -215,7 +215,10 @@ test("popover placement at each screen edge: the shell's frame kept inside, the 
   // Taller than the screen below the bar: the room there is.
   expect(placePopover({ width: 300, height: 900 }, 700, SCREEN)).toMatchObject({ y: 32 + pad, height: 900 - 32 - EDGE_MARGIN - 2 * pad });
   // Wider than a small screen: the screen's width, less the margins.
-  expect(placePopover({ width: 700, height: 200 }, 300, { ...SCREEN, width: 640 })).toMatchObject({ x: EDGE_MARGIN + pad, width: 640 - 2 * EDGE_MARGIN - 2 * pad });
+  expect(placePopover({ width: 700, height: 200 }, 300, { ...SCREEN, width: 640 })).toMatchObject({
+    x: EDGE_MARGIN + pad,
+    width: 640 - 2 * EDGE_MARGIN - 2 * pad,
+  });
   // A taller bar (a bigger text size) moves it down.
   expect(placePopover(size, 700, { ...SCREEN, barHeight: 36 }).y).toBe(40 + pad);
 });

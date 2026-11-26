@@ -9070,3 +9070,99 @@ short words, as the rulebook is written.
   window was opaque over its own panes, and a surface offering only `Inherit` got straight alpha.
   Proof: `dashi-0.10.0-review/28-glass-kit/`.
 - **Undo:** revert the shader's cut; surfaces drop their shadows instead.
+
+### D780. The menu bar is thin glass; its items' washes lean with its ink, its chips' words are primary
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; frost-objects board 01, decided here).
+- **Question:** how the bar and every item and chip on it wear thin glass (DE-4, UI-18).
+- **Choice:** the bar is `<Frosted level="thin">` (`menubar/menubar.tsx`), what sits on it a child component
+  so every hook reads the glass palette. An item has no fill at rest, the glass's primary ink at 8 % under
+  the pointer and 14 % open (`shared/glass/bar.ts` `barWashes`); a chip (`BarItem`, the tally's capsules,
+  the agent mark's words, the voice's line) has primary words on every tone's wash: neutral ink 10 %
+  (16 % hovered), a capture's ume 20 % (28 %), the agents' `agentWash` (shiso 30 % hovered)
+  (`barItemColors(tone, colors, glass)`, `useBarItemColors`). Off glass the chips keep the agents' ink.
+  The bar's own 1 px edge is clear where the compositor draws glass (its hairline is the pane's); the bar
+  tip is regular's solid twin, as the kit's tooltip (GL-6). The voice's chip keeps a ground under its wash
+  over a neighbour's edge: thin's solid twin on glass.
+- **Why:** the washes were fixed colours tuned for the old translucent fill; on glass the ink leans to the
+  backdrop (GL-1), so a wash made from it leans the same way and keeps its step on any wallpaper.
+- **Undo:** `openWash`, `button` and `agentInk` again; a `View` with `colors.menuBar`.
+
+### D781. The bar's panels, the OSD, the switcher and the Spaces row wear their levels; floating panels lose their own edge
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; frost-objects boards 02, 03, 06–13, decided here).
+- **Choice:** regular glass for "…" (radius 14), the Agents panel (14; runs, asks and connections are fills
+  r10, 8 apart, no separators), the Battery panel (28), Control Center and its pages and edit mode (28; Add
+  rows fills), the OSD (28, and the small one a pill), the switcher (14); thin glass for the Spaces row,
+  closed and open (names fills, the current one the accent's wash). The switcher's parts are laid out in the
+  panel's own place so they sit on its glass; its count is an ink badge and its chosen window's ring 2.5.
+  The OSD's segments are the glass's ink, an off one at 20 %. A floating panel has no border of its own
+  where glass is drawn (`useGlassPanelEdge`: the compositor's rim and hairline are its edge); the
+  true-black hairline stays where it isn't. RA-2's 14 is a new token, `RADIUS.panelList`, so the sheets'
+  and the launcher's `RADIUS.sheet` moves with their own engineers.
+- **Not as drawn:** frost-objects draws the Agents panel and "…" at 12 and the switcher at 26; RA-2 (the
+  binding rule, written after) says 14 for all three. The rule wins; one token to change if the drawing
+  is meant.
+- **Undo:** the surfaces' old fills (`colors.launcher`, `colors.osd`, `PANEL_GROUND`).
+
+### D782. Menus are regular glass, radius 10; the lit row stays the solid accent
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; RA-1, frost-objects boards 02 and 04).
+- **Choice:** the shell's dropdown (`menus/lib/view.tsx`: the bar's menus, a status item's, a Dock icon's)
+  is `<Frosted level="regular">`; `MENU.radius` and `RADIUS.menu` 9 → 10 (every menu, the kit's too). Its
+  1 px `menuEdge` keeps its width but is clear where glass is drawn, so the rows don't move. The lit row is
+  `colors.selection` under onAccent words, as before (4.85:1 on Kombu), never the 22 % wash a list uses.
+- **Submenus** (GL-2): none exist; applets and tray items keep flattening theirs under headings. A menu
+  nested two glass layers deep is its twin by the kit's depth rule, should one come.
+- **Undo:** radius 9 and the solid card under `colors.menu`.
+
+### D783. Coloured inks on the bar's surfaces: the kit's stepped inks; the floor list waits for the compositor
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible).
+- **Question:** GL-5 asks each surface to name its coloured inks to the floor (the tally, the microphone,
+  ume, the agents' purple). The floor takes one ink per style (`glass-style`'s `floor.ink`), and a
+  surface wearing mirin's `material` can't name more.
+- **Choice:** the bar's surfaces paint the kit's stepped inks on glass (ume #A0324A, the microphone
+  #9F4800 on a 12 % wash, Dark ume on a fill #F6859B, D772) and name nothing yet. GL-5's tag stays.
+- **Undo / next:** a per-surface ink list in `dashi_glass_v1` (the compositor's and mirin's), then the
+  surfaces pass theirs.
+
+### D784. An applet's popover is framed by the shell, on the catcher's surface
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; LA-4, D767).
+- **Choice:** the shell draws the frame, `<Frosted level="regular">` radius 12 with shadow xl, on the clear
+  catcher surface it already lays under every applet popover (`applets/start.tsx` `PopoverFrame`). The
+  frame is what is placed and kept inside the screen; the applet is given the room 14 inside it, the size
+  it asked for (`placement.ts` `POPOVER_FRAME`, `popoverFrame`). The SDK's `PopoverGround` is clear and no
+  longer clips. A press on the frame's margin is the popover's, not "outside".
+- **Why:** an applet's host can't be trusted with the material (D767), and one surface under it costs
+  nothing new: the catcher was there.
+- **Cost:** an applet built with an older SDK draws its solid card inside the glass frame.
+- **Undo:** the SDK's solid `PopoverGround` and the old placement.
+
+### D785. Control Center's Display and Focus pages and its Now Playing tile, as built
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; CC-5 to CC-7, D765, frost-objects board 10).
+- **Display:** the Display (brightness) tile opens it as the Sound tile opens its page. The built-in
+  screen's backlight is the one Dashi dims today, so one slider ("Built-in · 68%"); Night Shift and Dark
+  as rows with switches (the row's press works the switch); Displays Settings… opens Settings › Displays.
+- **Focus:** the end is kept beside the switch (`Flags.dndUntil`, `dndFor`, in control-center.json) so a
+  restart keeps it, and the shell's one store turns Focus off when it comes (`keepFocusTime`, started
+  with Control Center's stores). "This evening" is 7 PM, offered only while an hour of the day is left
+  before it; "tomorrow" is 8 AM. The switch turned by hand (the tile, the header, Settings) is "until I
+  turn it off". The header's switch, Notifications Settings… at the foot.
+- **Now Playing:** a kit tile (`NowPlayingTile`, H22), the flat size only (a 56 pill needs the row's width
+  for the title and two buttons), in the default layout after the battery, shown only while a player
+  plays (CC-2). Its source is the widgets' MPRIS `Media`; a press raises the player (`Media.raise`, the
+  root's `Raise`); its sleeve is the cover when it is a local file, else a neutral disc with a note.
+- **Undo:** drop the pages from the catalog and the tile from the layout.
+
+### D786. A window's own menus stay solid
+
+- **Date:** 2026-11-26. `v10/glass-bar` (a finding; for the owner).
+- **Question:** board 04 draws a context menu (Files) on regular glass. `PopupMenu` is drawn inside the
+  app's window surface, and glass behind a view blurs what is behind the *window*, not the window's own
+  content under the menu.
+- **Choice:** leave `PopupMenu` on the window's solid card (VS-3) until a menu is its own popup surface
+  (an `xdg_popup` per menu, mirin's); the shell's menus, each on its own surface, are glass.
+- **Undo:** n/a; the follow-up is mirin's popup surfaces.
