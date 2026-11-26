@@ -3,37 +3,31 @@
 //! sees the lower pane frosted; a pane under more glass than the style allows
 //! is drawn as its solid twin instead (GL-2), as is every pane in solid mode.
 //!
-//! For each pane, what is behind it (the elements after it in the list) is
-//! drawn at half size into a texture of its own, the pane and its hairline
+//! For each pane, or each run of panes side by side (group.rs), what is behind
+//! it (the elements after it in the list) is drawn at half size into a texture
+//! of its own, the pane and its hairline
 //! plus the blur's reach (clipped to the screen), by a damage tracker of its
 //! own: when nothing behind changed, nothing is drawn and the last blur is
 //! kept, and the pane is not damaged on screen. Only when something did is it
 //! blurred again (kawase.rs). The textures live with the GPU's EGL context
 //! (cache.rs).
 
-use std::{collections::HashMap, time::Instant};
+use std::time::Instant;
 
 use smithay::{
     backend::renderer::{
-        Bind, ImportAll, ImportMem, Offscreen, Renderer, Texture,
-        element::{
-            Id,
-            utils::{Relocate, RelocateRenderElement, RescaleRenderElement},
-        },
-        gles::GlesTexture,
-        utils::CommitCounter,
+        Bind, ImportAll, ImportMem, Offscreen, Renderer, Texture, gles::GlesTexture,
     },
-    utils::{Buffer, Physical, Point, Rectangle, Size},
+    utils::{Physical, Rectangle, Size},
 };
 
 use super::{
     backdrop,
-    cache::{self, Cache, text},
+    cache::{self, Caches},
     element::{Frosted, GlassElement, PaneKey},
-    kawase,
+    group,
     shaders::{self, Programs},
     style::Style,
-    tone,
 };
 use crate::render::{DashiElement, GlesAccess};
 
@@ -93,52 +87,53 @@ where
         now,
     };
     let mut below: Vec<(Rectangle<i32, Physical>, usize)> = Vec::new();
-    for at in (0..elements.len()).rev() {
+    let mut at = elements.len();
+    while at > 0 {
+        at -= 1;
+        let start = group::run_start(at, |i| match &elements[i] {
+            DashiElement::Glass(glass) => Some(group::Sharing::of(glass)),
+            _ => None,
+        });
         let (front, behind) = elements.split_at_mut(at + 1);
-        let DashiElement::Glass(glass) = &mut front[at] else {
-            continue;
-        };
-        let depth = backdrop::layers(&below, glass.geometry) + 1;
-        below.push((glass.geometry, depth));
-        if depth > deepest
-            && let Some(look) = Style::solid_twin(glass.look, glass.twin)
-        {
-            glass.look = look;
+        let mut run: Vec<&mut GlassElement> = Vec::new();
+        for element in front[start..].iter_mut().rev() {
+            let DashiElement::Glass(glass) = element else {
+                continue;
+            };
+            let depth = backdrop::layers(&below, glass.visible()) + 1;
+            below.push((glass.visible(), depth));
+            if depth > deepest
+                && let Some(look) = Style::solid_twin(glass.look, glass.twin)
+            {
+                glass.look = look;
+            }
+            if glass.look.solid.is_some() {
+                let key = (output.to_owned(), glass.key.clone());
+                let solid =
+                    cache::solid(renderer.gles(), &programs, &mut caches, key, glass, &place)?;
+                glass.frosted = Some(solid);
+                done.panes += 1;
+            } else {
+                run.push(glass);
+            }
         }
-        let key = (output.to_owned(), glass.key.clone());
-        if glass.look.solid.is_some() {
-            let solid = cache::solid(renderer.gles(), &programs, &mut caches, key, glass, &place)?;
-            glass.frosted = Some(solid);
-            done.panes += 1;
-            continue;
+        if !run.is_empty() {
+            frost_run(
+                renderer,
+                &programs,
+                &mut caches,
+                output,
+                &mut run,
+                behind,
+                &place,
+                &mut done,
+            )?;
         }
-        let frosted = pane(
-            renderer,
-            &programs,
-            &mut caches.panes,
-            key,
-            glass,
-            behind,
-            &place,
-        )?;
-        done.panes += u32::from(frosted.is_some());
-        if let Some((_, again, tone)) = &frosted {
-            done.blurred += u32::from(*again);
-            done.tones
-                .extend(tone.map(|tone| (glass.key.clone(), tone)));
-            done.tone_due |= caches
-                .panes
-                .get(&(output.to_owned(), glass.key.clone()))
-                .is_some_and(|cache| cache.tone.pending());
-        }
-        glass.frosted = frosted.map(|(frosted, _, _)| frosted);
+        at = start;
     }
     cache::forget(renderer.gles(), &mut caches, FORGET_AFTER);
     Ok(done)
 }
-
-/// A pane frosted, whether it was blurred again, and its tone if one was read.
-type PaneDone = (Frosted, bool, Option<[u8; 3]>);
 
 /// Where the panes of one frosting are: the screen, its scale, the turn, the time.
 pub(super) struct Place {
@@ -148,124 +143,93 @@ pub(super) struct Place {
     pub now: Instant,
 }
 
-/// Frost one pane from what is `behind` it; with whether it was blurred again, and its
-/// backdrop's tone when one was read.
-fn pane<R>(
+/// Frost a run of panes (group.rs: one surface's, side by side, the same blur) from what is
+/// `behind` the backmost: drawn once over all of them and blurred once, each taking its part.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the frosting's parts, passed as frost() holds them: the caches are borrowed apart"
+)]
+fn frost_run<R>(
     renderer: &mut R,
     programs: &Programs,
-    panes: &mut HashMap<(String, PaneKey), Cache>,
-    key: (String, PaneKey),
-    glass: &GlassElement,
+    caches: &mut Caches,
+    output: &str,
+    run: &mut [&mut GlassElement],
     behind: &[DashiElement<R>],
     place: &Place,
-) -> Result<Option<PaneDone>, String>
+    done: &mut Frosting,
+) -> Result<(), String>
 where
     R: Renderer + ImportAll + ImportMem + GlesAccess + Offscreen<GlesTexture> + Bind<GlesTexture>,
     R::TextureId: Texture + Clone + Send + 'static,
 {
-    let outer = glass.outer();
-    let Some(shown) = outer.intersection(place.screen).filter(|r| !r.is_empty()) else {
-        return Ok(None);
-    };
-    let sigma = glass.look.blur;
-    let Some(area) = backdrop::area(shown, sigma, place.screen) else {
-        return Ok(None);
-    };
-    let size: Size<i32, Buffer> = ((area.size.w + 1) / 2, (area.size.h + 1) / 2).into();
-    let (passes, spread) = kawase::plan(sigma);
-    let stale = panes.get(&key).is_none_or(|cache| {
-        cache.backdrop.size() != size || cache.pyramid.passes() != passes || cache.sigma != sigma
-    });
-    if stale {
-        let gles = renderer.gles();
-        let at = (place.scale, place.turn);
-        let cache = match panes.remove(&key) {
-            Some(old) => {
-                old.pyramid.free(gles);
-                cache::fresh(gles, old.id, old.commit, size, passes, sigma, at)?
-            }
-            None => cache::fresh(
-                gles,
-                Id::new(),
-                CommitCounter::default(),
-                size,
-                passes,
-                sigma,
-                at,
-            )?,
-        };
-        panes.insert(key.clone(), cache);
-    }
-    let Some(cache) = panes.get_mut(&key) else {
-        return Ok(None);
-    };
-    cache.used = place.turn;
-    // X-ray glass sees only the wallpaper: the last element, when it is one.
-    let behind = match behind.last() {
-        Some(last @ DashiElement::Memory(_)) if glass.look.xray => std::slice::from_ref(last),
-        _ => behind,
-    };
-    let moved: Vec<_> = behind
+    let shown = run
         .iter()
-        .map(|element| {
-            RelocateRenderElement::from_element(
-                RescaleRenderElement::from_element(element, area.loc, 0.5),
-                Point::from((-area.loc.x, -area.loc.y)),
-                Relocate::Relative,
-            )
-        })
-        .collect();
-    let changed = {
-        let mut target = renderer.bind(&mut cache.backdrop).map_err(text)?;
-        let drawn = cache
-            .tracker
-            .render_output(renderer, &mut target, 1, &moved, [0.0, 0.0, 0.0, 1.0])
-            .map_err(text)?;
-        let changed = backdrop::changed(drawn.damage);
-        if changed {
-            tracing::debug!(target: "glass", pane = ?key.1, behind = moved.len(), "what is behind changed");
+        .filter_map(|glass| glass.outer().intersection(place.screen))
+        .filter(|rect| !rect.is_empty())
+        .reduce(|a, b| a.merge(b));
+    let look = run[0].look;
+    let Some(area) = shown.and_then(|shown| backdrop::area(shown, look.blur, place.screen)) else {
+        for glass in run.iter_mut() {
+            glass.frosted = None;
         }
-        changed
+        return Ok(());
     };
-    let again = changed || !cache.blurred;
-    if again {
-        cache
-            .pyramid
-            .blur(renderer.gles(), programs, &cache.backdrop, spread)
-            .map_err(text)?;
-        cache.blurred = true;
-    }
-    if again || cache.look != Some(glass.look) {
-        cache.commit.increment();
-        cache.look = Some(glass.look);
-    }
-    let tone = cache
-        .tone
-        .wants(again, place.now)
-        .then(|| cache.pyramid.mean(renderer.gles()))
-        .flatten()
-        .and_then(|mean| {
-            let look = glass.look;
-            cache
-                .tone
-                .read(tone::lifted(mean, look.saturation, look.brightness))
-        });
-    // The pane's part of the picture (and its hairline's), at half size.
-    let (x, y) = (
-        f64::from(outer.loc.x - area.loc.x) / 2.0,
-        f64::from(outer.loc.y - area.loc.y) / 2.0,
-    );
-    let (w, h) = (f64::from(outer.size.w) / 2.0, f64::from(outer.size.h) / 2.0);
-    let src = Rectangle::new((x, y).into(), (w, h).into());
-    Ok(Some((
-        Frosted {
-            id: cache.id.clone(),
-            commit: cache.commit,
-            texture: cache.pyramid.out.clone(),
-            src,
+    // The run's textures are its first pane's (the lowest index: the one that stays as it scrolls).
+    let Some(lead) = run
+        .iter()
+        .map(|glass| glass.key.clone())
+        .min_by_key(|key| key.index)
+    else {
+        return Ok(());
+    };
+    let key = (output.to_owned(), lead);
+    let (again, tone) = backdrop::blur_behind(
+        renderer,
+        programs,
+        &mut caches.panes,
+        &key,
+        area,
+        look,
+        behind,
+        place,
+    )?;
+    done.blurred += u32::from(again);
+    done.tone_due |= caches
+        .panes
+        .get(&key)
+        .is_some_and(|cache| cache.tone.pending());
+    let Some(cache) = caches.panes.get(&key) else {
+        return Ok(());
+    };
+    let texture = cache.pyramid.out.clone();
+    for glass in run.iter_mut() {
+        let outer = glass.outer();
+        if outer
+            .intersection(place.screen)
+            .is_none_or(|rect| rect.is_empty())
+        {
+            glass.frosted = None;
+            continue;
+        }
+        let member = (output.to_owned(), glass.key.clone());
+        let (id, commit) = cache::member(&mut caches.members, member, glass, again, place.turn);
+        // The pane's part of the picture (and its hairline's), at half size.
+        let (x, y) = (
+            f64::from(outer.loc.x - area.loc.x) / 2.0,
+            f64::from(outer.loc.y - area.loc.y) / 2.0,
+        );
+        let (w, h) = (f64::from(outer.size.w) / 2.0, f64::from(outer.size.h) / 2.0);
+        glass.frosted = Some(Frosted {
+            id,
+            commit,
+            texture: texture.clone(),
+            src: Rectangle::new((x, y).into(), (w, h).into()),
             program: programs.pane.clone(),
-        },
-        again,
-        tone,
-    )))
+        });
+        done.panes += 1;
+        done.tones
+            .extend(tone.map(|tone| (glass.key.clone(), tone)));
+    }
+    Ok(())
 }

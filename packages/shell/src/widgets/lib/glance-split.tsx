@@ -1,8 +1,9 @@
 /**
  * Glance on any screen (LK-3, lock-v3 C and #narrow, decisions.md D803, D806): the split lock's left half on
  * black, in Dark's inks whatever the mode (the clock `#A3A3A1`, the words their secondary): the day and
- * the clock where the lock draws them, and Today folded into words where Today is: what is on air as one
- * line, then the counts (notifications, the song) with their glyphs. Everything moves a few points each
+ * the clock where the lock draws them, and Today folded into words where Today is: the next event as a
+ * figure line (else what is on air), then the facts with their glyphs: the event within the hour and a
+ * half, the notifications' count, the song (glance-words.ts). Everything moves a few points each
  * minute so no pixel burns in (`glanceNudge`); any key or press wakes the lock as it was.
  */
 
@@ -13,6 +14,7 @@ import { onAirWords, useSecondTick } from "../../tally/index.ts";
 import { useWidgetEnv } from "../env.tsx";
 import { lockTime, useClockDisplay } from "../lock.tsx";
 import { useSource } from "./data.ts";
+import { glanceNext } from "./glance-words.ts";
 import { lockNotes, noteWords } from "./today-cards.tsx";
 
 export interface SplitGlanceProps {
@@ -21,9 +23,11 @@ export interface SplitGlanceProps {
   layout: LockLayout;
   /** Where the content sits this minute (glance.tsx `glanceNudge`). */
   nudge: { x: number; y: number };
+  /** The next event's title shows, as on Today (`todayEventsShown`). */
+  eventsShown: boolean;
 }
 
-export function SplitGlance({ day, layout, nudge }: SplitGlanceProps) {
+export function SplitGlance({ day, layout, nudge, eventsShown }: SplitGlanceProps) {
   const { now, hour24, tally, hub } = useWidgetEnv();
   const inks = inkTokens("dark");
   const item = tally.item;
@@ -32,7 +36,8 @@ export function SplitGlance({ day, layout, nudge }: SplitGlanceProps) {
   const notes = lockNotes(useSource(hub?.notices, []));
   const count = notes.reduce((sum, note) => sum + note.count, 0);
   const playing = useSource(hub?.media, null);
-  const words = { fontSize: TYPE.body.size, color: inks.text.secondary } as const;
+  const next = glanceNext(hub?.occurrences() ?? [], now, hour24, eventsShown);
+  const words = { fontSize: TYPE.heading.size, color: inks.text.secondary } as const;
   // Where Today is: the pane's middle at the right, or under the left half where the sheet would be.
   const place = layout.glance.top === null ? ({ top: nudge.y, bottom: 0, justifyContent: "center" } as const) : { top: layout.glance.top + nudge.y };
   return (
@@ -41,8 +46,18 @@ export function SplitGlance({ day, layout, nudge }: SplitGlanceProps) {
         <LockClock day={day} time={lockTime(now, hour24)} ink={inks.text.tertiary} display={display} clock={layout.clock} testID="glance-clock" />
       </View>
       <View testID="glance-today" style={{ position: "absolute", left: layout.glance.left + nudge.x, ...place, gap: SPACE.inset }}>
-        {item ? <Text style={{ fontSize: TYPE.title.size, color: inks.text.tertiary }}>{onAirWords(item, tick)}</Text> : null}
+        {next ? (
+          <View testID="glance-next" style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset }}>
+            <Text style={{ fontSize: TYPE.figure.size, color: inks.text.tertiary }}>{next.figure}</Text>
+            <Text numberOfLines={1} style={words}>
+              {next.words}
+            </Text>
+          </View>
+        ) : item ? (
+          <Text style={{ fontSize: TYPE.title.size, color: inks.text.tertiary }}>{onAirWords(item, tick)}</Text>
+        ) : null}
         <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.page }}>
+          {next?.soon ? <Fact glyphName="cal" words={next.soon} style={words} /> : null}
           {count > 0 ? <Fact glyphName="msg" words={noteWords(count)} style={words} /> : null}
           {playing ? <Fact glyphName="music" words={playing.title} style={words} /> : null}
         </View>
@@ -51,7 +66,7 @@ export function SplitGlance({ day, layout, nudge }: SplitGlanceProps) {
   );
 }
 
-function Fact({ glyphName, words, style }: { glyphName: "msg" | "music"; words: string; style: { fontSize: number; color: string } }) {
+function Fact({ glyphName, words, style }: { glyphName: "cal" | "msg" | "music"; words: string; style: { fontSize: number; color: string } }) {
   return (
     <View testID={`glance-${glyphName}`} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
       <Svg markup={glyph(glyphName)} size={style.fontSize} color={style.color} />

@@ -59,6 +59,7 @@ const GlassLevelLook = obj({
   saturation: num({ min: 0, max: 3 }),
   tint: str(),
   solid: optional(str()),
+  reach: optional(num({ min: 0, max: 512 })),
 });
 
 /** How each level looks, and how glass is drawn (`glass-style`). */

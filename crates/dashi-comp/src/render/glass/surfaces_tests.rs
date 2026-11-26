@@ -22,6 +22,7 @@ fn pane(rect: Rectangle<i32, Logical>, radius: u32, level: Level) -> ClientPane 
         rect,
         radius,
         level,
+        cut: None,
     }
 }
 
@@ -87,11 +88,40 @@ fn panes_are_clipped_and_their_radius_held_never_empty() {
     let looks = looks(&glass, (300, 300).into(), &style("frosted"));
     // The one off the surface and the empty one are dropped.
     assert_eq!(looks.len(), 1);
-    let (at, look, level) = looks[0];
-    assert_eq!(at, rect(0, 0, 190, 40));
-    assert_eq!(look.radius, 20.0);
-    assert_eq!(level, Some(Level::Regular));
-    assert!(look.tint[3] > 0.5);
+    let shown = looks[0];
+    // Its shape is its own; what shows is what the surface keeps of it.
+    assert_eq!(shown.shape, rect(-10, 0, 200, 40));
+    assert_eq!(shown.cut, Some(rect(0, 0, 190, 40)));
+    assert_eq!(shown.look.radius, 20.0);
+    assert_eq!(shown.level, Some(Level::Regular));
+    assert!(shown.look.tint[3] > 0.5);
+}
+
+#[test]
+fn a_cut_pane_keeps_its_shape_and_shows_only_inside_its_cut() {
+    // A widget 356 × 160, radius 18, its list scrolled so only its top 60 show (the area over the Dock).
+    let card = ClientPane {
+        cut: Some(rect(0, 0, 400, 100)),
+        ..pane(rect(10, 40, 356, 160), 18, Level::Paper)
+    };
+    let below = ClientPane {
+        cut: Some(rect(0, 0, 400, 100)),
+        ..pane(rect(10, 210, 356, 160), 18, Level::Paper)
+    };
+    let whole = pane(rect(10, 10, 100, 20), 8, Level::Paper);
+    let glass = SurfaceGlass {
+        region: None,
+        panes: Some(vec![card, below, whole]),
+    };
+    let looks = looks(&glass, (400, 900).into(), &style("frosted"));
+    // The card scrolled out of its cut shows nothing.
+    assert_eq!(looks.len(), 2);
+    // The cut card keeps its whole shape and its radius (not the 60-tall rest's), shown to the cut.
+    assert_eq!(looks[0].shape, rect(10, 40, 356, 160));
+    assert_eq!(looks[0].cut, Some(rect(10, 40, 356, 60)));
+    assert_eq!(looks[0].look.radius, 18.0);
+    // One not cut shows whole.
+    assert_eq!(looks[1].cut, None);
 }
 
 #[test]
@@ -103,8 +133,8 @@ fn a_region_alone_is_the_apps_glass_and_panes_win_over_it() {
     let looks_of = |glass: &SurfaceGlass, mode: &str| looks(glass, (200, 200).into(), &style(mode));
     let apps = looks_of(&region_only, "frosted");
     assert_eq!(apps.len(), 2);
-    assert!(apps.iter().all(|(_, look, level)| {
-        level.is_none() && look.tint == [0.0; 4] && look.radius == 0.0
+    assert!(apps.iter().all(|shown| {
+        shown.level.is_none() && shown.look.tint == [0.0; 4] && shown.look.radius == 0.0
     }));
     // Solid: an app's own fill shows; nothing under it.
     assert!(looks_of(&region_only, "solid").is_empty());
@@ -114,7 +144,7 @@ fn a_region_alone_is_the_apps_glass_and_panes_win_over_it() {
     };
     let mine = looks_of(&both, "frosted");
     assert_eq!(mine.len(), 1);
-    assert_eq!(mine[0].2, Some(Level::Paper));
+    assert_eq!(mine[0].level, Some(Level::Paper));
     // An empty list of panes is no panes: the region speaks again.
     let cleared = SurfaceGlass {
         panes: Some(Vec::new()),

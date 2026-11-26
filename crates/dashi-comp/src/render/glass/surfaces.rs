@@ -22,12 +22,24 @@ const MOST_RECTS: usize = 16;
 /// The largest radius a pane may ask (dashi-chrome-v1 `invalid_pane`).
 pub(crate) const MOST_RADIUS: u32 = 512;
 
-/// One pane a client named: surface-local logical, its radius and level.
+/// One pane a client named: surface-local logical, its radius and level, and what of it shows
+/// (`cut_pane`, version 3: what clips it on the surface; none, all of it).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct ClientPane {
     pub rect: Rectangle<i32, Logical>,
     pub radius: u32,
     pub level: Level,
+    pub cut: Option<Rectangle<i32, Logical>>,
+}
+
+/// A pane to draw: its whole shape (its corners are its own), what of it shows on the surface
+/// (none: all of it), its look (the radius held to half the shape's shorter side) and level.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Shown {
+    pub shape: Rectangle<i32, Logical>,
+    pub cut: Option<Rectangle<i32, Logical>>,
+    pub look: Look,
+    pub level: Option<Level>,
 }
 
 /// A surface's glass state. Pending: `None` is "unchanged since the last commit".
@@ -88,34 +100,44 @@ pub(crate) fn pending(surface: &WlSurface, change: impl FnOnce(&mut SurfaceGlass
 }
 
 /// `surface`'s panes as its last commit left them, each with its look (logical, radius held
-/// to half the shorter side), clipped to `size`. Empty when the style draws none.
+/// to half the shorter side), cut to `size`. Empty when the style draws none.
 pub(crate) fn committed(
     surface: &WlSurface,
     size: smithay::utils::Size<i32, Logical>,
     style: &Style,
-) -> Vec<(Rectangle<i32, Logical>, Look, Option<Level>)> {
+) -> Vec<Shown> {
     let current = with_states(surface, |states| {
         states.cached_state.get::<SurfaceGlass>().current().clone()
     });
     looks(&current, size, style)
 }
 
-/// The panes of `glass` within a surface of `size`, with their looks.
+/// The panes of `glass` within a surface of `size`, with their looks: each its whole shape, cut
+/// to what of it shows on the surface (and to its own cut, `cut_pane`).
 pub(crate) fn looks(
     glass: &SurfaceGlass,
     size: smithay::utils::Size<i32, Logical>,
     style: &Style,
-) -> Vec<(Rectangle<i32, Logical>, Look, Option<Level>)> {
+) -> Vec<Shown> {
     let bounds = Rectangle::from_size(size);
     let clip = |rect: Rectangle<i32, Logical>| rect.intersection(bounds).filter(|r| !r.is_empty());
     match glass.panes.as_deref() {
         Some(panes) if !panes.is_empty() => panes
             .iter()
             .filter_map(|pane| {
-                let rect = clip(pane.rect)?;
-                let most = f64::from(rect.size.w.min(rect.size.h)) / 2.0;
+                let within = match pane.cut {
+                    Some(cut) => cut.intersection(pane.rect)?,
+                    None => pane.rect,
+                };
+                let shows = clip(within)?;
+                let most = f64::from(pane.rect.size.w.min(pane.rect.size.h)) / 2.0;
                 let radius = f64::from(pane.radius).min(most);
-                Some((rect, style.look(pane.level, radius)?, Some(pane.level)))
+                Some(Shown {
+                    shape: pane.rect,
+                    cut: (shows != pane.rect).then_some(shows),
+                    look: style.look(pane.level, radius)?,
+                    level: Some(pane.level),
+                })
             })
             .collect(),
         _ => {
@@ -126,7 +148,14 @@ pub(crate) fn looks(
                 .region
                 .iter()
                 .flatten()
-                .filter_map(|rect| Some((clip(*rect)?, look, None)))
+                .filter_map(|rect| {
+                    Some(Shown {
+                        shape: clip(*rect)?,
+                        cut: None,
+                        look,
+                        level: None,
+                    })
+                })
                 .collect()
         }
     }

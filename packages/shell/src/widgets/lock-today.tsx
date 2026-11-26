@@ -19,6 +19,14 @@ import { kindOfKey } from "./lib/views/widget.tsx";
 import type { Placement, WidgetKind } from "./types.ts";
 
 /**
+ * Whether Today's Up next names its events: as LK-1 draws it ("the next three events"), unless the person
+ * hid them for their Calendar widget (its `showPrivateWhenLocked` set to false; decisions.md D820).
+ */
+export function todayEventsShown(placements: readonly Placement[]): boolean {
+  return placements.find((each) => each.kind === "calendar")?.showPrivateWhenLocked !== false;
+}
+
+/**
  * Today's row of compacts: the weather and the battery, then the widget on air when it comes compact (a
  * timer counting down: CO-12 shows it glowing), else the person's first widget that comes compact (a
  * timer, a clock); `count` of them.
@@ -52,7 +60,7 @@ export function LockToday({ place, placements, onPress }: LockTodayProps) {
     return (
       <Frosted level="regular" testID="lock-today" style={{ flex: 1, paddingTop: place.top, paddingHorizontal: place.padding }}>
         <Title />
-        <TodayBody width={inside} row={todayRow(placements, place.smalls, holder)} {...data} onPress={onPress} />
+        <TodayBody width={inside} row={todayRow(placements, place.smalls, holder)} eventsShown={todayEventsShown(placements)} {...data} onPress={onPress} />
       </Frosted>
     );
   }
@@ -99,7 +107,14 @@ function TodayAtFoot({ open: roomy, width, placements, onPress, notes, song, hol
       {open ? (
         <>
           <SheetHead title={<Title />} chevron={roomy ? null : <Chevron up={false} onPress={() => setOpened(false)} />} />
-          <TodayBody width={inside} row={todayRow(placements, 3, holder)} notes={notes} song={song} onPress={onPress} />
+          <TodayBody
+            width={inside}
+            row={todayRow(placements, 3, holder)}
+            eventsShown={todayEventsShown(placements)}
+            notes={notes}
+            song={song}
+            onPress={onPress}
+          />
         </>
       ) : (
         <View style={{ height: sheet.peek - SPACE.gap - sheet.padding, flexDirection: "row", alignItems: "center", gap: SPACE.page }}>

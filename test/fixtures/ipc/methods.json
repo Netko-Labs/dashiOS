@@ -315,8 +315,9 @@
           "tint": "#f6f6f870"
         },
         "veil": {
-          "blur": 10.0,
-          "saturation": 1.15,
+          "blur": 24.0,
+          "reach": 137.0,
+          "saturation": 1.2,
           "tint": "#f6f6f81f"
         }
       },

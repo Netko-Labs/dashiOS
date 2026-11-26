@@ -1,6 +1,12 @@
 //! Where panes go among a screen's elements: the shell's (IPC `glass`, by
 //! namespace) and a client surface's (surfaces.rs), each made a
 //! GlassElement at the screen's pixels, behind the surface that wears it.
+//!
+//! A surface names its panes back to front, as it paints them (a later one
+//! over an earlier one: the lock's Today over its veil); a screen's elements
+//! go front to back, so they are given in the other order (`front_first`).
+//! Each keeps its index in the surface's list (`PaneKey`): its first pane's
+//! tone is still the first's.
 
 use smithay::{
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
@@ -65,7 +71,7 @@ impl Glass {
             .as_ref()
             .map(|style| style.mode)
             .unwrap_or_default();
-        panes
+        let panes = panes
             .iter()
             .enumerate()
             .filter_map(|(index, pane)| {
@@ -87,7 +93,8 @@ impl Glass {
                 let element = GlassElement::new(key, geometry, at_scale(look, scale, by), alpha);
                 Some(element.clipped(None, twin))
             })
-            .collect()
+            .collect();
+        front_first(panes)
     }
 
     /// The tile preview's pane (WI-10): `level` at `rect` (the screen's pixels), `radius` round
@@ -131,19 +138,49 @@ impl Glass {
             return Vec::new();
         }
         let alpha = motion.map_or(1.0, |(alpha, _, _)| alpha);
-        surfaces::committed(surface, size, style)
+        let panes = surfaces::committed(surface, size, style)
             .into_iter()
             .enumerate()
-            .map(|(index, (rect, look, level))| {
-                let (geometry, by) = placed(rect.to_f64(), at, scale, motion);
-                let key = PaneKey {
-                    owner: Owner::Surface(surface.id()),
+            .map(
+                |(
                     index,
-                };
-                let twin = level.and_then(|level| style.twin(level));
-                GlassElement::new(key, geometry, at_scale(look, scale, by), alpha)
-                    .clipped(clip, twin)
-            })
-            .collect()
+                    surfaces::Shown {
+                        shape,
+                        cut,
+                        look,
+                        level,
+                    },
+                )| {
+                    let (geometry, by) = placed(shape.to_f64(), at, scale, motion);
+                    let cut = cut.map(|cut| placed(cut.to_f64(), at, scale, motion).0);
+                    let key = PaneKey {
+                        owner: Owner::Surface(surface.id()),
+                        index,
+                    };
+                    let twin = level.and_then(|level| style.twin(level));
+                    GlassElement::new(key, geometry, at_scale(look, scale, by), alpha)
+                        .clipped(clip, twin)
+                        .cut_to(cut)
+                },
+            )
+            .collect();
+        front_first(panes)
+    }
+}
+
+/// A surface's panes, named back to front, in a screen's order: front to back.
+fn front_first<T>(mut panes: Vec<T>) -> Vec<T> {
+    panes.reverse();
+    panes
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_pane_painted_later_is_in_front() {
+        // The lock names its veil, then Today on it, then a card on Today.
+        let named = vec!["veil", "today", "card"];
+        // The screen's elements go front to back: the card first, the veil behind everything.
+        assert_eq!(super::front_first(named), vec!["card", "today", "veil"]);
     }
 }

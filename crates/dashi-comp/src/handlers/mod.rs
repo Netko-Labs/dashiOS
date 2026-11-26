@@ -6,6 +6,7 @@ mod compositor;
 mod decoration;
 mod dmabuf;
 pub(crate) mod inhibit;
+mod layer_keyboard;
 pub(crate) mod layer_regions;
 mod layer_shell;
 pub(crate) mod pointer;

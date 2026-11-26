@@ -33,7 +33,7 @@ export interface GlassInputs {
   tintGlass: boolean;
 }
 
-type Level = { blur: number; saturation: number; tint: string; solid?: string };
+type Level = { blur: number; saturation: number; tint: string; solid?: string; reach?: number };
 
 /** The `glass-style` params (docs/compositor-ipc.md). */
 export interface GlassStyle {
@@ -87,7 +87,12 @@ export function glassStyle(inputs: GlassInputs): GlassStyle {
       regular: level("regular"),
       thick: level("thick"),
       paper: level("paper"),
-      veil: { blur: veil.blur, saturation: inputs.tintGlass ? veil.saturation : UNTINTED, tint: withAlpha(veil[tone].tint, veil[tone].least) },
+      veil: {
+        blur: veil.blur,
+        saturation: inputs.tintGlass ? veil.saturation : UNTINTED,
+        tint: withAlpha(veil[tone].tint, veil[tone].least),
+        reach: veil.floorReach,
+      },
     },
     grain: GLASS.grain.amount,
     rim: { width: GLASS.rim.width, top: withAlpha(WHITE, rim.top), middle: withAlpha(WHITE, rim.middle), bottom: withAlpha(WHITE, rim.bottom) },

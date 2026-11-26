@@ -6,6 +6,7 @@ use crate::ipc::protocol::read;
 /// Frost's numbers in Light (theme/glass.ts), as the shell sends them; the IPC fixture too.
 pub(crate) fn example(mode: &str) -> Value {
     let level = |blur: f64, saturation: f64, tint: &str, solid: Option<&str>| json!({ "blur": blur, "saturation": saturation, "tint": tint, "solid": solid });
+    let veil = json!({ "blur": 24.0, "saturation": 1.2, "tint": "#f6f6f81f", "solid": null, "reach": 137.0 });
     json!({
         "mode": mode,
         "levels": {
@@ -13,7 +14,7 @@ pub(crate) fn example(mode: &str) -> Value {
             "regular": level(30.0, 1.6, "#f8f8fa9e", Some("#f7f7f9")),
             "thick": level(44.0, 1.4, "#eeeef2b8", Some("#e8e8ec")),
             "paper": level(30.0, 1.4, "#fbfbf9a3", Some("#fbfbf9")),
-            "veil": level(10.0, 1.15, "#f6f6f81f", None),
+            "veil": veil,
         },
         "grain": 0.035,
         "rim": { "width": 1, "top": "#ffffffd9", "middle": "#ffffff59", "bottom": "#ffffff26" },
@@ -38,6 +39,13 @@ fn each_level_takes_its_own_numbers_and_the_shared_ones() {
     assert!((thin.tint[3] - 0x70 as f32 / 255.0).abs() < 1e-4);
     assert!((thin.noise - 0.035).abs() < 1e-6);
     assert_eq!(thin.rim.0, 1.0);
+    // The veil's floor looks round each pixel for the hardest ground; the others' at the pixel.
+    assert_eq!(thin.reach, 0.0);
+    assert_eq!(style.look(Level::Veil, 0.0).unwrap().reach, 137.0);
+    assert_eq!(
+        style.look(Level::Veil, 0.0).unwrap().scaled(1.75).reach,
+        137.0 * 1.75
+    );
     assert_eq!(thin.keel.0, 0.5);
     assert!(thin.floor[1] > 4.6);
     // Frosted: not solid, not x-ray.

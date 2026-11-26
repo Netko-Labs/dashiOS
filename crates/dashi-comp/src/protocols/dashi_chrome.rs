@@ -39,7 +39,7 @@ pub(crate) struct ChromeData {
 }
 
 pub(crate) fn create_global(dh: &DisplayHandle) {
-    dh.create_global::<Dashi, dashi_chrome_manager_v1::DashiChromeManagerV1, ()>(2, ());
+    dh.create_global::<Dashi, dashi_chrome_manager_v1::DashiChromeManagerV1, ()>(3, ());
 }
 
 impl GlobalDispatch<dashi_chrome_manager_v1::DashiChromeManagerV1, ()> for Dashi {

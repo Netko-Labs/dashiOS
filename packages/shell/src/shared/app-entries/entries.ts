@@ -22,10 +22,14 @@ import {
 } from "../apps/index.ts";
 import type { Entry } from "./types.ts";
 
-/** "org.kde.konsole" → "Konsole"; falls back to the window title. */
+/**
+ * "org.kde.konsole" → "Konsole"; falls back to the window title. An id whose last part is a
+ * version, not a name ("gst-launch-1.0"), is no reverse-DNS name: it is named as it is.
+ */
 export function appIdName(appId: string, title: string): string {
   const last = appId.split(".").filter(Boolean).at(-1);
   if (!last) return title || "Untitled";
+  if (/^\d/.test(last)) return appId;
   return last.charAt(0).toUpperCase() + last.slice(1);
 }
 

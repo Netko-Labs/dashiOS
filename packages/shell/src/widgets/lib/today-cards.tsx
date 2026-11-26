@@ -54,13 +54,15 @@ type Press = (placement: Pick<Placement, "kind">) => void;
 export interface TodayBodyProps {
   width: number;
   row: readonly WidgetKind[];
+  /** Up next names its events (LK-1: "the next three events"); false only where the person hid them. */
+  eventsShown: boolean;
   notes: readonly LockNote[];
   song: TodaySong | null;
   onPress: Press;
 }
 
 /** Up next, Notifications and Playing, one under the other, `width` wide. */
-export function TodayBody({ width, row, notes, song, onPress }: TodayBodyProps) {
+export function TodayBody({ width, row, eventsShown, notes, song, onPress }: TodayBodyProps) {
   const each = (width - (row.length - 1) * SPACE.inset) / row.length;
   // The card on air glows in its ink with the Now dot (CO-12, D792, D807); the lock has no live cards, so any of Today's may hold it.
   const { tally } = useWidgetEnv();
@@ -73,6 +75,7 @@ export function TodayBody({ width, row, notes, song, onPress }: TodayBodyProps) 
           size="wide"
           width={width}
           height={span(SPANS.wide.rows)}
+          showPrivate={eventsShown}
           air={holder === "calendar"}
           testID="lock-widget:calendar"
           onPress={() => onPress({ kind: "calendar" })}

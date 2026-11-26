@@ -21,12 +21,13 @@ use smithay::{
     wayland::{
         compositor::with_states,
         shell::wlr_layer::{
-            KeyboardInteractivity, Layer, LayerSurface as WlrLayerSurface, LayerSurfaceData,
-            WlrLayerShellHandler, WlrLayerShellState,
+            Layer, LayerSurface as WlrLayerSurface, LayerSurfaceData, WlrLayerShellHandler,
+            WlrLayerShellState,
         },
     },
 };
 
+use super::layer_keyboard;
 use crate::state::{ClientState, Dashi};
 
 /// The pid of the client that owns `surface`, when the compositor knows it.
@@ -120,8 +121,16 @@ impl WlrLayerShellHandler for Dashi {
                 }
             }
         }
+        // The keyboard goes back to the exclusive surface shown before it (Control Center under
+        // the launcher), else to the window in front.
         if had_focus {
-            self.focus_topmost();
+            match self.newest_exclusive(surface.wl_surface()) {
+                Some(sheet) if !self.lock.locked => {
+                    self.set_keyboard_focus(Some(sheet), SERIAL_COUNTER.next_serial());
+                    self.configure_all();
+                }
+                _ => self.focus_topmost(),
+            }
         }
     }
 }
@@ -162,9 +171,15 @@ pub(crate) fn handle_commit(state: &mut Dashi, surface: &WlSurface) {
         state.ipc.emit(Event::OutputsChanged);
     }
     // While locked a sheet that takes the keyboard waits: the keyboard is the
-    // lock screen's (session/lock.rs), and it gets it after the unlock.
-    let exclusive = layer.cached_state().keyboard_interactivity == KeyboardInteractivity::Exclusive;
-    if exclusive && initial_configure_sent && !state.lock.locked && !state.has_keyboard(surface) {
+    // lock screen's (session/lock.rs), and it gets it after the unlock. Of two
+    // that take it, the one shown last keeps it (layer_keyboard.rs).
+    let shows = layer_keyboard::shows(surface, layer.cached_state().keyboard_interactivity);
+    let stamp = layer_keyboard::stamp(surface, shows);
+    if initial_configure_sent
+        && !state.lock.locked
+        && !state.has_keyboard(surface)
+        && layer_keyboard::takes_keyboard(stamp, state.keyboard_holder_stamp())
+    {
         state.set_keyboard_focus(Some(surface.clone()), SERIAL_COUNTER.next_serial());
     }
 }

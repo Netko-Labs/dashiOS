@@ -70,11 +70,15 @@ const LEVELS: Readonly<Record<GlassLevel, GlassMaterial>> = {
  * The veil (D722, Frost v2): the whole wallpaper frosted, under the lock, the login screen and (with no
  * tint and no floor) the overview. Its tint is shaped by what sits on it: on the lock a band behind the
  * clock and who signs in, feathered to a quarter at the sides. It has no solid twin: where glass is off
- * the wallpaper shows sharp under the lock's own wash (LOGIN, LOGIN_LIGHT).
+ * the wallpaper shows sharp under the lock's own wash (LOGIN, LOGIN_LIGHT). Its floor reads the hardest
+ * ground within `floorReach` points of each pixel, as lock-v3 floored the whole veil from where its words
+ * sit: the lake's light and shade still show through, where a floor per pixel flattened them into one
+ * pastel (D822).
  */
 const VEIL = {
   blur: 24,
   saturation: 1.2,
+  floorReach: 137,
   light: { tint: "#F6F6F8", least: 0.12 },
   dark: { tint: "#0A0A0C", least: 0.18 },
 } as const;

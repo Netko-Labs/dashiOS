@@ -1,11 +1,29 @@
 //! A pane's backdrop: how much of the screen is drawn behind it (the pane
 //! and its hairline, plus the blur's reach, grown to whole buckets so a pane
-//! that grows a little keeps its textures, clipped to the screen), whether
-//! what was drawn changed, and how deep under other glass it is.
+//! that grows a little keeps its textures, clipped to the screen), drawing it
+//! and blurring it when it changed, and how deep under other glass it is.
 
-use smithay::utils::{Physical, Point, Rectangle};
+use std::collections::HashMap;
 
-use super::kawase;
+use smithay::{
+    backend::renderer::{
+        Bind, ImportAll, ImportMem, Offscreen, Renderer, Texture,
+        element::utils::{Relocate, RelocateRenderElement, RescaleRenderElement},
+        gles::GlesTexture,
+    },
+    utils::{Buffer, Physical, Point, Rectangle, Size},
+};
+
+use super::{
+    cache::{Cache, text},
+    element::PaneKey,
+    frost::Place,
+    kawase,
+    shaders::Programs,
+    style::Look,
+    tone,
+};
+use crate::render::{DashiElement, GlesAccess};
 
 /// A backdrop's size is a whole number of these, in the screen's pixels.
 const BUCKET: i32 = 64;
@@ -48,6 +66,92 @@ pub(super) fn layers(
         .map(|(_, depth)| *depth)
         .max()
         .unwrap_or(0)
+}
+
+/// Draw what is `behind` into `key`'s backdrop over `area` (half size), and blur it when it
+/// changed; whether it was blurred again, and the backdrop's tone when one was read.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the frosting's parts, passed as frost() holds them: the caches are borrowed apart"
+)]
+pub(super) fn blur_behind<R>(
+    renderer: &mut R,
+    programs: &Programs,
+    panes: &mut HashMap<(String, PaneKey), Cache>,
+    key: &(String, PaneKey),
+    area: Rectangle<i32, Physical>,
+    look: Look,
+    behind: &[DashiElement<R>],
+    place: &Place,
+) -> Result<(bool, Option<[u8; 3]>), String>
+where
+    R: Renderer + ImportAll + ImportMem + GlesAccess + Offscreen<GlesTexture> + Bind<GlesTexture>,
+    R::TextureId: Texture + Clone + Send + 'static,
+{
+    let sigma = look.blur;
+    let size: Size<i32, Buffer> = ((area.size.w + 1) / 2, (area.size.h + 1) / 2).into();
+    let (passes, spread) = kawase::plan(sigma);
+    let stale = panes.get(key).is_none_or(|cache| {
+        cache.backdrop.size() != size || cache.pyramid.passes() != passes || cache.sigma != sigma
+    });
+    if stale {
+        let gles = renderer.gles();
+        if let Some(old) = panes.remove(key) {
+            old.pyramid.free(gles);
+        }
+        let fresh = super::cache::fresh(gles, size, passes, sigma, (place.scale, place.turn))?;
+        panes.insert(key.clone(), fresh);
+    }
+    let Some(cache) = panes.get_mut(key) else {
+        return Ok((false, None));
+    };
+    cache.used = place.turn;
+    // X-ray glass sees only the wallpaper: the last element, when it is one.
+    let behind = match behind.last() {
+        Some(last @ DashiElement::Memory(_)) if look.xray => std::slice::from_ref(last),
+        _ => behind,
+    };
+    let moved: Vec<_> = behind
+        .iter()
+        .map(|element| {
+            RelocateRenderElement::from_element(
+                RescaleRenderElement::from_element(element, area.loc, 0.5),
+                Point::from((-area.loc.x, -area.loc.y)),
+                Relocate::Relative,
+            )
+        })
+        .collect();
+    let changed = {
+        let mut target = renderer.bind(&mut cache.backdrop).map_err(text)?;
+        let drawn = cache
+            .tracker
+            .render_output(renderer, &mut target, 1, &moved, [0.0, 0.0, 0.0, 1.0])
+            .map_err(text)?;
+        let changed = changed(drawn.damage);
+        if changed {
+            tracing::debug!(target: "glass", pane = ?key.1, behind = moved.len(), "what is behind changed");
+        }
+        changed
+    };
+    let again = changed || !cache.blurred;
+    if again {
+        cache
+            .pyramid
+            .blur(renderer.gles(), programs, &cache.backdrop, spread)
+            .map_err(text)?;
+        cache.blurred = true;
+    }
+    let tone = cache
+        .tone
+        .wants(again, place.now)
+        .then(|| cache.pyramid.mean(renderer.gles()))
+        .flatten()
+        .and_then(|mean| {
+            cache
+                .tone
+                .read(tone::lifted(mean, look.saturation, look.brightness))
+        });
+    Ok((again, tone))
 }
 
 #[cfg(test)]
