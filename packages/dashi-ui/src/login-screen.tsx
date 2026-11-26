@@ -113,7 +113,7 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
   const [arming, press] = usePowerArming(props.onPower);
   const colors = loginColors(props.mode ?? "dark");
   const split = isSplitWidth(width);
-  const veil = useVeil();
+  const veil = useVeil(props.mode ?? "dark");
   // One root for both layouts: the ground, the ring's colour, and the veil once split (LK-4).
   const root = {
     testID: "login-screen",

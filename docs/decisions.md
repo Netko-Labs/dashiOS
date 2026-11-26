@@ -9131,3 +9131,26 @@ short words, as the rulebook is written.
   "Show previews" setting isn't built, so every app's words are hidden; Glance folds the next event as
   the tally's on-air line (the event on air), not every next event.
 - **Undo:** `isSplitWidth` false: every screen is the column again.
+
+### D804. The split's veil only in the session's mode; the login screen keeps its Dark wash otherwise
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; LK-3, LK-4, GL-3; found in the VM).
+- **Question:** the compositor draws glass in the session's mode. The login screen is always Dark; in
+  a Light session (and in the greeter, whose compositor knows no mode) its veil came out Light under
+  Dark's white words.
+- **Choice:** `useVeil(mode)` sends the veil only when the screen's mode is the session's, as `Frosted`
+  gives its twin there; the split wraps itself in `Appearance` of its own mode, so its regular and thin
+  glass are their Dark twins too. The login screen then shows `LOGIN`'s Dark wash (GL-3's fallback)
+  until the compositor can be told to draw the greeter's glass in Dark.
+- **Undo:** drop the mode check.
+
+### D805. Hover ends when the pointer leaves a window (mirin, sumi)
+
+- **Date:** 2026-11-26. `v10/glass-dock`, mirin `v10-glass-dock` (reversible; found in the VM, DK-2, DK-6).
+- **Question:** the Dock's label and magnification stayed after the pointer left the Dock.
+- **Why:** sumi cleared hover on the leave, but the Dock reflows when its icon stops being hovered,
+  and the redraw hit-tested the pointer's last place, still over the icon, so it was hovered again.
+- **Choice:** sumi's window keeps that the pointer is outside from `MouseExited` until any other pointer
+  event, and hit-tests nothing meanwhile (mirin c9787d0, with a test that fails without it). Fixed at
+  the source (Part A); nothing in Dashi works around it.
+- **Undo:** revert the mirin commit.

@@ -18,7 +18,8 @@ import { useWidgetEnv } from "./env.tsx";
 import { SPANS, span } from "./layout.ts";
 import { ago, useSource } from "./lib/data.ts";
 import { WidgetTile } from "./lib/views/widget.tsx";
-import { Btn, Lab } from "./parts.tsx";
+import { useCard } from "./look.tsx";
+import { Btn } from "./parts.tsx";
 import type { Placement, WidgetKind } from "./types.ts";
 
 /** The pane's inside width: Today less its padding at both sides. */
@@ -135,11 +136,23 @@ function NoteCard({ note }: { note: LockNote }) {
 function NoteBody({ note, now }: { note: LockNote; now: number }) {
   return (
     <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.gap }}>
-      <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xxs }}>
-        <Lab>{note.app}</Lab>
-        <Lab strong>{noteWords(note.count)}</Lab>
-      </View>
+      <NoteWords app={note.app} words={noteWords(note.count)} />
       <NoteWhen time={note.time} now={now} />
+    </View>
+  );
+}
+
+/** The app (11 SemiBold, secondary) over the count (13 SemiBold, the card's ink), in sentence case as lock-v3 draws them. */
+function NoteWords({ app, words }: { app: string; words: string }) {
+  const card = useCard();
+  return (
+    <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xxs }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: card.secondary }}>
+        {app}
+      </Text>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: card.ink }}>
+        {words}
+      </Text>
     </View>
   );
 }

@@ -17,9 +17,9 @@ import { Frosted } from "./frosted.tsx";
 import { CHEVRON_RIGHT, RESTART, SHUT_DOWN, SLEEP } from "./glyphs.ts";
 import { LockClock } from "./inks-clock.tsx";
 import { Picture } from "./picture.tsx";
-import type { LoginColors } from "./theme/colors.ts";
-import { CLEAR } from "./theme/colors.ts";
+import { CLEAR, LOGIN_LIGHT, type LoginColors } from "./theme/colors.ts";
 import { GLASS } from "./theme/glass.ts";
+import { Appearance, useSessionDark } from "./theme/index.ts";
 import { pill, SPACE, TYPE, WEIGHT } from "./theme/measures.ts";
 
 export type SplitPower = "sleep" | "restart" | "shutdown";
@@ -69,9 +69,15 @@ export interface SplitLoginProps {
   bare?: boolean;
 }
 
-/** The veil where the host draws glass (LK-4), over the ground that shows where it doesn't (GL-3). */
-export function useVeil(): { material?: "veil" } {
-  return useWindowGlass().available ? { material: "veil" } : {};
+/**
+ * The veil where the host draws glass (LK-4), over the ground that shows where it doesn't (GL-3). The
+ * compositor draws glass in the session's mode, so a screen in the other mode (the login screen is
+ * always Dark) keeps its wash, as `Frosted` gives its twin there.
+ */
+export function useVeil(mode: "light" | "dark"): { material?: "veil" } {
+  const glass = useWindowGlass().available;
+  const inMode = (mode === "dark") === useSessionDark();
+  return glass && inMode ? { material: "veil" } : {};
 }
 
 export function SplitLogin({
@@ -87,23 +93,26 @@ export function SplitLogin({
   testID = "login-screen",
   bare = false,
 }: SplitLoginProps): ReactNode {
-  const veil = useVeil();
+  const veil = useVeil(colors === LOGIN_LIGHT ? "light" : "dark");
   const inset = splitInset(width);
   return (
-    <View
-      {...(bare ? {} : { testID, ...veil })}
-      style={{ flex: 1, flexDirection: "row", ...(bare ? {} : { backgroundColor: colors.ground, focusRingColor: colors.focusRing }) }}
-    >
-      <View testID="lock-half" style={{ flex: 1, flexDirection: "column", paddingLeft: inset, paddingTop: GLASS.lock.top }}>
-        <LockClock day={day} time={time} ink={colors.ink} display={display} testID="lock-clock" />
-        <View style={{ flex: 1, minHeight: SPACE.xl }} />
-        <View style={{ height: GLASS.lock.footer }}>
-          <InSplit.Provider value>{who}</InSplit.Provider>
+    // Its glass and inks in the screen's own mode: the login screen is Dark in any session (LK-3).
+    <Appearance dark={colors !== LOGIN_LIGHT}>
+      <View
+        {...(bare ? {} : { testID, ...veil })}
+        style={{ flex: 1, flexDirection: "row", ...(bare ? {} : { backgroundColor: colors.ground, focusRingColor: colors.focusRing }) }}
+      >
+        <View testID="lock-half" style={{ flex: 1, flexDirection: "column", paddingLeft: inset, paddingTop: GLASS.lock.top }}>
+          <LockClock day={day} time={time} ink={colors.ink} display={display} testID="lock-clock" />
+          <View style={{ flex: 1, minHeight: SPACE.xl }} />
+          <View style={{ height: GLASS.lock.footer }}>
+            <InSplit.Provider value>{who}</InSplit.Provider>
+          </View>
         </View>
+        {today ? <View style={{ width: GLASS.lock.today }}>{today}</View> : null}
+        {press ? <PowerPills inset={inset} arming={arming} press={press} colors={colors} /> : null}
       </View>
-      {today ? <View style={{ width: GLASS.lock.today }}>{today}</View> : null}
-      {press ? <PowerPills inset={inset} arming={arming} press={press} colors={colors} /> : null}
-    </View>
+    </Appearance>
   );
 }
 
