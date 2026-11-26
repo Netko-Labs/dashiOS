@@ -28,10 +28,10 @@ use super::{
 };
 use crate::render::DashiElement;
 
-const W: i32 = 400;
-const H: i32 = 300;
+pub(super) const W: i32 = 400;
+pub(super) const H: i32 = 300;
 
-fn renderer() -> GlesRenderer {
+pub(super) fn renderer() -> GlesRenderer {
     EGLDevice::enumerate()
         .expect("EGL devices")
         .find_map(|device| {
@@ -56,7 +56,7 @@ fn pane(rect: Rectangle<i32, Physical>, blur: f64) -> DashiElement<GlesRenderer>
     DashiElement::Glass(GlassElement::new(key, rect, look(blur), 1.0))
 }
 
-fn solid(
+pub(super) fn solid(
     id: &Id,
     commit: CommitCounter,
     rect: Rectangle<i32, Physical>,
@@ -71,7 +71,7 @@ fn solid(
     ))
 }
 
-fn rect(x: i32, y: i32, w: i32, h: i32) -> Rectangle<i32, Physical> {
+pub(super) fn rect(x: i32, y: i32, w: i32, h: i32) -> Rectangle<i32, Physical> {
     Rectangle::new((x, y).into(), (w, h).into())
 }
 
@@ -90,7 +90,10 @@ fn scene(ids: &[Id; 2], commit: CommitCounter, blur: f64) -> Vec<DashiElement<Gl
 }
 
 /// Draw `elements` on a W×H picture; RGBA rows, top down.
-fn draw(renderer: &mut GlesRenderer, elements: &[DashiElement<GlesRenderer>]) -> Vec<[u8; 4]> {
+pub(super) fn draw(
+    renderer: &mut GlesRenderer,
+    elements: &[DashiElement<GlesRenderer>],
+) -> Vec<[u8; 4]> {
     let size = (W, H).into();
     let mut texture: GlesTexture = renderer
         .create_buffer(Fourcc::Abgr8888, size)
@@ -112,7 +115,7 @@ fn draw(renderer: &mut GlesRenderer, elements: &[DashiElement<GlesRenderer>]) ->
     rows.concat()
 }
 
-fn at(picture: &[[u8; 4]], x: i32, y: i32) -> [u8; 4] {
+pub(super) fn at(picture: &[[u8; 4]], x: i32, y: i32) -> [u8; 4] {
     picture[(y * W + x) as usize]
 }
 

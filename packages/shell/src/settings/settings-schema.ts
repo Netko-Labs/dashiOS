@@ -71,6 +71,8 @@ export const INPUT_METHOD = { engine: literal(...INPUT_METHODS) };
 export const APPEARANCE = {
   cornerRadius: literal(...CORNER_NAMES),
   reduceMotion: REDUCE_MOTION,
+  reduceTransparency: bool(),
+  glassForApps: bool(),
   highlightActiveWindow: bool(),
   auto: bool(),
   pointerSize: POINTER_SIZE,

@@ -23,6 +23,8 @@ mod element;
 mod frost;
 mod gl;
 #[cfg(test)]
+mod gpu_material_tests;
+#[cfg(test)]
 mod gpu_tests;
 mod kawase;
 mod params;

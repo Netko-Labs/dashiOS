@@ -107,8 +107,10 @@ crates/dashi-comp/src/
                     capture, presentation (present.rs), rounded corners (rounded.rs),
                     depth between windows (depth/: `window-style`), live pictures the shell places
                     (thumbnails/: `space-previews`, `window-thumbnails`), a screen showing
-                    another's picture (mirror.rs: `mirror`), frosted glass behind the shell's
-                    panes (glass/: `glass`, a spike behind DASHI_GLASS, decisions.md D710 to D715)
+                    another's picture (mirror.rs: `mirror`), frosted glass behind panes
+                    (glass/: the shell's `glass` panes and every granted client's
+                    ext-background-effect-v1 region and dashi_glass_v1 panes, drawn at the
+                    levels `glass-style` sets; decisions.md D710 to D715, D730 to D738)
   wakes.rs          what woke the event loop: whether idle screens may sleep
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
                     grabs (a move grab survives a Space change), edge holds (edge_hold.rs),

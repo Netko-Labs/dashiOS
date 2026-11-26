@@ -82,6 +82,10 @@ export function startMachine(needs: MachineNeeds): Machine {
   });
   late.set("laptop", laptop);
   services.add("laptop", () => laptop.close());
+  // Battery saver keeps glass, the wallpaper only behind it (glass-style.ts, D723).
+  const followSaver = () => needs.look.glass?.set({ batterySaver: laptop.modes.getSnapshot().effective?.mode === "low-power" });
+  followSaver();
+  services.add("glass on battery saver", laptop.modes.subscribe(followSaver));
   // An applet's pick of the power mode is the same as one in Control Center.
   needs.programs.appletPower.connect(laptop.modes);
   const autoRefresh = late.set("autoRefresh", startAutoRefresh(needs));

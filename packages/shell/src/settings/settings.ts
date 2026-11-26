@@ -44,7 +44,8 @@
  * a Desktop of its own, uncounted and unnamed here (spaces/fullscreen.ts).
  * `cornerRadius` is "none", "small", "medium" (the default), or "large", how
  * round every window is (shared/appearance/corners.ts). `reduceMotion` turns the compositor's
- * window animations off. `highlightActiveWindow` (default false) rings the
+ * window animations off. `reduceTransparency` (default false) draws every glass material solid, and
+ * `glassForApps` (default true) lets apps that aren't Dashi's have glass where they ask (glass-style.ts). `highlightActiveWindow` (default false) rings the
  * window with the keyboard in the accent color (appearance/window-style.ts). `pointerSize` is 24 (the default), 32, 40, or 48
  * points (pointer.ts); `textSize` is 1 (the default), 1.15, 1.3, or 1.5, what the
  * shell's type is multiplied by (text-size.ts); `x11Apps` is "sharp" (the default) or "stretched",
@@ -170,6 +171,8 @@ export function parseSettings(value: unknown): Loaded {
   const appearance = readSection("appearance", value.appearance, APPEARANCE, problems, ["wallpaper"]);
   settings.appearance.cornerRadius = appearance.cornerRadius ?? DEFAULT_CORNERS;
   settings.appearance.reduceMotion = appearance.reduceMotion ?? false;
+  settings.appearance.reduceTransparency = appearance.reduceTransparency ?? false;
+  settings.appearance.glassForApps = appearance.glassForApps ?? true;
   settings.appearance.highlightActiveWindow = appearance.highlightActiveWindow ?? false;
   settings.appearance.pointerSize = appearance.pointerSize ?? DEFAULT_POINTER_SIZE;
   settings.appearance.textSize = appearance.textSize ?? DEFAULT_TEXT_SIZE;

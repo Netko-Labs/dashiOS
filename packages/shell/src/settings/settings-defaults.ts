@@ -23,6 +23,10 @@ export interface Settings {
   appearance: {
     cornerRadius: CornerName;
     reduceMotion: boolean;
+    /** Every glass material is its solid twin (glass-style.ts, GL-3). */
+    reduceTransparency: boolean;
+    /** Apps that aren't Dashi's get glass where they ask (glass-style.ts, D731). */
+    glassForApps: boolean;
     highlightActiveWindow: boolean;
     pointerSize: number;
     /** What the shell's type is multiplied by (text-size.ts). */
@@ -56,6 +60,8 @@ export function defaults(): Settings {
     appearance: {
       cornerRadius: DEFAULT_CORNERS,
       reduceMotion: false,
+      reduceTransparency: false,
+      glassForApps: true,
       highlightActiveWindow: false,
       pointerSize: DEFAULT_POINTER_SIZE,
       textSize: DEFAULT_TEXT_SIZE,

@@ -114,6 +114,7 @@ export function startSwitches(
   const tellChrome = () => {
     const { dark, accent } = flags.getSnapshot();
     look.chromeStyle?.setDark(dark);
+    look.glass?.set({ dark });
     look.windowStyle?.set({ dark, accent: accent ?? null });
   };
   tellChrome();
