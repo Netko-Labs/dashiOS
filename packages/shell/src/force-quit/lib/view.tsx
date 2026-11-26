@@ -7,7 +7,21 @@
  * question); ↑ and ↓ choose an app.
  */
 
-import { ALERT_TILE, AlertSheet, FormSheet, type KeyInput, KeySink, PICK_ROW, RADIUS, rowLook, SelectionBar, SPACE, TYPE, useColors } from "@dashi/ui";
+import {
+  ALERT_TILE,
+  AlertSheet,
+  FormSheet,
+  type KeyInput,
+  KeySink,
+  PICK_ROW,
+  RADIUS,
+  rowLook,
+  SelectionBar,
+  SPACE,
+  TYPE,
+  useColors,
+  useSurface,
+} from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { AppIcon } from "../../shared/apps/index.ts";
@@ -64,9 +78,10 @@ function Row({ group, selected, onPress }: { group: AppGroup; selected: boolean;
   );
 }
 
-/** The list: the rows on screen, or a line saying there are none. */
+/** The list, on a well (a fill with the control edge, on glass the glass edge): the rows on screen, or a line saying there are none. */
 function AppList({ state, onSelect }: { state: ForceQuitState; onSelect: (pid: number) => void }) {
   const colors = useColors();
+  const surface = useSurface();
   const visible = state.groups.slice(state.top, state.top + VISIBLE_ROWS);
   return (
     <View
@@ -78,8 +93,9 @@ function AppList({ state, onSelect }: { state: ForceQuitState; onSelect: (pid: n
         gap: SPACE.px,
         justifyContent: state.groups.length === 0 ? "center" : "flex-start",
         borderRadius: RADIUS.card,
+        backgroundColor: surface.field,
         borderWidth: 1,
-        borderColor: colors.separator,
+        borderColor: colors.controlEdge,
       }}
     >
       {state.loaded && state.groups.length === 0 && (

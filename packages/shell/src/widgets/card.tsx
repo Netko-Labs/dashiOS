@@ -1,18 +1,17 @@
 /**
- * A widget's card: paper with a hairline, radius 14 (12 for one-row
- * spans), padding 14; no shadow, no blur. On air it floods: its ink is the
- * paper, its words paper-coloured, a 3-point ring in the tally's colour goes
- * round it, and its header carries "Now" (round five, #16). Redacted on the
- * lock screen, it shows a lock in the corner.
+ * A widget's card (CO-11): paper glass, radius 18 (14 for one-row spans),
+ * padding 14, no shadow at rest; the compositor draws its rim and hairline.
+ * On air it keeps its glass as off air and glows faintly in its own ink, its
+ * header carrying "Now" (CO-12, D768): no ring, no flood. The lock's cards
+ * are the same paper glass (LK-4, D807). Redacted on the lock screen, it
+ * shows a lock in the corner.
  */
 
-import { SPACE } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
+import { Frosted, RADIUS, SPACE } from "@dashi/ui";
+import { type SpelledShadow, Svg, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { glyph } from "../shared/inks/index.ts";
-import { type CardLook, cardColours, LookProvider, REDACT_LOCK, RedactProvider } from "./look.tsx";
-
-export const CARD_RING = 3;
+import { type CardColours, type CardLook, cardColours, LookProvider, onAirGlow, REDACT_LOCK, RedactProvider } from "./look.tsx";
 
 export interface CardProps {
   look: CardLook;
@@ -21,6 +20,8 @@ export interface CardProps {
   /** One-row spans and live cards are a little tighter. */
   compact?: boolean;
   padding?: number;
+  /** Paper's solid twin, never glass (a preview inside the gallery's glass, GL-2). */
+  solid?: boolean;
   testID?: string;
   onPress?: () => void;
   /** Right-click: on a live card, pin it (the design's long press, D403). */
@@ -29,51 +30,44 @@ export interface CardProps {
   children: ReactNode;
 }
 
-export function Card({ look, width, height, compact, padding, testID, onPress, onContext, onHoverChange, children }: CardProps) {
+/** The card's corner: a widget's 18, 14 for one row (RA-1, CO-11). */
+export const cardRadius = (compact: boolean): number => (compact ? RADIUS.inkCardRow : RADIUS.inkCard);
+
+export function Card({ look, width, height, compact = false, padding, solid = false, testID, onPress, onContext, onHoverChange, children }: CardProps) {
   const colours = cardColours(look);
-  const radius = compact ? 12 : 14;
+  const radius = cardRadius(compact);
+  const glow = onAirGlow(look);
+  const inside = {
+    ...(testID ? { testID } : {}),
+    ...(onPress ? { onPress } : {}),
+    ...(onContext ? { onContextMenu: () => onContext() } : {}),
+    ...(onHoverChange ? { onHoverChange } : {}),
+  };
+  const frame = {
+    flex: 1,
+    flexDirection: "column" as const,
+    alignItems: "stretch" as const,
+    padding: padding ?? (compact ? SPACE.inset : SPACE.button),
+    borderRadius: radius,
+  };
   return (
     <LookProvider value={colours}>
       <RedactProvider value={look.redact}>
         <View style={{ width, ...(height === undefined ? {} : { height }) }}>
-          {look.air ? (
-            <View
-              testID="tally-ring"
-              style={{
-                position: "absolute",
-                left: -CARD_RING,
-                top: -CARD_RING,
-                right: -CARD_RING,
-                bottom: -CARD_RING,
-                borderRadius: radius + CARD_RING,
-                backgroundColor: look.inks.tally,
-              }}
-            />
-          ) : null}
-          <View
-            testID={testID}
-            {...(onPress ? { onPress } : {})}
-            {...(onContext ? { onContextMenu: () => onContext() } : {})}
-            {...(onHoverChange ? { onHoverChange } : {})}
-            style={{
-              flex: 1,
-              flexDirection: "column",
-              alignItems: "stretch",
-              padding: padding ?? (compact ? SPACE.inset : SPACE.button),
-              borderRadius: radius,
-              backgroundColor: colours.paper,
-              ...(look.air ? {} : { borderWidth: 1, borderColor: colours.hairline }),
-            }}
-          >
+          <Frosted {...inside} level="paper" solid={solid} style={{ ...frame, ...(glow ? { shadow: glow as SpelledShadow } : {}) }}>
             {children}
-          </View>
-          {look.redact ? (
-            <View style={{ position: "absolute", right: REDACT_LOCK.inset, bottom: REDACT_LOCK.inset }}>
-              <Svg markup={glyph("lock")} size={REDACT_LOCK.size} color={colours.tertiary} />
-            </View>
-          ) : null}
+          </Frosted>
+          {look.redact ? <RedactLock colours={colours} /> : null}
         </View>
       </RedactProvider>
     </LookProvider>
+  );
+}
+
+function RedactLock({ colours }: { colours: CardColours }) {
+  return (
+    <View style={{ position: "absolute", right: REDACT_LOCK.inset, bottom: REDACT_LOCK.inset }}>
+      <Svg markup={glyph("lock")} size={REDACT_LOCK.size} color={colours.tertiary} />
+    </View>
   );
 }

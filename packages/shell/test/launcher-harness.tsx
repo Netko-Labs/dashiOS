@@ -4,13 +4,16 @@
  * Shared by the launcher's view tests; each calls `unmountLauncher` after each test.
  */
 
-import { lightColors } from "@dashi/ui";
+import { lightColors, paintedPalette } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { Launcher } from "../src/launcher/launcher.tsx";
 import type { LauncherFiles, LauncherProps } from "../src/launcher/props.ts";
 import type { FileRow } from "../src/launcher/row-model.ts";
 import type { Entry } from "../src/shared/app-entries/index.ts";
 import { settle } from "./support/time.ts";
+
+/** The launcher's palette on its regular glass, neutral (no tone yet). */
+const ON_GLASS = paintedPalette(lightColors, false, { level: "regular", tone: null }, true);
 
 export const app = (name: string): Entry => ({ id: `app.${name.toLowerCase().replaceAll(" ", "-")}`, name, icon: "/icon.svg", keywords: [], exec: ["true"] });
 export const file = (name: string): FileRow => ({
@@ -99,7 +102,8 @@ export async function mount(props: Partial<LauncherProps> & Pick<LauncherProps, 
       if (row !== undefined && !ids.includes(row)) {
         ids.push(row);
         // The wash is the row's own background, not a child's.
-        if ((each.background ?? each.props?.background) === lightColors.selectionWash) selected = row;
+        // The launcher is regular glass: its selection is the glass one (the accent at 22 %, CO-9).
+        if ((each.background ?? each.props?.background) === ON_GLASS.selectionWash) selected = row;
       }
       for (const value of Object.values(each)) {
         if (Array.isArray(value)) value.forEach(walk);

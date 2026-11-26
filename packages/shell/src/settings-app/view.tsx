@@ -271,7 +271,7 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
               onWindowKeyDown={(event) => {
                 if (event.key === "escape" && search.query !== "") search.onQuery("");
               }}
-              style={{ flex: 1, flexDirection: "row", position: "relative", backgroundColor: colors.window, focusRingColor: colors.focus }}
+              style={{ flex: 1, flexDirection: "row", position: "relative", focusRingColor: colors.focus }}
             >
               {/* The window's top layer (as AppWindow's): a row's "More" menu draws there, over the cards (@dashi/ui folded.tsx). */}
               <TooltipLayer>
@@ -283,7 +283,8 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
                   waiting={waitingCount(agents)}
                   {...(results ? { results } : {})}
                 />
-                <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+                {/* The sidebar is glass, the pane opaque (GL-6): the window paints no ground under the sidebar. */}
+                <View style={{ flex: 1, flexDirection: "column", minWidth: 0, backgroundColor: colors.window }}>
                   {/* A pane's state is its own: switching panes starts the next one fresh. */}
                   <Pane key={current} id={current} ctx={ctx} />
                 </View>

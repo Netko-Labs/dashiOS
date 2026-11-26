@@ -6,6 +6,7 @@
  * pointer; a drop in a zone tiles it, going back to where the drag began.
  */
 
+import { GLASS } from "@dashi/ui";
 import type { Compositor } from "../../compositor/index.ts";
 import { dragZones, frameUnderPointer, type Output, type Rect, sameRect, type Tile } from "../../layout.ts";
 import type { Arranged, EventOf } from "./arrange-frames.ts";
@@ -36,12 +37,12 @@ export class DragTiling {
 
   constructor(private readonly steps: DragSteps) {}
 
-  /** Send the zones of `outputs`; without them (an older compositor), windows still fit their screens. */
+  /** Send the zones of `outputs`, and how a tile's preview looks (WI-10); without them (an older compositor), windows still fit their screens. */
   async send(compositor: Pick<Compositor, "layout">, outputs: readonly Output[]): Promise<void> {
     const zones = zonesOf(outputs);
     this.zones = zones.map(({ tile, frame, usable }) => ({ tile, frame, usable }));
     await compositor
-      .layout({ zones: zones.map(({ area, frame }) => ({ area, frame })), dwellMs: DWELL_MS })
+      .layout({ zones: zones.map(({ area, frame }) => ({ area, frame })), dwellMs: DWELL_MS, preview: GLASS.tilePreview })
       .catch((error) => console.error("dashi-shell: drag-to-tile is off:", error instanceof Error ? error.message : error));
   }
 

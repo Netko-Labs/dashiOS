@@ -11,7 +11,7 @@ import { ETHERNET, SUN, speakerGlyph, wifiGlyph } from "../glyphs.ts";
 import { graphicsGlyph, keyboardLightGlyph, modeGlyph } from "../laptop/glyphs.ts";
 import { MODE_LABEL, MODE_SHORT, type Mode, type ModeChoice } from "../power/modes/types.ts";
 import type { Bars } from "../system/network.ts";
-import { BATTERY, BLUETOOTH, BOLT, CONTRAST, HOTSPOT, MIRROR, MOON, PADLOCK, SUNSET } from "./glyphs.ts";
+import { BATTERY, BLUETOOTH, BOLT, CONTRAST, HOTSPOT, MIRROR, MOON, NOTE, PADLOCK, SUNSET } from "./glyphs.ts";
 import type { Layout, TileSize } from "./layout.ts";
 
 /**
@@ -19,13 +19,13 @@ import type { Layout, TileSize } from "./layout.ts";
  * does its one thing, a page only opens, a slider is dragged, and the battery
  * row opens the battery panel.
  */
-export type ControlKind = "toggle" | "button" | "page" | "slider" | "battery" | "status";
+export type ControlKind = "toggle" | "button" | "page" | "slider" | "battery" | "status" | "media";
 
 /** The laptop tiles' pages (laptop-pages.tsx). */
 export type LaptopPage = "laptop-mode" | "laptop-light" | "graphics";
 
 /** The pages a tile opens (panel.tsx draws them). */
-export type ControlPageId = "wifi" | "bluetooth" | "sound" | LaptopPage;
+export type ControlPageId = "wifi" | "bluetooth" | "sound" | "display" | "focus" | LaptopPage;
 
 /** What the panel shows: the grid, or a tile's page (an applet's choice control's page is its tile's key). */
 export type ControlPage = "main" | ControlPageId | `applet:${string}`;
@@ -43,9 +43,9 @@ export const SYSTEM_CONTROLS: readonly ControlInfo[] = [
   { id: "wifi", title: "Wi-Fi", kind: "toggle", sizes: ["wide", "round"], page: "wifi" },
   { id: "ethernet", title: "Ethernet", kind: "status", sizes: ["wide", "round"] },
   { id: "bluetooth", title: "Bluetooth", kind: "toggle", sizes: ["wide", "round"], page: "bluetooth" },
-  { id: "brightness", title: "Display", kind: "slider", sizes: ["tall", "flat"] },
+  { id: "brightness", title: "Display", kind: "slider", sizes: ["tall", "flat"], page: "display" },
   { id: "volume", title: "Sound", kind: "slider", sizes: ["tall", "flat"], page: "sound" },
-  { id: "focus", title: "Focus", kind: "toggle", sizes: ["round", "wide"] },
+  { id: "focus", title: "Focus", kind: "toggle", sizes: ["round", "wide"], page: "focus" },
   { id: "dark", title: "Dark", kind: "toggle", sizes: ["round", "wide"] },
   { id: "power", title: "Power", kind: "toggle", sizes: ["wide", "round"], page: "laptop-mode" },
   { id: "keyboard", title: "Keyboard", kind: "toggle", sizes: ["wide", "round"], page: "laptop-light" },
@@ -55,12 +55,14 @@ export const SYSTEM_CONTROLS: readonly ControlInfo[] = [
   { id: "graphics", title: "Graphics", kind: "page", sizes: ["wide", "round"], page: "graphics" },
   { id: "hotspot", title: "Hotspot", kind: "toggle", sizes: ["round", "wide"] },
   { id: "mirror", title: "Mirroring", kind: "toggle", sizes: ["round", "wide"] },
+  { id: "nowplaying", title: "Now Playing", kind: "media", sizes: ["flat"] },
 ];
 
 /**
  * What a new machine shows (the approved design): Wi-Fi (Ethernet on a
  * machine without it), the two sliders, Bluetooth, Focus, Dark, Power,
- * Keyboard light and the battery. The rest waits in Add.
+ * Keyboard light, the battery, and Now Playing while a player plays (CC-7).
+ * The rest waits in Add.
  */
 export const DEFAULT_LAYOUT: Layout = [
   { id: "wifi", size: "wide" },
@@ -73,6 +75,7 @@ export const DEFAULT_LAYOUT: Layout = [
   { id: "power", size: "wide" },
   { id: "keyboard", size: "wide" },
   { id: "battery", size: "flat" },
+  { id: "nowplaying", size: "flat" },
 ];
 
 /** The machine as Control Center sees it; null is "not on this machine". */
@@ -100,6 +103,8 @@ export interface ControlSnapshot {
   hotspot: boolean | null;
   /** The other screens show the built-in one (display-config/mirror.ts); null with one screen. */
   mirroring: boolean | null;
+  /** What a player plays (CC-7); null with no player, when the Now Playing tile isn't shown. */
+  playing: { title: string; detail: string; playing: boolean; cover: string | null } | null;
 }
 
 /** What a tile shows. */
@@ -141,6 +146,8 @@ export function isThere(id: string, snap: ControlSnapshot): boolean {
       return snap.hotspot !== null;
     case "mirror":
       return snap.mirroring !== null;
+    case "nowplaying":
+      return snap.playing !== null;
     default:
       return false;
   }
@@ -215,6 +222,8 @@ export function tileState(id: string, snap: ControlSnapshot): TileState | null {
       return { title, detail: onOff(snap.hotspot === true), glyph: HOTSPOT, on: snap.hotspot === true };
     case "mirror":
       return { title, detail: onOff(snap.mirroring === true), glyph: MIRROR, on: snap.mirroring === true };
+    case "nowplaying":
+      return snap.playing ? { title: snap.playing.title, detail: snap.playing.detail, glyph: NOTE, on: false } : null;
     default:
       return null;
   }

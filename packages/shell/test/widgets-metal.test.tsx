@@ -5,7 +5,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { inkTokens, WEIGHT } from "@dashi/ui";
+import { INK_TEXT, inkTokens, WEIGHT } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { DotRow } from "../src/shared/inks/index.ts";
 import { HostRegistry, hostAbilities, NO_ABILITIES } from "../src/shared/metal/index.ts";
@@ -157,12 +157,24 @@ describe("dots", () => {
 });
 
 describe("the Now tag", () => {
+  const tag = () => (
+    <Card look={{ inks: inkTokens("light"), ink: null, air: true, houseDown: false, redact: false }} width={172}>
+      <NowTag tally="#E5322D" />
+    </Card>
+  );
   test("breathes only where the host takes pulse", async () => {
-    expect(await print(<NowTag tally="#E5322D" />)).not.toContain("pulse");
+    expect(await print(tag())).not.toContain("pulse");
     sessionSays(NEW);
-    const tree = await print(<NowTag tally="#E5322D" />);
+    const tree = await print(tag());
     expect(tree).toContain('"pulse"');
     expect(tree).toContain('"periodMs":2000');
+  });
+
+  test("is the tally's 7-point dot beside “Now” in the card's ink, 11 SemiBold: no vermilion pill (CO-12)", async () => {
+    const tree = await print(tag());
+    expect(tree).toContain('"width":7,"height":7,"background":"#E5322D"');
+    expect(tree).toContain(`{"type":"text","props":{"color":"${INK_TEXT.light.ink}","size":11,"weight":"semibold"},"children":["Now"]}`);
+    expect(tree).not.toContain('"NOW"');
   });
 });
 

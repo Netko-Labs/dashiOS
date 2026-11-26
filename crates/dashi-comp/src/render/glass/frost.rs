@@ -40,21 +40,36 @@ use crate::render::{DashiElement, GlesAccess};
 /// Calls without a pane before its textures are let go.
 const FORGET_AFTER: u64 = 600;
 
-/// What one frosting did: how many panes, how many were blurred again, and the tones read.
+/// What one frosting did: how many panes, how many were blurred again, the tones read, and
+/// whether a tone is still due (the screen must look again for it, still or not).
 #[derive(Debug, Default, Clone)]
 pub(crate) struct Frosting {
     pub panes: u32,
     pub blurred: u32,
     pub tones: Vec<(PaneKey, [u8; 3])>,
+    pub tone_due: bool,
 }
 
-/// Frost every pane in `elements`, a screen's (`screen`, in its pixels, at `scale`); a pane
-/// under more than `deepest` layers of glass is drawn solid (none: as deep as last time).
+/// How a screen is frosted: its scale, how many layers of glass a pane may have under it
+/// (none: as deep as last time), and the time of the frame.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Frame {
+    pub scale: f64,
+    pub deepest: Option<usize>,
+    pub now: Instant,
+}
+
+/// Frost every pane in `elements`, a screen's (`screen`, in its pixels); a pane under more
+/// than `frame.deepest` layers of glass is drawn solid.
 pub(crate) fn frost<R>(
     renderer: &mut R,
     output: &str,
     screen: Size<i32, Physical>,
-    (scale, deepest): (f64, Option<usize>),
+    Frame {
+        scale,
+        deepest,
+        now,
+    }: Frame,
     elements: &mut [DashiElement<R>],
 ) -> Result<Frosting, String>
 where
@@ -75,7 +90,7 @@ where
         screen: Rectangle::from_size(screen),
         scale,
         turn: caches.turn,
-        now: Instant::now(),
+        now,
     };
     let mut below: Vec<(Rectangle<i32, Physical>, usize)> = Vec::new();
     for at in (0..elements.len()).rev() {
@@ -111,6 +126,10 @@ where
             done.blurred += u32::from(*again);
             done.tones
                 .extend(tone.map(|tone| (glass.key.clone(), tone)));
+            done.tone_due |= caches
+                .panes
+                .get(&(output.to_owned(), glass.key.clone()))
+                .is_some_and(|cache| cache.tone.pending());
         }
         glass.frosted = frosted.map(|(frosted, _, _)| frosted);
     }

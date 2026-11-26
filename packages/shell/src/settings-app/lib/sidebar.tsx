@@ -14,8 +14,8 @@
  * or the arrows).
  */
 
-import { noResultsMessage, SPACE, TYPE, useControlColors } from "@dashi/ui";
-import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
+import { Frosted, noResultsMessage, SPACE, TYPE, useControlColors, WindowFocusContext } from "@dashi/ui";
+import { type Bounds, ScrollView, Text, useWindowActive, useWindowChrome, View } from "@mirinjs/metal";
 import { useContext, useEffect, useRef } from "react";
 import { type PaneId, paneGroups, SIDEBAR_PANES } from "../../shared/settings/index.ts";
 import { SpotContext, scrollFor } from "../spot.tsx";
@@ -116,20 +116,28 @@ function TopBand({ search }: { search: SearchProps }) {
   );
 }
 
-export function Sidebar({ current, onSelect, shown, results, search, waiting = 0 }: SidebarProps) {
+/** The sidebar: thick glass while the window has focus, thick's twin without it (GL-2, decisions.md D813). */
+export function Sidebar(props: SidebarProps) {
+  const focused = useWindowActive();
+  return (
+    <WindowFocusContext.Provider value={focused}>
+      <Frosted
+        level="thick"
+        solid={!focused}
+        testID="settings-sidebar"
+        style={{ width: SIDEBAR.width, flexShrink: 0, flexDirection: "column", paddingTop: SIDEBAR.top }}
+      >
+        <SidebarRows {...props} />
+      </Frosted>
+    </WindowFocusContext.Provider>
+  );
+}
+
+function SidebarRows({ current, onSelect, shown, results, search, waiting = 0 }: SidebarProps) {
   const colors = useControlColors();
   const { list, rows, reveal } = useReveal(current);
   return (
-    <View
-      testID="settings-sidebar"
-      style={{
-        width: SIDEBAR.width,
-        flexShrink: 0,
-        flexDirection: "column",
-        paddingTop: SIDEBAR.top,
-        backgroundColor: colors.sidebar,
-      }}
-    >
+    <>
       <TopBand search={search} />
       <ScrollView
         testID={LIST_ID}
@@ -170,6 +178,6 @@ export function Sidebar({ current, onSelect, shown, results, search, waiting = 0
           </View>
         )}
       </ScrollView>
-    </View>
+    </>
   );
 }

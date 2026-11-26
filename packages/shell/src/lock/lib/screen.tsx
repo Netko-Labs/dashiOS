@@ -97,7 +97,7 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower, cover = f
   const hub = widgetHub();
   const placements = usePlacements(hub);
   // The widgets take the lock's mode too; the login screen stays Dark.
-  const env = useWidgetEnvFor(hub, { locked: true, placements, open: setPending, dark: face.mode === "dark", lock: true });
+  const env = useWidgetEnvFor(hub, { locked: true, placements, open: setPending, dark: face.mode === "dark" });
   const press = presser(hub, () => setTouched((n) => n + 1), setPending);
 
   const submit = async (): Promise<void> => {

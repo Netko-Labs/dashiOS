@@ -67,6 +67,8 @@ pub(crate) struct Glass {
     pub effects: Vec<WlSurface>,
     /// dashi_glass_v1 objects, by surface (they hear `drawing` and `tone`).
     pub objects: Vec<(Weak<WlSurface>, DashiGlassV1)>,
+    /// The last tone sent for a surface (0xRRGGBB), by its id: a new dashi_glass_v1 hears it at once.
+    pub tones: HashMap<smithay::reexports::wayland_server::backend::ObjectId, u32>,
     /// What each manager and object last heard (drawn or not), by object id.
     pub said: HashMap<smithay::reexports::wayland_server::backend::ObjectId, bool>,
     /// False once a GPU could not compile the shaders.

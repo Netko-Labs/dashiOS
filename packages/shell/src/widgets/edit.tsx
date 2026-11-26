@@ -7,7 +7,7 @@
  * column (gallery.tsx).
  */
 
-import { OPACITY, pill, RADIUS, SPACE, TYPE, WEIGHT } from "@dashi/ui";
+import { Frosted, OPACITY, pill, RADIUS, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef, useState } from "react";
 import { textWidth } from "../shared/file-browser/tile-name.ts";
@@ -19,6 +19,8 @@ import { useWidgetEnv } from "./env.tsx";
 import { Gallery, type GalleryProps } from "./gallery.tsx";
 import { packColumn, sizeWord } from "./layout.ts";
 import { cycleSize, dropIndex } from "./lib/edit-keys.ts";
+import { EDIT_RING } from "./lib/edit-ring.ts";
+import { oneRow } from "./lib/views/widget.tsx";
 import type { Placed, Placement, WidgetInfo, WidgetSize } from "./types.ts";
 
 export const EDIT_HINT = "Tab · ⌥ arrows move · ⌥⇧ arrows resize";
@@ -37,7 +39,7 @@ export function tagOf(info: WidgetInfo | null, from: WidgetSize | null, size: Wi
 export const TAG = { left: 10, right: 10, padding: SPACE.m, height: 20, fontSize: TYPE.caption.size, below: -10 } as const;
 /** Semibold runs a little wider than `textWidth`'s estimate. */
 const SEMIBOLD = 1.1;
-/** The header pill over the column while editing: 26 tall. */
+/** The header pill over the column while editing: 26 tall, on thin glass (frost-objects board 22). */
 const EDIT_HEAD = { height: 26 } as const;
 
 /** The tag's words, fullest first: with the ink, without it, then the size alone. */
@@ -66,15 +68,16 @@ interface DecorationProps {
   onDrag: (phase: "down" | "move" | "up", y: number) => void;
 }
 
-/** The chosen widget's ring (CO-9, D588): 2 of ink, 4 out, the card's corner plus that. Purple is the keyboard's (KB-2). */
-const CHOSEN_RING = {
-  left: -SPACE.xs,
-  top: -SPACE.xs,
-  right: -SPACE.xs,
-  bottom: -SPACE.xs,
-  borderRadius: RADIUS.inkCard + SPACE.xs,
-  borderWidth: 2,
-} as const;
+/** The chosen widget's ring (CO-9, D588; frost-objects board 22): 2 of ink, 3 out, the card's corner plus that. Purple is the keyboard's (KB-2). */
+const chosenRing = (row: boolean) =>
+  ({
+    left: -EDIT_RING.out,
+    top: -EDIT_RING.out,
+    right: -EDIT_RING.out,
+    bottom: -EDIT_RING.out,
+    borderRadius: EDIT_RING.radius(row),
+    borderWidth: EDIT_RING.width,
+  }) as const;
 
 function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResize, onDrag }: DecorationProps) {
   const { inks } = useWidgetEnv();
@@ -87,7 +90,12 @@ function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResi
       onPointer={(event) => onDrag(event.phase, event.y)}
       onPress={onChoose}
     >
-      {chosen ? <View style={{ position: "absolute", ...CHOSEN_RING, borderColor: inks.text.ink }} /> : null}
+      {chosen ? (
+        <View
+          testID={`edit-ring:${placed.placement.id}`}
+          style={{ position: "absolute", ...chosenRing(oneRow(placed.placement.size)), borderColor: inks.text.ink }}
+        />
+      ) : null}
       {hover || chosen ? (
         <View
           style={{ position: "absolute", top: 8, left: width / 2 - 14, width: 28, height: 4, borderRadius: RADIUS.thumb, backgroundColor: inks.text.tertiary }}
@@ -186,7 +194,9 @@ export function EditWidgets({ placements, session: edit, onDone }: { placements:
   };
   return (
     <View style={{ flexDirection: "column", gap: SPACE.gap }}>
-      <View
+      <Frosted
+        level="thin"
+        testID="edit-head"
         style={{
           flexDirection: "row",
           alignItems: "center",
@@ -195,9 +205,6 @@ export function EditWidgets({ placements, session: edit, onDone }: { placements:
           paddingLeft: SPACE.inset,
           paddingRight: SPACE.inset,
           borderRadius: pill(EDIT_HEAD.height),
-          backgroundColor: inks.paper,
-          borderWidth: 1,
-          borderColor: inks.text.hairline,
         }}
       >
         <Text numberOfLines={1} style={{ fontSize: TYPE.inks.small.size, fontWeight: WEIGHT.semibold, color: inks.text.ink }}>
@@ -208,7 +215,7 @@ export function EditWidgets({ placements, session: edit, onDone }: { placements:
             {EDIT_HINT}
           </Text>
         </View>
-      </View>
+      </Frosted>
       <WidgetColumn placements={placements} testID="widget-column-edit" decorate={decorate} />
       <EditBar onAdd={edit.gallery.toggle} onDone={onDone} />
     </View>

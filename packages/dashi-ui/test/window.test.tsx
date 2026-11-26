@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { Notice } from "../src/notice.tsx";
+import { ToolbarButton } from "../src/toolbar-button.tsx";
 import { TOOLTIP_DELAY_MS, tooltipOrigin } from "../src/tooltip.tsx";
-import { AppWindow, ToolbarButton, toolbarInset } from "../src/window.tsx";
+import { AppWindow, toolbarInset } from "../src/window.tsx";
 import { fakeHost } from "./host.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 

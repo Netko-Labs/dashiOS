@@ -56,3 +56,8 @@ export const PLUS = svg(stroke("M8 4v8M4 8h8", 1.8));
 
 /** An applet's control without an icon of its own: a neutral puzzle piece, never Dashi's mark. */
 export const PUZZLE = svg(stroke("M3 5.5h2.6a1.6 1.6 0 1 1 3 0H11v2.4a1.6 1.6 0 1 1 0 3V13H8.4a1.6 1.6 0 1 0-3 0H3v-2.4a1.6 1.6 0 1 0 0-3z", 1.3));
+
+/** Now Playing's empty sleeve (CC-7): a note. */
+export const NOTE = svg(
+  `${stroke("M6 12.5V3.6l7-1.5v8.9", 1.4)}<circle cx="4.4" cy="12.5" r="1.9" fill="#000"/><circle cx="11.4" cy="11" r="1.9" fill="#000"/>`,
+);

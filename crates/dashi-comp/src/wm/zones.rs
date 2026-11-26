@@ -13,7 +13,10 @@ use smithay::{
 };
 
 use crate::{
-    ipc::{methods::chrome::Layout, protocol::Event},
+    ipc::{
+        methods::chrome::{Layout, TilePreview},
+        protocol::Event,
+    },
     state::Dashi,
 };
 
@@ -25,6 +28,8 @@ pub(crate) struct Zones {
     current: Option<(usize, Instant)>,
     /// Where the window would go: shown while the pointer rests in a zone.
     pub preview: Option<Rectangle<i32, Logical>>,
+    /// How it is drawn, as the shell says (none: an older shell's, a plain wash).
+    pub look: Option<TilePreview>,
 }
 
 impl Dashi {
@@ -42,6 +47,7 @@ impl Dashi {
             dwell: Duration::from_millis(dwell),
             current: None,
             preview: None,
+            look: params.preview,
         };
         Ok(())
     }

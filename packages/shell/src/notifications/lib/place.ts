@@ -3,6 +3,7 @@
 import { SPACE } from "@dashi/ui";
 import { COLUMN_WIDTH, galleryFit } from "../../widgets/index.ts";
 import type { NotificationStore } from "../store.ts";
+import { AREA, COLUMN_RIGHT } from "./area.ts";
 
 /** The air between the area and the Dock (or the screen's edge). */
 const AREA_AIR = SPACE.m;
@@ -10,8 +11,18 @@ const AREA_AIR = SPACE.m;
 /** Where the area ends above the screen's bottom edge: over the Dock's or the taskbar's zone, which stays visible under it. */
 export const areaBottom = (dockInset: number): number => Math.max(0, dockInset) + AREA_AIR;
 
-/** The area's place: from the screen's right edge and the bar, and the room between its cards. */
-export const AREA = { right: 12, top: 8, gap: SPACE.gap } as const;
+/** Between the banners' lane and the widget column beside it (Frost v2: 1274 − 12 − 356). */
+const LANE_GAP = SPACE.inset;
+
+/**
+ * The banners' lane (NO-6, D729): how far a banner's panel stands from the screen's right edge. With the
+ * widget column showing, the column just left of it, so a banner never covers or moves a widget; without
+ * it, the column's own place at the screen's edge. Top-aligned with the column either way.
+ */
+export function bannerLane(columnShown: boolean): number {
+  return columnShown ? COLUMN_RIGHT + COLUMN_WIDTH + LANE_GAP : COLUMN_RIGHT;
+}
+
 /** The widget gallery beside the column: this far left of it, this far down; and the least it keeps from the screen's left edge. */
 const GALLERY_AT = { beside: 26, down: 30, edge: SPACE.inset } as const;
 

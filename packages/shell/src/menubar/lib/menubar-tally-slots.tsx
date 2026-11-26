@@ -6,7 +6,7 @@
  * (D500). A click opens the notification area, where the item's card is.
  */
 
-import { SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { SPACE, TYPE, useBarItemColors, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { glyph, isGlyphName, useInks } from "../../shared/inks/index.ts";
 import { type OnAirItem, onAirWords, type TallyView, useSecondTick, useTally } from "../../tally/index.ts";
@@ -22,6 +22,8 @@ function TallyDot({ color }: { color: string }) {
 
 function HolderCapsule({ item, tally, onPress }: { item: OnAirItem; tally: string; onPress: () => void }) {
   const colors = useColors();
+  // A neutral chip on the bar's glass: ink 10 %, 16 % under the pointer (D780).
+  const chip = useBarItemColors("neutral");
   const now = useSecondTick(item.countdown !== undefined);
   return (
     <View
@@ -36,7 +38,8 @@ function HolderCapsule({ item, tally, onPress }: { item: OnAirItem; tally: strin
         paddingLeft: CAPSULE.padding,
         paddingRight: CAPSULE.padding,
         borderRadius: CAPSULE.height / 2,
-        backgroundColor: colors.button,
+        backgroundColor: chip.wash,
+        hoverBackgroundColor: chip.hover,
       }}
     >
       <TallyDot color={tally} />
@@ -49,6 +52,8 @@ function HolderCapsule({ item, tally, onPress }: { item: OnAirItem; tally: strin
 
 function StandbyCapsule({ items, onPress }: { items: readonly OnAirItem[]; onPress: () => void }) {
   const colors = useColors();
+  // A neutral chip on the bar's glass: ink 10 %, 16 % under the pointer (D780).
+  const chip = useBarItemColors("neutral");
   const shown = items.slice(0, STANDBY_SHOWN);
   const more = items.length - shown.length;
   return (
@@ -62,7 +67,7 @@ function StandbyCapsule({ items, onPress }: { items: readonly OnAirItem[]; onPre
             borderRadius: CAPSULE.height / 2,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: colors.button,
+            backgroundColor: chip.wash,
           }}
         >
           <Svg markup={glyph(isGlyphName(item.glyph) ? item.glyph : "spark")} size={CAPSULE.glyph} color={colors.text} />

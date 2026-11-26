@@ -47,8 +47,9 @@ export function PersonBubble({ turn }: { turn: PersonTurn }) {
     >
       {turn.by === "voice" && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xxs }}>
-          <Svg markup={MIC} size={11} color={colors.textMuted} />
-          <Text style={{ fontSize: m.micro, color: colors.textMuted }}>Said</Text>
+          {/* Words on a fill inside glass are primary ink (GL-1, D729), and never under 11 (11 is SemiBold). */}
+          <Svg markup={MIC} size={11} color={colors.text} />
+          <Text style={{ fontSize: m.small, fontWeight: WEIGHT.semibold, color: colors.text }}>Said</Text>
         </View>
       )}
       <Text style={{ fontSize: m.talk, color: colors.text }}>{turn.text}</Text>

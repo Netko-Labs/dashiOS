@@ -1,13 +1,16 @@
 /**
  * One notification banner: icon, summary, a short body, and a button for each
  * action beyond `default` (a click anywhere else runs `default`, or just
- * dismisses). Each banner is its own overlay surface, because a Metal host
- * can't resize or move its layer surface yet; `bannerHeight` says how tall to
- * make it so the stack (stack.ts) can place them.
+ * dismisses). Regular glass, 356 wide, radius 18, shadow xl (NO-5, NO-6,
+ * D766): its words and small Buttons read the glass (the vibrant inks, the
+ * glass control edge). Each banner is its own overlay surface, because a
+ * Metal host can't resize or move its layer surface yet; `bannerHeight` says
+ * how tall to make it so the stack (stack.ts) can place them in their lane.
  */
 
-import { Button, SHADOW, SPACE, useColors } from "@dashi/ui";
+import { Button, CLOSE, Frosted, GLASS, GLYPH_BUTTON, GlyphButton, OffGlass, pill, SHADOW, SPACE, useSolidTwin } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
+import { useState } from "react";
 import { type NotificationStore, useNotifications } from "../store.ts";
 import { ellipsize } from "../text.ts";
 import type { Notification, NotificationAction } from "../types.ts";
@@ -15,10 +18,15 @@ import { NOTE_CARD, NoteCard, NoteTime } from "./card.tsx";
 import { notificationIcon } from "./icon.ts";
 
 export const BANNER = {
-  /** The panel's width. */
-  width: 344,
-  /** Transparent room around the panel for its shadow, on every side of the surface. */
-  shadow: SPACE.inset,
+  /** The panel's width (NO-6). */
+  width: GLASS.banner.width,
+  radius: GLASS.banner.radius,
+  /** Between two banners in the lane. */
+  gap: GLASS.banner.gap,
+  /** Transparent room round the panel for its shadow: at its sides and top, and below it, where xl falls. */
+  shadow: SPACE.page,
+  shadowTop: SPACE.inset,
+  shadowBelow: SPACE.xl,
   bodyLines: 2,
   /** What two lines of the body hold; a longer one is cut with an ellipsis. */
   bodyChars: 88,
@@ -45,12 +53,12 @@ export function bannerHeight(notification: Pick<Notification, "body" | "actions"
 
 /** The surface's size: the panel with its shadow room. */
 export function bannerSurface(notification: Pick<Notification, "body" | "actions">): { width: number; height: number } {
-  return { width: BANNER.width + BANNER.shadow * 2, height: bannerHeight(notification) + BANNER.shadow * 2 };
+  return { width: BANNER.width + BANNER.shadow * 2, height: BANNER.shadowTop + bannerHeight(notification) + BANNER.shadowBelow };
 }
 
 /** The banner for notification `id`, following the store while it lives. */
 export function Banner({ store, id }: { store: NotificationStore; id: number }) {
-  const colors = useColors();
+  const [hovered, setHovered] = useState(false);
   const notification = useNotifications(store).live.find((candidate) => candidate.id === id);
   if (!notification) return null;
   const buttons = buttonsFor(notification);
@@ -59,21 +67,17 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
   };
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <View
+    <View style={{ flex: 1, alignItems: "center", paddingTop: BANNER.shadowTop }}>
+      <Frosted
+        level="regular"
         occlude
         testID="banner"
-        style={{
-          width: BANNER.width,
-          height: bannerHeight(notification),
-          borderRadius: NOTE_CARD.radius,
-          backgroundColor: colors.launcher,
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
-          shadow: SHADOW.lg,
-        }}
+        style={{ width: BANNER.width, height: bannerHeight(notification), borderRadius: BANNER.radius, shadow: SHADOW.xl }}
         onPress={press}
-        onHoverChange={(hovered) => store.hold(id, hovered)}
+        onHoverChange={(over) => {
+          setHovered(over);
+          store.hold(id, over);
+        }}
       >
         <NoteCard
           testID="banner-card"
@@ -97,7 +101,31 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
               }
             : {})}
         />
-      </View>
+        {hovered ? <Dismiss onPress={() => store.dismiss(id)} /> : null}
+      </Frosted>
+    </View>
+  );
+}
+
+/** Where the hover ✕ sits: over the panel's top-left corner (frost-objects board 18). */
+const DISMISS = { at: -SPACE.s } as const;
+
+/** The ✕ under the pointer: a solid disc (regular's twin under the kit's filled ✕), never glass (GL-6, as a tooltip), that dismisses the banner. */
+function Dismiss({ onPress }: { onPress: () => void }) {
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: DISMISS.at,
+        top: DISMISS.at,
+        borderRadius: pill(GLYPH_BUTTON.small.target),
+        backgroundColor: useSolidTwin("regular"),
+        shadow: SHADOW.sm,
+      }}
+    >
+      <OffGlass>
+        <GlyphButton testID="banner-dismiss" glyph={CLOSE} label="Dismiss" size="small" filled onPress={onPress} />
+      </OffGlass>
     </View>
   );
 }

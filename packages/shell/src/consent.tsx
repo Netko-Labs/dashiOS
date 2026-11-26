@@ -104,7 +104,7 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", paddingTop: SPACE.inset, paddingBottom: CONSENT.below }}>
-      <SheetCard testID="consent-sheet" width={CARD_WIDTH}>
+      <SheetCard testID="consent-sheet" width={CARD_WIDTH} frosted>
         <Alert question={question} message={origin} glyph={AGENT_GLYPH} tone="agent" buttons={answers(answer)}>
           {/* Scrolls only when even this can't fit (a long need on a small sheet); it gives way before anything else. */}
           <ScrollView style={{ maxHeight: SCOPES_MAX, flexShrink: 1, minHeight: 0 }}>

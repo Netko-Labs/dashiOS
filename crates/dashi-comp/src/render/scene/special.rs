@@ -70,7 +70,11 @@ pub(super) fn locked_elements<R>(
     }
 }
 
-/// Where a dragged window would tile, over the windows.
+/// The wash an older shell's preview gets, which names no look: white at a quarter, premultiplied.
+const PLAIN_PREVIEW: [f32; 4] = [0.25, 0.25, 0.25, 0.25];
+
+/// Where a dragged window would tile, over the windows: a pane of glass as the shell says
+/// (WI-10: thin, radius 10, inset 6), or a plain wash where glass can't be drawn.
 pub(super) fn tile_preview<R>(
     state: &Dashi,
     origin: Point<i32, Logical>,
@@ -82,13 +86,31 @@ pub(super) fn tile_preview<R>(
     let Some(preview) = state.zones.preview else {
         return;
     };
-    let area = smithay::utils::Rectangle::new(
+    let mut area = smithay::utils::Rectangle::new(
         (preview.loc - origin).to_physical_precise_round(scale),
         preview.size.to_physical_precise_round(scale),
     );
+    if let Some(look) = state.zones.look {
+        let inset = (look.inset.get() * scale.x).round() as i32;
+        area = smithay::utils::Rectangle::new(
+            area.loc + Point::from((inset, inset)),
+            (
+                (area.size.w - 2 * inset).max(1),
+                (area.size.h - 2 * inset).max(1),
+            )
+                .into(),
+        );
+        if let Some(pane) = state
+            .glass
+            .preview_element(area, look.level, look.radius.get(), scale)
+        {
+            elements.push(DashiElement::Glass(pane));
+            return;
+        }
+    }
     let shade = smithay::backend::renderer::element::solid::SolidColorBuffer::new(
         area.size.to_logical(1),
-        [0.30, 0.45, 0.95, 0.28],
+        PLAIN_PREVIEW,
     );
     elements.push(DashiElement::Solid(SolidColorRenderElement::from_buffer(
         &shade,

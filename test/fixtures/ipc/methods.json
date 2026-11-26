@@ -527,6 +527,11 @@
   "layout": {
     "params": {
       "dwellMs": 150,
+      "preview": {
+        "inset": 6.0,
+        "level": "thin",
+        "radius": 10.0
+      },
       "zones": [
         {
           "area": {

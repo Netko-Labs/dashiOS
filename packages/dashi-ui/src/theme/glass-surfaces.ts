@@ -80,4 +80,10 @@ const BANNER = { width: 356, radius: 18, gap: 8 } as const;
 /** Control Center's Now Playing tile (CC-7, D765): a pill `height` tall on a fill, the sleeve a `sleeve` disc. */
 const NOW_PLAYING = { height: 56, sleeve: 44 } as const;
 
-export const GLASS_SURFACES = { lock: LOCK, dock: DOCK, banner: BANNER, nowPlaying: NOW_PLAYING } as const;
+/**
+ * Where a dragged window would tile (WI-10, D767): a pane of `level` glass, radius `radius`, `inset` in
+ * from the frame it would take, never the accent. The compositor draws it; the shell sends this (`layout`).
+ */
+const TILE_PREVIEW = { level: "thin", radius: 10, inset: 6 } as const;
+
+export const GLASS_SURFACES = { lock: LOCK, dock: DOCK, banner: BANNER, nowPlaying: NOW_PLAYING, tilePreview: TILE_PREVIEW } as const;

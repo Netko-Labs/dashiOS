@@ -145,7 +145,7 @@ fn chrome_and_spaces(into: &mut BTreeMap<&'static str, Value>) {
     example!(into, "keymap", KeymapParams, json!({ "apps": { "terminal": ["foot"] }, "tapMs": 300, "holdMs": 700, "rules": [{ "when": "super+space", "bind": "launcher", "armsAfterTap": true }, { "when": "super+c", "app": "terminal", "send": "ctrl+shift+c" }], "afterTap": [{ "when": "letter", "bind": "type" }], "locked": [{ "when": "super+a", "send": "ctrl+a" }, { "when": "super+*", "swallow": true }] }), Done, none.clone());
     example!(into, "bars", Bars, json!({ "show": true, "output": "eDP-1" }), Done, none.clone());
     example!(into, "edges", Edges, json!({ "bottom": 4, "output": "eDP-1" }), Inside, json!({ "inside": false }));
-    example!(into, "layout", Layout, json!({ "zones": [{ "area": { "x": 0, "y": 30, "width": 8, "height": 884 }, "frame": { "x": 0, "y": 30, "width": 731, "height": 884 } }], "dwellMs": 150 }), Done, none.clone());
+    example!(into, "layout", Layout, json!({ "zones": [{ "area": { "x": 0, "y": 30, "width": 8, "height": 884 }, "frame": { "x": 0, "y": 30, "width": 731, "height": 884 } }], "dwellMs": 150, "preview": { "level": "thin", "radius": 10, "inset": 6 } }), Done, none.clone());
     example!(into, "gestures", Gestures, json!({ "swipe": [3] }), Done, none.clone());
     example!(into, "idle", Idle, json!({ "timeouts": [120, 300] }), Done, none.clone());
     example!(into, "keyboard", KeyboardParams, json!({ "layout": "us,de", "variant": "", "options": "", "repeatRate": 30, "repeatDelay": 400 }), Done, none.clone());

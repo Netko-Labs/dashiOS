@@ -7,19 +7,24 @@
  * that size. Weather's "May go on air" is here, off by default. It has no
  * buttons of its own: the area's bar (Add · Done) and Esc close it; ↑ ↓
  * choose in the list, ← → pick a size (ringed) and Return adds it.
+ * On glass (frost-objects board 22): regular, radius 18; its previews are
+ * paper's solid twin (glass under glass, GL-2); the chosen kind wears the
+ * neutral pick (ink 10 % and a 3-point ink bar: the accent never paints
+ * here, H23); the picked size is ringed in ink (EDIT_RING).
  */
 
-import { CLEAR, pill, RADIUS, SPACE, Switch, TYPE, WEIGHT } from "@dashi/ui";
+import { CLEAR, Frosted, inkPick, pill, RADIUS, SHADOW, SPACE, Switch, TYPE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { glyph } from "../shared/inks/index.ts";
 import { printsIn } from "./catalog.ts";
 import { useWidgetEnv } from "./env.tsx";
 import { SIZE_ORDER, SPANS, sizeWord, span } from "./layout.ts";
-import { WidgetTile } from "./lib/views/widget.tsx";
+import { EDIT_RING } from "./lib/edit-ring.ts";
+import { oneRow, WidgetTile } from "./lib/views/widget.tsx";
 import type { WidgetInfo, WidgetSize } from "./types.ts";
 
-/** Its width, its list's, and the least its list keeps on a narrow screen. */
-export const GALLERY = { width: 700, list: 240, leastList: 180 } as const;
+/** Its width, its list's, and the least its list keeps on a narrow screen; its corner (regular glass, a widget's 18). */
+export const GALLERY = { width: 700, list: 240, leastList: 180, radius: RADIUS.inkCard } as const;
 /** What the panel takes besides its list and its previews: its padding, the gaps either side of the divider, and the divider. */
 const FRAME = 2 * SPACE.page + 2 * SPACE.page + 1;
 /** The previews' least: the widest, Wide (four cells), and its ring. */
@@ -40,10 +45,8 @@ export function sizeRange(sizes: readonly WidgetSize[]): string {
   return `${sizeWord(sorted[0] ?? "small")} – ${sizeWord(sorted.at(-1) ?? "small")}`;
 }
 
-/** A list row's measures: 32 tall, its ink dot 7 across. */
-const ROW = { height: 32, dot: 7, dotEdge: 1.2 } as const;
-/** A chosen row or size (CO-9, D588): an ink wash under a 2 px ink edge, its words still ink; never solid ink, never purple. */
-const CHOSEN_EDGE = 2;
+/** A list row's measures: 32 tall, its ink dot 7 across; the chosen row's bar 3 wide, 6 in from its top and bottom. */
+const ROW = { height: 32, dot: 7, dotEdge: 1.2, bar: 3, barInset: 6 } as const;
 
 function ListRow({ info, chosen, onPress }: { info: WidgetInfo; chosen: boolean; onPress: () => void }) {
   const { inks } = useWidgetEnv();
@@ -62,10 +65,24 @@ function ListRow({ info, chosen, onPress }: { info: WidgetInfo; chosen: boolean;
         paddingLeft: SPACE.inset,
         paddingRight: SPACE.inset,
         borderRadius: RADIUS.control,
-        backgroundColor: chosen ? inks.text.hairline : CLEAR,
-        ...(chosen ? { borderWidth: CHOSEN_EDGE, borderColor: inks.text.ink } : {}),
+        // Chosen in ink, never the accent (CO-9's neutral look, H23): ink at 10 %, a 3-point ink bar.
+        backgroundColor: chosen ? inkPick(inks.text.ink).wash : CLEAR,
       }}
     >
+      {chosen ? (
+        <View
+          testID={`gallery-bar:${info.kind}`}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: ROW.barInset,
+            bottom: ROW.barInset,
+            width: ROW.bar,
+            borderRadius: RADIUS.thumb,
+            backgroundColor: inkPick(inks.text.ink).bar,
+          }}
+        />
+      ) : null}
       <View
         style={{
           width: ROW.dot,
@@ -116,18 +133,10 @@ export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir, fi
     list.map((each) => <ListRow key={each.kind} info={each} chosen={each.kind === chosen} onPress={() => onChoose(each.kind)} />);
   const theirs = infos.filter((each) => each.kind.startsWith("ext:"));
   return (
-    <View
+    <Frosted
+      level="regular"
       testID="widget-gallery"
-      style={{
-        width: fit.width,
-        flexDirection: "row",
-        padding: SPACE.page,
-        gap: SPACE.page,
-        borderRadius: RADIUS.sheet,
-        backgroundColor: inks.paper,
-        borderWidth: 1,
-        borderColor: inks.text.hairline,
-      }}
+      style={{ width: fit.width, flexDirection: "row", padding: SPACE.page, gap: SPACE.page, borderRadius: GALLERY.radius, shadow: SHADOW.xl }}
     >
       <View style={{ width: fit.list, flexDirection: "column" }}>
         {section("DASHI")}
@@ -137,7 +146,7 @@ export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir, fi
       </View>
       <View style={{ width: 1, alignSelf: "stretch", backgroundColor: inks.text.hairline }} />
       {info ? <Detail info={info} sizeAt={sizeAt} onAdd={onAdd} {...(mayGoOnAir ? { mayGoOnAir } : {})} /> : null}
-    </View>
+    </Frosted>
   );
 }
 
@@ -173,17 +182,17 @@ function Detail({
                 testID={`picked:${info.kind}:${size}`}
                 style={{
                   position: "absolute",
-                  left: -SPACE.xs,
-                  top: -SPACE.xs,
-                  width: span(SPANS[size].cols) + SPACE.m,
-                  height: span(SPANS[size].rows) + SPACE.m,
-                  borderRadius: RADIUS.inkCard + SPACE.xs,
-                  borderWidth: CHOSEN_EDGE,
+                  left: -EDIT_RING.out,
+                  top: -EDIT_RING.out,
+                  width: span(SPANS[size].cols) + 2 * EDIT_RING.out,
+                  height: span(SPANS[size].rows) + 2 * EDIT_RING.out,
+                  borderRadius: EDIT_RING.radius(oneRow(size)),
+                  borderWidth: EDIT_RING.width,
                   borderColor: inks.text.ink,
                 }}
               />
             ) : null}
-            <WidgetTile kind={info.kind} size={size} width={span(SPANS[size].cols)} height={span(SPANS[size].rows)} air={false} />
+            <WidgetTile kind={info.kind} size={size} width={span(SPANS[size].cols)} height={span(SPANS[size].rows)} air={false} solid />
             <Text style={{ fontSize: TYPE.panel.detail.size, color: inks.text.secondary }}>{sizeWord(size)}</Text>
           </View>
         ))}

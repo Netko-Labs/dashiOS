@@ -3,18 +3,19 @@
  * the bar, in a row of tiles under it, in the bar's order. Each works as it
  * does in the bar: an app's or applet's icon activates or opens its menu
  * (the menu takes the popover's place, under the tile), Wi-Fi opens Control
- * Center on its Wi-Fi page, Sound and the moon open Control Center.
+ * Center on its Wi-Fi page, Sound and the moon open Control Center. It is
+ * regular glass, radius 14 (RA-2), its tiles fills (frost-objects board 02).
  */
 
-import { RADIUS, SHADOW, SPACE, useColors } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
+import { CLEAR, Frosted, RADIUS, SHADOW, SPACE, useColors } from "@dashi/ui";
+import { Svg, useWindowGlass, View } from "@mirinjs/metal";
 import { MOON } from "../control-center/index.ts";
 import { ExtraItem, type ExtrasStore, type MenuBarExtra, TILE, useExtras } from "../extras/index.ts";
 import { networkGlyph, speakerGlyph } from "../glyphs.ts";
 import { KeyCatcher } from "../overlay.tsx";
 import { type SystemStore, useSystem } from "../system/store.ts";
 
-export const OVERFLOW = { padding: SPACE.s, gap: SPACE.xs, radius: 12 } as const;
+export const OVERFLOW = { padding: SPACE.s, gap: SPACE.xs, radius: RADIUS.panelList } as const;
 
 export interface OverflowActions {
   /** An extra's menu, its right edge at `right` (it replaces the row). */
@@ -53,6 +54,7 @@ interface OverflowRowProps {
 
 export function OverflowRow({ keys, right, extras, system, openKey, actions, onClose, onEscape = onClose }: OverflowRowProps) {
   const colors = useColors();
+  const glass = useWindowGlass().available;
   const all = useExtras(extras);
   const { network, volume } = useSystem(system);
   const tiles = keys.flatMap((key) => {
@@ -90,7 +92,8 @@ export function OverflowRow({ keys, right, extras, system, openKey, actions, onC
   });
   const width = tiles.length * TILE + Math.max(0, tiles.length - 1) * OVERFLOW.gap + OVERFLOW.padding * 2 + 2;
   return (
-    <View
+    <Frosted
+      level="regular"
       testID="overflow-row"
       style={{
         position: "absolute",
@@ -101,13 +104,12 @@ export function OverflowRow({ keys, right, extras, system, openKey, actions, onC
         padding: OVERFLOW.padding,
         borderRadius: OVERFLOW.radius,
         borderWidth: 1,
-        borderColor: colors.separator,
-        backgroundColor: colors.launcher,
+        borderColor: glass ? CLEAR : colors.separator,
         shadow: SHADOW.xl,
       }}
     >
       <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />
       {tiles}
-    </View>
+    </Frosted>
   );
 }

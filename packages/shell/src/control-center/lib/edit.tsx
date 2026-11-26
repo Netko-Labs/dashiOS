@@ -7,7 +7,7 @@
  * outlined.
  */
 
-import { BUTTON, Button, Knob, KnobButton, SPACE, TILE, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
+import { BUTTON, Button, CLEAR, Knob, KnobButton, SPACE, TILE, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { DEFAULT_LAYOUT } from "../catalog.ts";
 import { PLUS } from "../glyphs.ts";
@@ -43,7 +43,8 @@ function AddTile({ entry, onAdd }: { entry: AddEntry; onAdd: (id: string) => voi
         paddingRight: SPACE.m,
         borderRadius: TILE.radius.off,
         borderWidth: BUTTON.panel.edge,
-        borderColor: colors.line,
+        // On glass an Add row is a fill (frost-objects board 07); off it, an outline.
+        ...(colors.edge !== undefined ? { borderColor: CLEAR, backgroundColor: colors.off } : { borderColor: colors.line }),
       }}
     >
       <Knob glyph={entry.glyph} size={ADD.knob} glyphSize={ADD.glyph} ground={colors.knobOff} />

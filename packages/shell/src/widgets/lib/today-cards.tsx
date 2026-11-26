@@ -13,10 +13,10 @@ import { Card } from "../card.tsx";
 import { useWidgetEnv } from "../env.tsx";
 import { SPANS, span } from "../layout.ts";
 import { useCard } from "../look.tsx";
-import { Btn } from "../parts.tsx";
+import { Btn, NowTag } from "../parts.tsx";
 import type { Placement, WidgetKind } from "../types.ts";
 import { ago } from "./data.ts";
-import { WidgetTile } from "./views/widget.tsx";
+import { kindOfKey, WidgetTile } from "./views/widget.tsx";
 
 /** One app's notifications on the lock (NO-7): its name, how many, and when the newest came. */
 export interface LockNote {
@@ -62,6 +62,9 @@ export interface TodayBodyProps {
 /** Up next, Notifications and Playing, one under the other, `width` wide. */
 export function TodayBody({ width, row, notes, song, onPress }: TodayBodyProps) {
   const each = (width - (row.length - 1) * SPACE.inset) / row.length;
+  // The card on air glows in its ink with the Now dot (CO-12, D792, D807); the lock has no live cards, so any of Today's may hold it.
+  const { tally } = useWidgetEnv();
+  const holder = tally.holder ? kindOfKey(tally.holder) : null;
   return (
     <>
       <Section title="Up next">
@@ -70,7 +73,7 @@ export function TodayBody({ width, row, notes, song, onPress }: TodayBodyProps) 
           size="wide"
           width={width}
           height={span(SPANS.wide.rows)}
-          air={false}
+          air={holder === "calendar"}
           testID="lock-widget:calendar"
           onPress={() => onPress({ kind: "calendar" })}
         />
@@ -82,7 +85,7 @@ export function TodayBody({ width, row, notes, song, onPress }: TodayBodyProps) 
               size="compact"
               width={each}
               height={span(SPANS.compact.rows)}
-              air={false}
+              air={holder === kind}
               testID={`lock-widget:${kind}`}
               onPress={() => onPress({ kind })}
             />
@@ -98,7 +101,7 @@ export function TodayBody({ width, row, notes, song, onPress }: TodayBodyProps) 
       ) : null}
       {song ? (
         <Section title="Playing">
-          <PlayingCard song={song} width={width} onPress={() => onPress({ kind: "media" })} />
+          <PlayingCard song={song} width={width} air={holder === "media"} onPress={() => onPress({ kind: "media" })} />
         </Section>
       ) : null}
     </>
@@ -116,10 +119,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-/** The look every card on Today wears: the lock's (the widgets' own engineer moves it to paper glass). */
-function useTodayLook() {
+/** The look every card on Today wears: paper glass, as every widget's (D791, D807). */
+function useTodayLook(air = false) {
   const { inks } = useWidgetEnv();
-  return { inks, ink: null, air: false, houseDown: false, redact: false, glass: true } as const;
+  return { inks, ink: air ? ("album" as const) : null, air, houseDown: false, redact: false } as const;
 }
 
 /** One app's notifications, hidden (NO-7): "Messages", "2 new notifications", the lock and when. */
@@ -161,13 +164,27 @@ function NoteWhen({ time, now }: { time: number | null; now: number }) {
 }
 
 /** The song (LK-5: its buttons work while locked; the card opens Music once unlocked). */
-export function PlayingCard({ song, width, onPress, compact = false }: { song: TodaySong; width: number; onPress: () => void; compact?: boolean }) {
+export function PlayingCard({
+  song,
+  width,
+  onPress,
+  compact = false,
+  air = false,
+}: {
+  song: TodaySong;
+  width: number;
+  onPress: () => void;
+  compact?: boolean;
+  air?: boolean;
+}) {
   const { hub } = useWidgetEnv();
+  const look = useTodayLook(air);
   return (
-    <Card look={useTodayLook()} width={width} height={compact ? GLASS.lock.note : GLASS.lock.playing} compact onPress={onPress} testID="lock-playing">
+    <Card look={look} width={width} height={compact ? GLASS.lock.note : GLASS.lock.playing} compact onPress={onPress} testID="lock-playing">
       <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}>
         <Sleeve size={compact ? GLASS.lock.pill.height : GLASS.lock.sleeve} />
         <SongWords song={song} />
+        {air ? <NowTag tally={look.inks.tally} /> : null}
         {compact ? null : <Btn icon="prev" round onPress={() => void hub?.media.command("Previous")} testID="lock-previous" />}
         <Btn icon={song.playing ? "pause" : "play"} round onPress={() => void hub?.media.command("PlayPause")} testID="lock-play" />
         {compact ? null : <Btn icon="next" round onPress={() => void hub?.media.command("Next")} testID="lock-next" />}

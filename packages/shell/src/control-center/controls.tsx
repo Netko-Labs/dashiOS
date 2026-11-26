@@ -5,12 +5,13 @@
  * and the keyboard agree; this file draws what they act on.
  */
 
-import { BatteryTile, RoundTile, SliderTile, type TileLook, WideTile } from "@dashi/ui";
+import { BatteryTile, NowPlayingTile, RoundTile, SliderTile, type TileLook, WideTile } from "@dashi/ui";
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
+import { glyph } from "../shared/inks/index.ts";
 import type { AppletTile } from "./applet-tiles.ts";
 import { type ControlPage, type ControlSnapshot, controlInfo, isThere, SYSTEM_CONTROLS, tileState } from "./catalog.ts";
-import { PUZZLE } from "./glyphs.ts";
+import { NOTE, PUZZLE } from "./glyphs.ts";
 import type { Layout, Placed, TileSize } from "./layout.ts";
 import {
   type ControlActions,
@@ -26,6 +27,8 @@ import type { AddEntry } from "./lib/edit.tsx";
 import { useControlSnapshot } from "./lib/snapshot.ts";
 
 const EMPTY: readonly AppletTile[] = [];
+/** The Now Playing tile's glyphs: the Inks' play, pause and next, and an empty sleeve's note. */
+const NOW_PLAYING_GLYPHS = { play: glyph("play"), pause: glyph("pause"), next: glyph("next"), note: NOTE } as const;
 const NO_APPLETS = { subscribe: () => () => {}, getSnapshot: () => EMPTY };
 
 export interface Controls {
@@ -84,6 +87,25 @@ function renderTile(
       <BatteryTile
         look={{ percent: battery.percent, charging: battery.charging, limit: battery.limit, time: battery.time, glyph: shown.glyph }}
         onOpen={() => (editing ? undefined : actions.onBattery?.())}
+      />
+    );
+  }
+  if (tile.id === "nowplaying" && snapshot.playing) {
+    const media = actions.media;
+    const command = (member: "PlayPause" | "Next") => () => (editing ? undefined : void media?.command(member).catch(() => {}));
+    return (
+      <NowPlayingTile
+        look={{
+          testID: shown.testID,
+          title: snapshot.playing.title,
+          detail: snapshot.playing.detail,
+          playing: snapshot.playing.playing,
+          cover: snapshot.playing.cover,
+        }}
+        glyphs={NOW_PLAYING_GLYPHS}
+        onOpen={() => (editing ? undefined : void media?.raise?.().catch(() => {}))}
+        onPlayPause={command("PlayPause")}
+        onNext={command("Next")}
       />
     );
   }

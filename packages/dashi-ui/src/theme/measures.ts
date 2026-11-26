@@ -111,15 +111,17 @@ export const RADIUS = {
   row: 5,
   /** 7: a button, a field, a pop-up, a pick row, a sidebar row. */
   control: 7,
-  /** 9: menus and pop-up menus. */
-  menu: 9,
+  /** 10: menus and pop-up menus (RA-1). */
+  menu: 10,
   /** 10: a group or card, the alert tile. */
   card: 10,
   /** 12: a window (the person's choice), a sheet, the launcher, every panel that asks or lists (RA-2). */
   sheet: 12,
-  /** 14: a widget (CO-11); 12 for one row. */
-  inkCard: 14,
-  inkCardRow: 12,
+  /** 14: a panel that asks or lists, on regular glass (RA-2): the agents' panel, the switcher, "…" (a sheet's 14 too, once it moves). */
+  panelList: 14,
+  /** 18: a widget on paper glass (CO-11, D720); 14 for one row. */
+  inkCard: 18,
+  inkCardRow: 14,
   /** 17.5: the capsule's card (pill-v2). */
   capsuleCard: 17.5,
   /** 20: the Dock (RA-1, DK-1). */
@@ -139,9 +141,9 @@ export const pill = (height: number): number => height / 2;
 export const SHADOW = {
   /** Controls, cards, a knob, a lifted event, Segmented's chosen segment. */
   sm: "sm",
-  /** Sheets, menus, popovers, suggestions, a drag ghost. */
+  /** Sheets, menus, popovers, suggestions, a drag ghost; floating glass: the launcher, banners, the capsule's card. */
   xl: "xl",
-  /** Floating HUDs over the desktop: the capsule and card, banners, the OSD. */
+  /** Floating HUDs over the desktop: the capsule's line, the OSD. */
   lg: "lg",
 } as const;
 

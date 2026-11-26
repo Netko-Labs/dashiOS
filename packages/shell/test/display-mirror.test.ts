@@ -122,6 +122,7 @@ test("Control Center's Mirroring tile is there only with two screens or more", (
     battery: null,
     hotspot: null,
     mirroring: null,
+    playing: null,
   };
   expect(isThere("mirror", snap)).toBe(false);
   expect(tileState("mirror", snap)).toBeNull();

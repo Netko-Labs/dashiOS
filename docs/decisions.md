@@ -8801,6 +8801,20 @@ short words, as the rulebook is written.
   blur, which is why it is rare; the cost shows in `DASHI_GLASS_STATS`'s `cpu`.
 - **Undo:** a pixel buffer object read a frame later (no stall), if the stall ever shows.
 
+### D739. A new pane's tone is read at once; a due tone keeps the screen looking
+
+- **Date:** 2026-11-26. `v10/glass-tone` (a fix of D735, found by y4a's run,
+  `dashi-0.10.0-review/28-glass-kit/` and `29-glass-tone/`).
+- **What was wrong:** D735 read a pane's first tone only once its backdrop had been still for a
+  frosting. A pane whose backdrop changed on every frame from its first (a video, a live wallpaper,
+  anything moving behind) never got one: the once-a-second rule for moving backdrops only applied
+  after a first read. The client heard `drawing(1)` and no `tone`, and its words stayed neutral.
+- **Choice:** a pane never read is read on its first frosting, right after its first blur (one
+  read-back per new pane); after that D735's rules hold. A tone that is due but not read yet (inside
+  the 120 ms) pokes the screens (wakes.rs), so a screen that falls still can't leave it unsaid. A
+  surface's last tone is kept, and a new `dashi_glass_v1` for it hears it at once.
+- **Undo:** `Tone::wants`'s first case back to `!changed`.
+
 ### D736. The floor stays per pixel, now counting the grain
 
 - **Date:** 2026-11-25. `v10/glass-comp`.
@@ -9071,6 +9085,314 @@ short words, as the rulebook is written.
   Proof: `dashi-0.10.0-review/28-glass-kit/`.
 - **Undo:** revert the shader's cut; surfaces drop their shadows instead.
 
+### D810. Sheets are regular glass at radius 14, from the kit's sheet card
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; UI-5, RA-1, frost-objects 23 to 25).
+- **Question:** how every sheet wears Frost's regular glass and RA-1's 14 without touching the
+  launcher's and the panels' `RADIUS.sheet` (12), which their own engineers move.
+- **Choice:** `SheetCard` is a `Frosted level="regular"` at `SHEET_RADIUS` (14, a named constant beside
+  it); `frosted` asks for glass, otherwise it is regular's solid twin. `Sheet` asks for it on a surface
+  of the shell's own (`place="screen"`) and when hung over a window from one (`hang`); the shortcut
+  sheet and the consent sheet pass it. The compositor draws a pane's rim and hairline, so the card keeps
+  its 1 px edge only where it shows its twin. Force Quit's list sits on a well (a fill, the control
+  edge); fields, tiles and buttons are the kit's on glass already (D772).
+- **Why:** one frame for every sheet (UI-5); 14 is the drawn radius; a separate constant keeps the
+  surfaces still on 12 unchanged until their engineers move them.
+- **Undo:** `SheetCard` back to a `View` on `surface.card` at `RADIUS.sheet`.
+
+### D811. A sheet inside an app's own window is regular's twin
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; GL-3).
+- **Question:** frost-objects draws an app's sheet (Setup's Skip question) frosting the window's own
+  content. The compositor draws a pane behind the surface that wears it; a sheet is drawn inside its
+  window's buffer, over the window's opaque content, so glass there would show nothing behind it and
+  the card, which paints no fill while glass is drawn, would put its words on the scrimmed content.
+- **Choice:** a sheet in an app's window (no `hang`, `place` its window) is regular's solid twin, as
+  GL-3's glass off. The shell's sheets, on surfaces of their own, are glass.
+- **Why:** readable now, and the same look Reduce Transparency gives; frosting a window's own content
+  needs mirin to blur its own frame under a view (a backdrop pass in sumi's renderer), which is mirin's
+  work, not a Dashi workaround.
+- **Undo:** once mirin frosts within a frame, `Sheet` asks for glass in a window too.
+
+### D812. A glass sheet's scrim goes round the card
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; UI-5).
+- **Question:** Change Password hangs over Settings from a surface of the shell's own, over a scrim on
+  that surface. Glass is drawn behind the surface, so a scrim painted under the card lies over its
+  glass (55 % black in Dark).
+- **Choice:** when the card is drawn as glass, the scrim is four bands round the card and the outside
+  of its four rounded corners (`sheet-scrim.tsx`), never under it.
+- **Why:** UI-5 keeps the scrim; the card's glass keeps its tint and its floor.
+- **Undo:** paint the scrim on the whole surface again.
+
+### D813. The window's sidebar is thick glass with focus, its twin at once without
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; GL-2, CO-9, GL-6).
+- **Choice:** `AppWindow`'s sidebar is `Frosted level="thick"` while `useWindowActive()`, and
+  `solid` (thick's twin, neutral inks) without focus; the selection turns neutral with it (D772). With
+  a sidebar the window paints no ground of its own: the content column paints `surface.window`, so
+  the title row, toolbar and content stay opaque. The twin comes at once, which is within GL-2's 180 ms.
+  `ToolbarButton` moved to `toolbar-button.tsx` so `window.tsx` stays under 300 lines.
+- **Why:** frost-v2 frame 9 and frost-objects 29; a cross-fade would re-render or need the compositor
+  to fade a pane, for a change of 0.1 in tint.
+- **Undo:** the sidebar back to a `View` on `surface.sidebar`.
+
+### D814. "Your turn" wears regular glass and keeps its shape
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; frost-objects 18).
+- **Choice:** the agents' "Your turn" card is `Frosted level="regular"` with its purple edge; its
+  radius and size stay as they are (the drawn 560 × 96 pill needs a fixed height, and the lane it
+  pushes is the notifications' engineer's).
+- **Undo:** back to `opaque(colors.launcher)`.
+
+### D815. The capture toolbar is glass, the capture area never
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; GL-6, D728, frost-objects 26).
+- **Choice:** the ⇧❖5 toolbar is regular glass at 14 (no shadow: its surface is its own size). The
+  ⇧❖4 area is no glass: black at 35 % outside it (`CAPTURE_AREA.outside`), clear inside, its edge, and
+  under it "Space: a window · Esc: cancel" and its size on solid chips. The toolbar keeps the kit's
+  segmented control (chosen raised, never the accent), the one segmented look on glass (D772), where the
+  board drew the chosen mode in the accent. The board's eight handles aren't drawn: the area can't be
+  resized after it is let go, and handles would say it can.
+- **Undo:** the toolbar back to `colors.menu`; the area back to a white wash inside.
+
+### D816. Titles of 20 and up through `useTitleFace`
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; TY-2).
+- **Choice:** the kit's `useTitleFace()` gives Inter Display SemiBold on a host that says
+  `displayFont`, Inter SemiBold on one that doesn't (an older host refuses the family). About and
+  Setup's page titles wear it. The Bluetooth sheet's code is a figure, not words, and stays.
+- **Undo:** the titles back to 700.
+
+### D817. The tile preview is a pane of thin glass the shell describes
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; WI-10).
+- **Question:** the compositor drew the preview as a blue wash, a colour it chose itself.
+- **Choice:** `layout` takes `preview: {level, radius, inset}`; the shell sends `GLASS.tilePreview`
+  (thin, 10, 6) and the compositor draws a pane of that level there (`Glass::preview_element`), or a
+  plain white wash where glass can't be drawn or the shell is older. Its tone goes nowhere (no words).
+- **Why:** Rust displays, TypeScript decides: the look is the shell's, as every pane's is.
+- **Undo:** drop `preview`; the compositor draws its wash.
+
+### D818. A window's glass needs mirin to keep its opaque promise off on a configure
+
+- **Date:** 2026-11-26. `v10/glass-windows` (the VM's finding; mirin PR #61, branch `v10-glass-windows`).
+- **Question:** in the VM, Files' sidebar on thick glass was black. sumi's `update_window` (every
+  configure: a focus change, a resize) promised the whole surface opaque while a frame had glass
+  panes, so the compositor drew the window opaque. A window with panes from its first frames always
+  hit it; the gallery's Glass page escaped because its panes came after the configures.
+- **Choice:** fixed in mirin, where it starts (Part A): one rule, `promises_opaque`, for the frame and
+  the configure, with a test. Dashi needs mirin with PR #61 for any window's sidebar to show glass.
+- **Undo:** revert the mirin commit; sidebars show black where glass should be.
+
+### D780. The menu bar is thin glass; its items' washes lean with its ink, its chips' words are primary
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; frost-objects board 01, decided here).
+- **Question:** how the bar and every item and chip on it wear thin glass (DE-4, UI-18).
+- **Choice:** the bar is `<Frosted level="thin">` (`menubar/menubar.tsx`), what sits on it a child component
+  so every hook reads the glass palette. An item has no fill at rest, the glass's primary ink at 8 % under
+  the pointer and 14 % open (`shared/glass/bar.ts` `barWashes`); a chip (`BarItem`, the tally's capsules,
+  the agent mark's words, the voice's line) has primary words on every tone's wash: neutral ink 10 %
+  (16 % hovered), a capture's ume 20 % (28 %), the agents' `agentWash` (shiso 30 % hovered)
+  (`barItemColors(tone, colors, glass)`, `useBarItemColors`). Off glass the chips keep the agents' ink.
+  The bar's own 1 px edge is clear where the compositor draws glass (its hairline is the pane's); the bar
+  tip is regular's solid twin, as the kit's tooltip (GL-6). The voice's chip keeps a ground under its wash
+  over a neighbour's edge: thin's solid twin on glass.
+- **Why:** the washes were fixed colours tuned for the old translucent fill; on glass the ink leans to the
+  backdrop (GL-1), so a wash made from it leans the same way and keeps its step on any wallpaper.
+- **Undo:** `openWash`, `button` and `agentInk` again; a `View` with `colors.menuBar`.
+
+### D781. The bar's panels, the OSD, the switcher and the Spaces row wear their levels; floating panels lose their own edge
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; frost-objects boards 02, 03, 06–13, decided here).
+- **Choice:** regular glass for "…" (radius 14), the Agents panel (14; runs, asks and connections are fills
+  r10, 8 apart, no separators), the Battery panel (28), Control Center and its pages and edit mode (28; Add
+  rows fills), the OSD (28, and the small one a pill), the switcher (14); thin glass for the Spaces row,
+  closed and open (names fills, the current one the accent's wash). The switcher's parts are laid out in the
+  panel's own place so they sit on its glass; its count is an ink badge and its chosen window's ring 2.5.
+  The OSD's segments are the glass's ink, an off one at 20 %. A floating panel has no border of its own
+  where glass is drawn (`useGlassPanelEdge`: the compositor's rim and hairline are its edge); the
+  true-black hairline stays where it isn't. RA-2's 14 is a new token, `RADIUS.panelList`, so the sheets'
+  and the launcher's `RADIUS.sheet` moves with their own engineers.
+- **Not as drawn:** frost-objects draws the Agents panel and "…" at 12 and the switcher at 26; RA-2 (the
+  binding rule, written after) says 14 for all three. The rule wins; one token to change if the drawing
+  is meant.
+- **Undo:** the surfaces' old fills (`colors.launcher`, `colors.osd`, `PANEL_GROUND`).
+
+### D782. Menus are regular glass, radius 10; the lit row stays the solid accent
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; RA-1, frost-objects boards 02 and 04).
+- **Choice:** the shell's dropdown (`menus/lib/view.tsx`: the bar's menus, a status item's, a Dock icon's)
+  is `<Frosted level="regular">`; `MENU.radius` and `RADIUS.menu` 9 → 10 (every menu, the kit's too). Its
+  1 px `menuEdge` keeps its width but is clear where glass is drawn, so the rows don't move. The lit row is
+  `colors.selection` under onAccent words, as before (4.85:1 on Kombu), never the 22 % wash a list uses.
+- **Submenus** (GL-2): none exist; applets and tray items keep flattening theirs under headings. A menu
+  nested two glass layers deep is its twin by the kit's depth rule, should one come.
+- **Undo:** radius 9 and the solid card under `colors.menu`.
+
+### D783. Coloured inks on the bar's surfaces: the kit's stepped inks; the floor list waits for the compositor
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible).
+- **Question:** GL-5 asks each surface to name its coloured inks to the floor (the tally, the microphone,
+  ume, the agents' purple). The floor takes one ink per style (`glass-style`'s `floor.ink`), and a
+  surface wearing mirin's `material` can't name more.
+- **Choice:** the bar's surfaces paint the kit's stepped inks on glass (ume #A0324A, the microphone
+  #9F4800 on a 12 % wash, Dark ume on a fill #F6859B, D772) and name nothing yet. GL-5's tag stays.
+- **Undo / next:** a per-surface ink list in `dashi_glass_v1` (the compositor's and mirin's), then the
+  surfaces pass theirs.
+
+### D784. An applet's popover is framed by the shell, on the catcher's surface
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; LA-4, D767).
+- **Choice:** the shell draws the frame, `<Frosted level="regular">` radius 12 with shadow xl, on the clear
+  catcher surface it already lays under every applet popover (`applets/start.tsx` `PopoverFrame`). The
+  frame is what is placed and kept inside the screen; the applet is given the room 14 inside it, the size
+  it asked for (`placement.ts` `POPOVER_FRAME`, `popoverFrame`). The SDK's `PopoverGround` is clear and no
+  longer clips. A press on the frame's margin is the popover's, not "outside".
+- **Why:** an applet's host can't be trusted with the material (D767), and one surface under it costs
+  nothing new: the catcher was there.
+- **Cost:** an applet built with an older SDK draws its solid card inside the glass frame.
+- **Undo:** the SDK's solid `PopoverGround` and the old placement.
+
+### D785. Control Center's Display and Focus pages and its Now Playing tile, as built
+
+- **Date:** 2026-11-26. `v10/glass-bar` (reversible; CC-5 to CC-7, D765, frost-objects board 10).
+- **Display:** the Display (brightness) tile opens it as the Sound tile opens its page. The built-in
+  screen's backlight is the one Dashi dims today, so one slider ("Built-in · 68%"); Night Shift and Dark
+  as rows with switches (the row's press works the switch); Displays Settings… opens Settings › Displays.
+- **Focus:** the end is kept beside the switch (`Flags.dndUntil`, `dndFor`, in control-center.json) so a
+  restart keeps it, and the shell's one store turns Focus off when it comes (`keepFocusTime`, started
+  with Control Center's stores). "This evening" is 7 PM, offered only while an hour of the day is left
+  before it; "tomorrow" is 8 AM. The switch turned by hand (the tile, the header, Settings) is "until I
+  turn it off". The header's switch, Notifications Settings… at the foot.
+- **Now Playing:** a kit tile (`NowPlayingTile`, H22), the flat size only (a 56 pill needs the row's width
+  for the title and two buttons), in the default layout after the battery, shown only while a player
+  plays (CC-2). Its source is the widgets' MPRIS `Media`; a press raises the player (`Media.raise`, the
+  root's `Raise`); its sleeve is the cover when it is a local file, else a neutral disc with a note.
+- **Undo:** drop the pages from the catalog and the tile from the layout.
+
+### D786. A window's own menus stay solid
+
+- **Date:** 2026-11-26. `v10/glass-bar` (a finding; for the owner).
+- **Question:** board 04 draws a context menu (Files) on regular glass. `PopupMenu` is drawn inside the
+  app's window surface, and glass behind a view blurs what is behind the *window*, not the window's own
+  content under the menu.
+- **Choice:** leave `PopupMenu` on the window's solid card (VS-3) until a menu is its own popup surface
+  (an `xdg_popup` per menu, mirin's); the shell's menus, each on its own surface, are glass.
+- **Undo:** n/a; the follow-up is mirin's popup surfaces.
+
+### D790. The launcher and its conversation wear regular glass
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; DE-4, D721, frost-objects boards 14 to 16).
+- **Choice:** the launcher's panel is `Frosted level="regular"`, radius 14 (was 12, RA-2), shadow xl, no
+  fill or border of its own (the compositor draws the rim and hairline). Everything inside reads the glass
+  palettes (`useColors` under `Frosted`): the vibrant inks, fills for icons, chips and bubbles, the
+  selection as the accent at 22 % under primary words. Words on a fill in the conversation are primary
+  ink (GL-1, D729): the bubble's "Said" is now 11 SemiBold primary (it was 10.5 secondary, under GL-1's 11).
+- **Not done, on purpose:** the board's hover tint (ink 7 %): the pointer moves the selection in the
+  launcher (one mark only), so a hovered row is the selected one. RA-2's "rows 8 inside 5" is off RA-1's
+  scale (H21a knows no 8); rows stay 7 inside 4 until the rulebook names the token.
+- **Undo:** back to the solid `colors.launcher` panel with its border.
+
+### D791. Widgets are paper glass at 18; the area's inks are the glass ones
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; CO-11, GL-5, board 20 and 21).
+- **Choice:** a widget's card is `Frosted level="paper"`, radius 18, 14 for one row (`RADIUS.inkCard`
+  18, `inkCardRow` 14), padding 14, no shadow at rest and no border (the compositor's rim and hairline).
+  The area makes its widget env with `glassInkTokens` (Light matcha `#5F6305`, wakame `#00737E`) always,
+  glass or its twin: the stepped inks pass on the solid paper too. The lock's wash (`look.glass`, y4d's)
+  keeps its opaque paper and hairline until the lock moves to Frost; it takes the new radii, which CO-11
+  gives every widget.
+- **Undo:** the card's plain view with the paper fill and hairline; the tokens back to 14 and 12.
+
+### D792. On air is a glow of the card's ink and the Now dot (CO-12, D768)
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; the owner's answer, frost-v2 frame 6).
+- **Choice:** a card on air (a widget, a live card, an agent's critical question) keeps its paper glass
+  and words as off air and casts `0 0 30 3` in its own ink at 60 % (Light) / 55 % (Dark), plain ink for
+  a widget printed in plain ink (`onAirGlow`); the "Now" tag is the tally's 7-point dot beside "Now" in
+  the card's ink, 11 SemiBold, breathing as before. No ring, no flood, no lift. The glow needs a shadow
+  in a colour, which mirin's presets didn't have: mirin now takes one shadow spelled out
+  (`"0 0 30 3 #rrggbbaa"`, `SpelledShadow`; an older host draws none). The lock's Now bar (y4d's) still
+  floods with the tally's ring on its wash (`floods`: only `look.glass`), until the lock wears Frost.
+  The VM showed the area's scrolling list clipping the glow (4 points of room): the list now keeps
+  `AREA_GLOW` (33) left of the column and the area's own top inset above it, the column where it was.
+- **Undo:** `cardColours`' flood for every card on air, and the ring.
+
+### D793. Edit mode and the gallery on glass, the accent kept out (H23)
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; board 22).
+- **Choice:** the card being edited is ringed in ink, 2 wide and 3 out (`EDIT_RING`; was 4 out), and so is
+  the gallery's picked size; the tag stays an ink pill 20. The header is thin glass, Add · Done a capsule
+  of regular glass (Add outlined in the glass control edge, Done filled in ink). The gallery is regular
+  glass, radius 18, shadow xl; its previews are paper's solid twin (GL-2: `Card solid`). The board draws
+  the chosen kind in the selection look; the accent never paints `widgets/` (H23), so it wears the
+  neutral selection instead: ink at 10 % and a 3-point ink bar at 55 % (CO-9's look without focus).
+- **Undo:** the opaque paper header, bar and gallery; the 2-point ink edge on the chosen row.
+
+### D794. Banners: regular glass in their lane, newest on top
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; NO-5, NO-6, D729, board 18).
+- **Choice:** a banner is `Frosted level="regular"`, 356 wide, radius 18, shadow xl (was 344, 12, lg),
+  its words and small Buttons on the glass palettes. The lane (`bannerLane`): top-aligned with the widget
+  column, its right edge where the column's is (16 from the screen's edge) while the column is hidden, and
+  12 left of the column while it shows. The area hides banners while it is open (store.ts), so today a
+  banner always takes the column's place and can never cover a widget. Newest on top, 8 apart (was oldest
+  on top, 12 apart). The surface keeps 16 of shadow room at its sides, 12 above, 24 below.
+  Under the pointer a ✕ shows over its top-left corner, the kit's small filled `GlyphButton` (18: the
+  board's 20 is no kit size), solid (`OffGlass`, GL-6); a press dismisses the banner, never opens it.
+- **Not done:** "Your turn"'s pill (the agents' engineer's).
+- **Undo:** the old size, the top-right anchor and the order.
+
+### D795. The area's notes are paper glass; a group's edges paper's twin
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; NO-5, GL-2, board 19).
+- **Choice:** the area's notification cards are the widgets' `Card` (paper glass, no shadow); the peeking
+  edge under a group is paper's solid twin (`useSolidTwin("paper")`), so a group is one glass layer. "N
+  more" is a paper card too.
+- **Undo:** the edge back to the paper colour; cards are the widgets' either way.
+
+### D796. The capsule's card is regular glass with the persona's rim
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; CP-11, D766, board 17).
+- **Choice:** the card is `Frosted level="regular"`, radius 17.5, shadow xl, its rim 1.5 in the persona's
+  own colour (not `dashiFill`, the disc's colour darkened for its white mark: in the VM that darker green
+  all but vanished on Dark's glass); with the keyboard a 3-point
+  rim in the focus purple replaces it (was a white 3-point outline inside a 1.5 ink line). Its words are
+  the glass's inks (`glassCardColours`), buttons outlined in the glass edge with the yes filled in ink,
+  choices on a fill; the disc is filled in the persona's colour with a white mark. The line under it stays
+  solid (GL-6).
+- **Undo:** `dashiColours` for the card again, and the white outline.
+
+### D797. The widgets' small words stay as the boards draw them
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (reversible; TY-1's inks row, GL-1).
+- **Question:** GL-1 says words on glass are never under 11; a widget's label is 10.5 SemiBold capitals
+  (`TYPE.inks.small`) and Calendar's weekday letters 9.5 (`TYPE.inks.label`), on paper glass now.
+- **Choice:** keep them: frost-objects draws the labels at 10.5 (`c-launcher.js`, `b-cc.js`) and the owner
+  approved those boards; the area's paper is the most opaque glass (α ≥ 0.64, floored). The "Now" tag, new
+  here, is 11 SemiBold as the board draws it. For the rulebook: GL-1 should name the inks' small capitals as
+  its exception, or TY-1's inks row should move to 11.
+- **Undo:** `TYPE.inks.small` and `label` to 11.
+
+### D798. A shadow spelled out, in mirin
+
+- **Date:** 2026-11-26. mirin `v10-glass-launcher` (reversible; Part A: fix it where it starts).
+- **Choice:** `shadow` takes a preset or one shadow spelled out as CSS's `box-shadow` is, without units:
+  `"x y blur spread #rrggbbaa"` (`SpelledShadow`). The host parses it (`edges.rs` `spelled_shadow`); a bad
+  one, or a host from before it, draws nothing. H21a still counts a bare preset word only; a spelled shadow
+  comes from a token (`GLASS.onAir`).
+- **Undo:** drop the parse; the glow is gone, nothing else changes.
+
+### D799. Coloured inks can't yet be named to the floor per surface
+
+- **Date:** 2026-11-26. `v10/glass-launcher` (left for the compositor; GL-5).
+- **Finding:** the floor (`glass-style`'s `floor`) holds one ink for every surface; nothing lets a surface
+  name its coloured inks (a widget's category ink, the conversation's purple and moss, ume). GL-5's floor
+  lists need the compositor and `material` to carry them. Meanwhile the five stepped inks keep their
+  contrast on the twins (`dashi-ui/test/glass.test.tsx`), and the area's widgets read them.
+- **Undo:** nothing to undo.
+
 ### D800. The Dock magnifies by icon, and names it on its own surface
 
 - **Date:** 2026-11-26. `v10/glass-dock` (reversible; DK-2, DK-6; frost-objects board 05).
@@ -9183,3 +9505,16 @@ short words, as the rulebook is written.
   for the status row (the lock has no status source, and the veil's tint is the compositor's, one even
   tint).
 - **Undo:** `lockShape` returns `wide` for every screen.
+
+### D807. The lock's cards are paper glass and glow on air; its wash, its inks' shift and its Now bar go
+
+- **Date:** 2026-11-26. `v10/glass-dock` (reversible; LK-4, CO-11, CO-12; after D791 and D792 merged).
+- **Choice:** the lock wears Frost (D803, D806), so its widget cards are the area's: `Frosted
+  level="paper"` at 18 / 14, the env's inks `glassInkTokens` (no more lock shift), and the card on air
+  keeps its glass and glows in its own ink with the Now dot (`onAirGlow`, `NowTag`), never a flood or a
+  tally ring. On the lock the card holding the tally is whichever of Today's shows it (the calendar, a
+  compact, the song): the lock has no live cards. The lock's Now bar went with the old column (D806), so
+  nothing floods anywhere. Retired with it: the card's `glass` look and `floods`, the tally ring,
+  `LOCK_GLASS`, the login colours' `fieldEdge` (the field is on glass, LK-1) and the inks' `lock` shift
+  (`INK_RULE.lockL`).
+- **Undo:** bring back `look.glass` and `LOCK_GLASS` from git; nothing else reads them.

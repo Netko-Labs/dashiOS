@@ -2,13 +2,17 @@
 //! where they go: the shell hears `glass-tone` for its own panes, a client's
 //! dashi_glass_v1 hears `tone` for its surface's first pane.
 
+use std::time::Instant;
+
 use smithay::backend::renderer::{
     Bind, ImportAll, ImportMem, Offscreen, Renderer, Texture, gles::GlesTexture,
 };
 
 use super::{
     element::{Owner, PaneKey},
-    frost, tone,
+    frost,
+    frost::Frame,
+    tone,
 };
 use crate::{
     ipc::protocol::Event,
@@ -37,7 +41,12 @@ pub(crate) fn frost_screen<R>(
     let scale = output.current_scale().fractional_scale();
     let deepest = state.glass.deepest();
     let timing = state.glass.stats.begin(renderer.gles());
-    match frost(renderer, cache, size, (scale, Some(deepest)), elements) {
+    let frame = Frame {
+        scale,
+        deepest: Some(deepest),
+        now: Instant::now(),
+    };
+    match frost(renderer, cache, size, frame, elements) {
         Ok(done) => {
             let was = state.glass.can();
             state.glass.tried(true);
@@ -49,6 +58,11 @@ pub(crate) fn frost_screen<R>(
             }
             for (key, rgb) in &done.tones {
                 send_tone(state, key, *rgb);
+            }
+            // A tone still due (read at most every 120 ms): every screen keeps looking until
+            // it is read, so a still screen never leaves it unsaid (wakes.rs).
+            if done.tone_due {
+                state.wakes.poke();
             }
         }
         Err(error) => {
@@ -62,6 +76,9 @@ pub(crate) fn frost_screen<R>(
     }
 }
 
+/// The most surfaces whose last tone is kept.
+const MOST_TONES: usize = 256;
+
 /// Where a pane's tone goes: only a surface's first pane speaks for it.
 fn send_tone(state: &mut crate::state::Dashi, key: &PaneKey, rgb: [u8; 3]) {
     if key.index != 0 {
@@ -72,15 +89,22 @@ fn send_tone(state: &mut crate::state::Dashi, key: &PaneKey, rgb: [u8; 3]) {
             namespace: namespace.clone(),
             tone: tone::hex(rgb),
         }),
+        Owner::TilePreview => {}
         Owner::Surface(id) => {
             let object = state
                 .glass
                 .objects
                 .iter()
                 .find(|(surface, _)| surface.id() == *id);
+            tracing::debug!(target: "glass", surface = ?id, ?rgb, heard = object.is_some(), "tone");
             if let Some((_, object)) = object {
                 object.tone(tone::wire(rgb));
             }
+            // Bounded: a surface that went without its glass object leaves its entry behind.
+            if state.glass.tones.len() >= MOST_TONES {
+                state.glass.tones.clear();
+            }
+            state.glass.tones.insert(id.clone(), tone::wire(rgb));
         }
     }
 }
@@ -98,7 +122,12 @@ pub(crate) fn frost_capture<R>(
 {
     let cache = format!("capture@{scale}");
     // As deep as the screens' glass was last allowed (frost.rs keeps it).
-    if let Err(error) = frost(renderer, &cache, size, (scale, None), elements) {
+    let frame = Frame {
+        scale,
+        deepest: None,
+        now: Instant::now(),
+    };
+    if let Err(error) = frost(renderer, &cache, size, frame, elements) {
         tracing::debug!(%error, "a capture's glass");
     }
 }

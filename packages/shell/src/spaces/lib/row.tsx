@@ -10,15 +10,15 @@
  * automatic name). A window dragged out of the overview and dropped on a
  * picture, a name, or the + moves there (start.tsx). A full-screen window's
  * Desktop (fullscreen.ts) is named after its app and is not renamed; its ×
- * takes the window out of full screen.
+ * takes the window out of full screen. The row is thin glass across the
+ * screen, closed or open (DE-4; frost-objects board 13).
  */
 
-import { useColors } from "@dashi/ui";
-import { View } from "@mirinjs/metal";
+import { Frosted } from "@dashi/ui";
 import { useState, useSyncExternalStore } from "react";
 import { KeyCatcher } from "../../overlay.tsx";
 import { ROW } from "./row-layout.ts";
-import { at, CLOSE, RowAdd, RowClose, RowName, RowPictures, RowRename, useNamePress } from "./row-parts.tsx";
+import { CLOSE, RowAdd, RowClose, RowName, RowPictures, RowRename, useNamePress } from "./row-parts.tsx";
 import { rowShape, SHELF_HEIGHT } from "./shelf.ts";
 import type { Desktops } from "./state.ts";
 
@@ -54,7 +54,6 @@ export interface RowProps {
 
 export function SpacesRow(props: RowProps) {
   const { width, aspect } = props;
-  const colors = useColors();
   const { count, current, labels, fullscreen } = useSyncExternalStore(props.desktops.subscribe, props.desktops.getSnapshot);
   const isFullscreen = (index: number) => (fullscreen[index] ?? null) !== null;
   const desktops = fullscreen.filter((slot) => slot === null).length;
@@ -77,8 +76,12 @@ export function SpacesRow(props: RowProps) {
 
   const shown = { names: labels, lifted: view.lifted, current };
   return (
-    <View style={{ width, height: view.open ? SHELF_HEIGHT : ROW.height }} onHoverChange={(hovered) => props.onHover(hovered)}>
-      {view.open ? <View style={{ ...at({ x: 0, y: 0, width, height: SHELF_HEIGHT }), backgroundColor: colors.dock }} /> : null}
+    <Frosted
+      level="thin"
+      testID="spaces-row"
+      style={{ width, height: view.open ? SHELF_HEIGHT : ROW.height }}
+      onHoverChange={(hovered) => props.onHover(hovered)}
+    >
       {renaming === null ? <KeyCatcher onKey={(key) => key === "Escape" && props.onEscape()} /> : null}
       {shape.open ? <RowPictures pictures={shape.layout.pictures} {...shown} onSwitch={props.onSwitch} onOverSpace={props.onOverSpace} /> : null}
       {names.map((rect, index) =>
@@ -123,6 +126,6 @@ export function SpacesRow(props: RowProps) {
         ) : null,
       )}
       {shape.layout.add ? <RowAdd rect={shape.layout.add} onPress={props.onAdd} /> : null}
-    </View>
+    </Frosted>
   );
 }

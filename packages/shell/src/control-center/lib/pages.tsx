@@ -1,5 +1,5 @@
 /**
- * The page a tile opens (panel.tsx): Wi-Fi, Bluetooth, Sound, the laptop's
+ * The page a tile opens (panel.tsx): Wi-Fi, Bluetooth, Sound, Display, Focus, the laptop's
  * power mode, keyboard light and graphics, and an applet's choice control
  * (its choices, the one chosen green). Each grows out of its tile
  * (page-parts.tsx).
@@ -13,6 +13,7 @@ import type { Controls } from "../controls.tsx";
 import { PageBody, PageHeader, PageNote, PageRow } from "../page-parts.tsx";
 import type { ControlCenterProps } from "../panel.tsx";
 import { LaptopPageView } from "./laptop-pages.tsx";
+import { DisplayPage, FocusPage } from "./more-pages.tsx";
 
 function AppletChoicePage({ id, props, controls, onBack }: { id: string; props: ControlCenterProps; controls: Controls; onBack: () => void }) {
   const tile = controls.applet(id);
@@ -64,6 +65,10 @@ export function PageView({ page, props, controls, onBack }: { page: ControlPage;
           {...(props.onSettings ? { onSettings: () => props.onSettings?.("sound") } : {})}
         />
       );
+    case "display":
+      return <DisplayPage props={props} snapshot={snapshot} onBack={onBack} />;
+    case "focus":
+      return <FocusPage props={props} onBack={onBack} />;
     case "bluetooth":
       return <BluetoothPage bluetooth={props.bluetooth} radio={snapshot.bluetooth} onRadio={(on) => void devices.setBluetooth(on)} onBack={onBack} />;
     case "laptop-mode":

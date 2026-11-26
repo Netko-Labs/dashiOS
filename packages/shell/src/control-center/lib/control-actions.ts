@@ -85,6 +85,7 @@ export function pressControl(scope: ControlScope, id: string, openPage: (page: C
   if (!info) return;
   if (info.kind === "toggle" || info.kind === "button") return toggle(scope, id);
   if (info.kind === "battery") return scope.actions.onBattery?.();
+  if (info.kind === "media") return void scope.actions.media?.raise?.().catch(() => {});
   if (info.page) openPage(info.page);
 }
 

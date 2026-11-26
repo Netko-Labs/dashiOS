@@ -7,7 +7,23 @@
  * Sound, power mode, keyboard light and graphics pages are built from these.
  */
 
-import { KnobButton, OPACITY, PANEL_SWITCH, pill, RADIUS, SPACE, Switch, TILE, TYPE, useColors, useControlColors, useGrow, WEIGHT } from "@dashi/ui";
+import {
+  BUTTON,
+  Button,
+  KnobButton,
+  OPACITY,
+  PANEL_SWITCH,
+  pill,
+  RADIUS,
+  SPACE,
+  Switch,
+  TILE,
+  TYPE,
+  useColors,
+  useControlColors,
+  useGrow,
+  WEIGHT,
+} from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext } from "react";
 import { AppIcon } from "../shared/apps/index.ts";
@@ -112,6 +128,10 @@ export interface PageRowProps {
   icon?: string;
   /** Words at the right ("Hotspot", "Connected", "Now"). */
   detail?: string | null;
+  /** A second line under the label ("Until 5:48 PM", "Sunset to sunrise"). */
+  subtitle?: string | null;
+  /** A control at the right, drawn at full strength (a row's switch, CC-5); the row's press works it. */
+  control?: ReactNode;
   /** Small glyphs at the right (a lock, the signal). */
   trailing?: ReactNode;
   /** The row chosen (a mode, a level, an output): the one on, as a tile that is on. */
@@ -119,7 +139,7 @@ export interface PageRowProps {
   onPress?: () => void;
 }
 
-export function PageRow({ testID, label, glyph, icon, detail, trailing, checked = false, onPress }: PageRowProps) {
+export function PageRow({ testID, label, glyph, icon, detail, subtitle, control, trailing, checked = false, onPress }: PageRowProps) {
   const colors = useControlColors();
   const ink = checked ? colors.onInk : colors.offInk;
   const key = usePageKey(testID, onPress);
@@ -164,9 +184,14 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
         </View>
       )}
       <View style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: ink }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, ...(subtitle ? { fontWeight: WEIGHT.semibold } : {}), color: ink }}>
           {label}
         </Text>
+        {subtitle ? (
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: ink, opacity: OPACITY.soft }}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
       {(detail || trailing) && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, opacity: OPACITY.soft }}>
@@ -174,6 +199,22 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
           {trailing}
         </View>
       )}
+      {control}
+    </View>
+  );
+}
+
+/** The page's foot: "… Settings…", an outline pill the width of the page, which the page's keys reach. */
+export function PageFoot({ testID, label, onPress }: { testID: string; label: string; onPress: () => void }) {
+  const colors = useControlColors();
+  const key = usePageKey(testID, onPress);
+  return (
+    <View
+      onLayout={key.onLayout}
+      focusRingShown={key.focused}
+      style={{ flexDirection: "row", marginTop: SPACE.xs, borderRadius: pill(BUTTON.panel.height), focusRingColor: colors.focus }}
+    >
+      <Button testID={testID} look="panel" fill label={label} onPress={onPress} />
     </View>
   );
 }

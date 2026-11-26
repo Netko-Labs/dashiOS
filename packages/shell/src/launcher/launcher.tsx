@@ -27,7 +27,7 @@
  *   narrows the panel to its rows behind a chip; Esc leaves it.
  */
 
-import { SHADOW, useColors } from "@dashi/ui";
+import { Frosted, SHADOW, useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { fieldAccess } from "./access.ts";
 import { useCommands, useExtraKeys } from "./lib/commands.ts";
@@ -60,7 +60,32 @@ export function Launcher(props: LauncherProps) {
 
 function LauncherPanel(props: LauncherProps) {
   const colors = useColors();
-  // Type and rows at the person's text size, and how many rows fit (launcher/lib/measures.ts).
+  return (
+    // The focus ring is the one purple in every control inside (KB-2).
+    <View testID="launcher-root" style={{ flex: 1, flexDirection: "column", alignItems: "center", focusRingColor: colors.focusRing }}>
+      {/* A click anywhere outside the panel closes the launcher. */}
+      <View
+        accessibilityRole="group"
+        accessibilityLabel="Close"
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        onPress={props.onClose}
+      />
+      {/* Regular glass, the conversation too (DE-4, D721): the compositor draws its blur, tint, rim and hairline; no fill of its own. */}
+      <Frosted
+        level="regular"
+        occlude
+        testID="launcher-panel"
+        style={{ width: LAUNCHER.width, flexDirection: "column", borderRadius: LAUNCHER.radius, shadow: SHADOW.xl, overflow: "hidden" }}
+      >
+        <PanelInside {...props} />
+      </Frosted>
+    </View>
+  );
+}
+
+/** What the panel holds, read on its glass (the vibrant inks, fills, the selection on glass: `useColors` under `Frosted`). */
+function PanelInside(props: LauncherProps) {
+  const colors = useColors();
   const m = useMeasures();
   const s = useLauncherState(props);
   const search = useSearch(props, s, m);
@@ -80,52 +105,29 @@ function LauncherPanel(props: LauncherProps) {
   const hints = hintsOf({ ...field, ...search, agents: s.agents });
   const access = props.accessible === true;
   return (
-    // The focus ring is kombu in every control inside (KB-2).
-    <View testID="launcher-root" style={{ flex: 1, flexDirection: "column", alignItems: "center", focusRingColor: colors.focusRing }}>
-      {/* A click anywhere outside the panel closes the launcher. */}
-      <View
-        accessibilityRole="group"
-        accessibilityLabel="Close"
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-        onPress={props.onClose}
-      />
-      <View
-        occlude
-        style={{
-          width: LAUNCHER.width,
-          flexDirection: "column",
-          borderRadius: LAUNCHER.radius,
-          // Opaque in every mode: no window's words read through the field or the rows (DE-4, D697; the conversation's since D261).
-          backgroundColor: colors.launcher,
-          borderWidth: 1,
-          borderColor: colors.separator,
-          shadow: SHADOW.xl,
-          overflow: "hidden",
-        }}
-      >
-        {mode.kind === "talk" ? (
-          // The conversation (lib/talk/): the thread, then the field at the bottom.
-          <TalkPanel props={props} s={s} keys={keys} revision={acts.fieldRevision} colour={props.colour ?? colors.agent} />
-        ) : (
-          <>
-            <FieldRow
-              value={mode.kind === "search" ? s.query : filter}
-              revision={acts.fieldRevision}
-              placeholder={placeholder}
-              {...(chip ? { chip } : {})}
-              hints={hints}
-              notice={s.notice ?? s.scope?.notice?.() ?? null}
-              secure={s.scope?.secure?.() === true}
-              yields={mode.kind === "search" && s.scope?.form?.() === true}
-              {...(access ? { access: { ...fieldAccess(typeof placeholder === "string" ? placeholder : (placeholder[0] ?? ""), list !== null) } } : {})}
-              onChangeText={keys.onChangeText}
-              onSubmit={() => keys.submit()}
-              onKey={keys.onKey}
-            />
-            {list}
-          </>
-        )}
-      </View>
-    </View>
+    <>
+      {mode.kind === "talk" ? (
+        // The conversation (lib/talk/): the thread, then the field at the bottom.
+        <TalkPanel props={props} s={s} keys={keys} revision={acts.fieldRevision} colour={props.colour ?? colors.agent} />
+      ) : (
+        <>
+          <FieldRow
+            value={mode.kind === "search" ? s.query : filter}
+            revision={acts.fieldRevision}
+            placeholder={placeholder}
+            {...(chip ? { chip } : {})}
+            hints={hints}
+            notice={s.notice ?? s.scope?.notice?.() ?? null}
+            secure={s.scope?.secure?.() === true}
+            yields={mode.kind === "search" && s.scope?.form?.() === true}
+            {...(access ? { access: { ...fieldAccess(typeof placeholder === "string" ? placeholder : (placeholder[0] ?? ""), list !== null) } } : {})}
+            onChangeText={keys.onChangeText}
+            onSubmit={() => keys.submit()}
+            onKey={keys.onKey}
+          />
+          {list}
+        </>
+      )}
+    </>
   );
 }

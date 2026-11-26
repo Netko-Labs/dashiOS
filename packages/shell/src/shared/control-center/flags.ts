@@ -17,6 +17,12 @@ import { useSyncExternalStore } from "react";
 export interface Flags {
   /** Banners and sounds are held back. */
   dnd: boolean;
+  /**
+   * Focus ends by itself then (ms since the epoch; Control Center's Focus page, CC-6), and the
+   * choice that set it; absent: until it is turned off.
+   */
+  dndUntil?: number | undefined;
+  dndFor?: FocusFor | undefined;
   /** Dark Mode: the shell paints with the dark palette and apps are asked to. */
   dark: boolean;
   /** Night Shift: the screens' colors are warmed. */
@@ -31,6 +37,12 @@ export interface Flags {
   accent?: string | undefined;
 }
 
+/** How long Focus was turned on for (design.html CC-6): an hour, until this evening, until tomorrow morning. */
+export type FocusFor = "hour" | "evening" | "tomorrow";
+
+const FOCUS_FOR: readonly FocusFor[] = ["hour", "evening", "tomorrow"];
+const isFocusFor = (value: unknown): value is FocusFor => FOCUS_FOR.some((each) => each === value);
+
 const DEFAULTS: Flags = { dnd: false, dark: false, night: false };
 
 /** The saved flags; anything unreadable or of the wrong type is the default. */
@@ -42,11 +54,13 @@ export function parseFlags(text: string): Flags {
     return DEFAULTS;
   }
   if (!isRecord(value)) return DEFAULTS;
-  const { dnd, dark, night, accent } = value;
-  return { dnd: dnd === true, dark: dark === true, night: night === true, ...(isAccentHex(accent) ? { accent: accent.toUpperCase() } : {}) };
+  const { dnd, dark, night, accent, dndUntil, dndFor } = value;
+  const until = dnd === true && typeof dndUntil === "number" && Number.isFinite(dndUntil) && isFocusFor(dndFor) ? { dndUntil, dndFor } : {};
+  return { dnd: dnd === true, ...until, dark: dark === true, night: night === true, ...(isAccentHex(accent) ? { accent: accent.toUpperCase() } : {}) };
 }
 
-const same = (a: Flags, b: Flags): boolean => a.dnd === b.dnd && a.dark === b.dark && a.night === b.night && a.accent === b.accent;
+const same = (a: Flags, b: Flags): boolean =>
+  a.dnd === b.dnd && a.dark === b.dark && a.night === b.night && a.accent === b.accent && a.dndUntil === b.dndUntil && a.dndFor === b.dndFor;
 
 export function flagsPath(env: Record<string, string | undefined> = process.env): string {
   const state = env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state");
@@ -80,6 +94,11 @@ export class FlagsStore {
   set(patch: Partial<Flags>): void {
     const next = { ...this.snapshot, ...patch };
     if (next.accent === undefined) delete next.accent;
+    // Focus off, or on with no end, forgets the end it had.
+    if (!next.dnd || next.dndUntil === undefined || next.dndFor === undefined) {
+      delete next.dndUntil;
+      delete next.dndFor;
+    }
     if (same(next, this.snapshot)) return;
     this.snapshot = next;
     this.save();
@@ -96,8 +115,9 @@ export class FlagsStore {
     for (const listener of this.listeners) listener();
   }
 
-  toggle(key: keyof Flags): void {
-    this.set({ [key]: !this.snapshot[key] });
+  toggle(key: "dnd" | "dark" | "night"): void {
+    // A switch turned by hand: Focus on is until it is turned off.
+    this.set(key === "dnd" ? { dnd: !this.snapshot.dnd, dndUntil: undefined, dndFor: undefined } : { [key]: !this.snapshot[key] });
   }
 
   private save(): void {

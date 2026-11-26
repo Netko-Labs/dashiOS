@@ -7,7 +7,7 @@
  * beside the agent mark in the bar's one row: no second bar, no banner.
  */
 
-import { BAR_ITEM, BarItem, SQUARE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { BAR_ITEM, BarItem, SQUARE, TYPE, useBarItemColors, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Svg, Text } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { AloneState } from "./agents/index.ts";
@@ -33,6 +33,8 @@ export interface AloneChipProps {
 
 export function AloneChip({ state, onStop, onTip }: AloneChipProps) {
   const colors = useColors();
+  // On the bar's glass its words are primary (D780); off it, the agents' ink.
+  const { ink } = useBarItemColors("agent");
   const laid = useRef<Bounds | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const on = state.on;
@@ -66,7 +68,7 @@ export function AloneChip({ state, onStop, onTip }: AloneChipProps) {
       onHoverChange={(hovered, bounds) => onTip?.(hovered ? { text: aloneTip(left), bounds: box(bounds) } : null)}
     >
       <Svg markup={SQUARE} size={ALONE_CHIP.square} color={colors.agent} />
-      <Text numberOfLines={1} style={{ fontSize: ALONE_CHIP.fontSize, fontWeight: WEIGHT.semibold, color: colors.agentInk }}>
+      <Text numberOfLines={1} style={{ fontSize: ALONE_CHIP.fontSize, fontWeight: WEIGHT.semibold, color: ink }}>
         {left}
       </Text>
     </BarItem>

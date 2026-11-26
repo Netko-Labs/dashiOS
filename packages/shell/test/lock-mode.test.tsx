@@ -1,10 +1,10 @@
 /** The lock follows the person's mode (Q2, D671); its clock is the one clock (Q1, D670). */
 
 import { afterEach, expect, test } from "bun:test";
-import { Appearance, INK_RULE, inkHex, inkTokens, LOCK_GLASS, LOGIN, LOGIN_LIGHT } from "@dashi/ui";
+import { Appearance, LOGIN, LOGIN_LIGHT } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { LockScreen } from "../src/lock/lib/screen.tsx";
-import { cardColours, lockTime, setWidgetHub, WidgetHub } from "../src/widgets/index.ts";
+import { lockTime, setWidgetHub, WidgetHub } from "../src/widgets/index.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();
@@ -68,21 +68,6 @@ for (const [mode, colors] of [
     expect((clock?.children ?? []).filter(isNode).map((line) => line.props.size)).toEqual([230, 230]);
   });
 }
-
-test("the lock's glass is the mode's: smoked in Dark, milky in Light", () => {
-  for (const mode of ["light", "dark"] as const) {
-    const inks = inkTokens(mode, { lock: true });
-    const look = cardColours({ inks, ink: null, air: false, houseDown: false, redact: false, glass: true });
-    expect(look.paper).toBe(LOCK_GLASS[mode].paper);
-    expect(look.hairline).toBe(LOCK_GLASS[mode].hairline);
-  }
-});
-
-test("the lock's inks lift on Dark's wash and sink on Light's (inks frames 4 and 5)", () => {
-  expect(INK_RULE.lockL.dark).toBeGreaterThan(0);
-  expect(INK_RULE.lockL.light).toBeLessThan(0);
-  expect(inkHex("mizu", "dark", { lock: true })).not.toBe(inkHex("mizu", "dark"));
-});
 
 test("the lock's time pads its hours in 24-hour time", () => {
   const nine = new Date(2026, 10, 15, 9, 5).getTime();

@@ -27,14 +27,14 @@ export function WidgetColumn({ placements, openerOf, decorate, testID = "widget-
   const extensions = useSource(env.hub?.extensions, []);
   const placed = packColumn(placements);
   const holderKind = env.tally.holder ? kindOfKey(env.tally.holder) : null;
-  // A holder drawn as a live card above does not flood its widget too: timers, runs and asks are live cards.
-  const floods = holderKind === "media" || holderKind === "calendar" || holderKind === "weather";
-  let flooded = false;
+  // A holder drawn as a live card above does not put its widget on air too: timers, runs and asks are live cards.
+  const onAir = holderKind === "media" || holderKind === "calendar" || holderKind === "weather";
+  let shown = false;
   return (
     <View testID={testID} style={{ width: COLUMN_WIDTH, height: columnHeight(placed) }}>
       {placed.map((each) => {
-        const air = floods && !flooded && each.placement.kind === holderKind;
-        if (air) flooded = true;
+        const air = onAir && !shown && each.placement.kind === holderKind;
+        if (air) shown = true;
         const info = widgetInfo(
           each.placement.kind,
           extensions.map((ext) => ext.info),

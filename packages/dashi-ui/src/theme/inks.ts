@@ -8,7 +8,7 @@
  * vermilion; a flooded card swaps paper and ink (`onInk` on the ink).
  *
  * Only three transforms exist: house lights (`dim`: 15 % chroma, halfway to
- * a quiet tone), the lock screen's lightness shift (`lock`), and nothing else.
+ * a quiet tone), and nothing else.
  */
 
 import { type Oklch, oklchToHex } from "./lib/oklch.ts";
@@ -57,24 +57,20 @@ export const INK_TEXT: Readonly<Record<InkMode, { ink: string; secondary: string
 };
 
 /**
- * The transforms' numbers, in one place. The lock follows the mode (Q2), so
- * its wash is the mode's: Dark's smoked wash lifts the inks 5 points, Light's
- * milky one sinks them 4 (inks round five, frames 4 and 5).
+ * The transforms' numbers, in one place: how far house lights take an ink's chroma and lightness. (The
+ * lock's wash shifted them too; the lock is paper glass now, the area's inks, D807.)
  */
-export const INK_RULE = { houseChroma: 0.15, houseL: 0.62, lockL: { dark: 0.05, light: -0.04 } } as const;
+export const INK_RULE = { houseChroma: 0.15, houseL: 0.62 } as const;
 
 export interface InkOptions {
   /** House lights are down: something critical asks or something is due, and this is not it. */
   dim?: boolean;
-  /** Drawn on the lock screen's wash, the mode's (Dark's smoked, Light's milky). */
-  lock?: boolean;
 }
 
 /** One ink as `#RRGGBB`. */
 export function inkHex(name: InkName, mode: InkMode, options: InkOptions = {}): string {
   const spec = INKS[name][mode];
   let { L, C } = spec;
-  if (options.lock) L += INK_RULE.lockL[mode];
   if (options.dim) {
     C *= INK_RULE.houseChroma;
     L = (L + INK_RULE.houseL) / 2;
@@ -88,7 +84,7 @@ export function tallyHex(mode: InkMode): string {
 
 /** What a surface paints its widgets with: each ink, its dimmed twin, the tally, and the flood's words. */
 export interface InkTokens {
-  /** Which mode's inks these are (the lock's glass is the mode's, LOCK_GLASS). */
+  /** Which mode's inks these are. */
   mode: InkMode;
   ink: Readonly<Record<InkName, string>>;
   dimmed: Readonly<Record<InkName, string>>;
@@ -103,15 +99,15 @@ export interface InkTokens {
 const cache = new Map<string, InkTokens>();
 
 /** Every ink for one mode, computed once (the transforms are pure). */
-export function inkTokens(mode: InkMode, options: Pick<InkOptions, "lock"> = {}): InkTokens {
-  const key = `${mode}:${options.lock === true}`;
+export function inkTokens(mode: InkMode): InkTokens {
+  const key = mode;
   const hit = cache.get(key);
   if (hit) return hit;
   const ink = {} as Record<InkName, string>;
   const dimmed = {} as Record<InkName, string>;
   for (const name of INK_NAMES) {
-    ink[name] = inkHex(name, mode, options);
-    dimmed[name] = inkHex(name, mode, { ...options, dim: true });
+    ink[name] = inkHex(name, mode);
+    dimmed[name] = inkHex(name, mode, { dim: true });
   }
   const tally = tallyHex(mode);
   const tokens: InkTokens = { mode, ink, dimmed, tally, tallyWash: `${tally}24`, onInk: ON_INK[mode], paper: INK_PAPER[mode], text: INK_TEXT[mode] };

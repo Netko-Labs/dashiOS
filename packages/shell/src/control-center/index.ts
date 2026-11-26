@@ -2,6 +2,7 @@ export { type AppletTile, type AppletTileSource, appletTileKey, isAppletTile, ty
 export { type ControlPage, isThere, percentText } from "./catalog.ts";
 export { type Controls, useControls } from "./controls.tsx";
 export { DeviceStore, useDevices } from "./devices.ts";
+export { chooseFocus, type FocusChoice, focusChoices, focusChosen, focusDetail, focusUntil, keepFocusTime, untilWords } from "./focus.ts";
 export { BLUETOOTH, CHEVRON_LEFT, CHEVRON_RIGHT, CONTRAST, LOCK, MOON, PADLOCK, PUZZLE } from "./glyphs.ts";
 export { GRID, type Layout, type Placed, pack, shown } from "./layout.ts";
 export { LayoutStore, useLayout } from "./layout-store.ts";

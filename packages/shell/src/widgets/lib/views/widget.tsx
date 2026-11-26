@@ -1,4 +1,4 @@
-/** One placed widget: its card (floods when it holds the tally), and its kind's view inside. */
+/** One placed widget: its card (glows when it holds the tally), and its kind's view inside. */
 
 import { SPACE } from "@dashi/ui";
 import { Card } from "../../card.tsx";
@@ -15,6 +15,9 @@ import { RundownWidget } from "./rundown.tsx";
 import { BatteryWidget, ClockWidget, SystemWidget, WorldWidget } from "./simple.tsx";
 import { TimerWidget } from "./timer.tsx";
 import { WeatherWidget } from "./weather.tsx";
+
+/** A one-row card (Mini, Compact, a strip): tighter, its corner 14 (CO-11). */
+export const oneRow = (size: WidgetSize): boolean => size === "mini" || size === "compact" || size === "strip";
 
 /** The widget kind a tally key belongs to: "timer:t1" → timer. */
 export function kindOfKey(key: string): WidgetKind | null {
@@ -62,20 +65,22 @@ export interface WidgetTileProps {
   showPrivate?: boolean;
   /** The tally's holder is drawn here (and not as a live card above). */
   air: boolean;
+  /** Paper's solid twin, not glass: a preview inside the gallery's glass (GL-2). */
+  solid?: boolean;
   testID?: string;
   onPress?: () => void;
   onContext?: () => void;
   onHoverChange?: (hovered: boolean) => void;
 }
 
-export function WidgetTile({ kind, size, width, height, showPrivate, air, testID, onPress, onContext, onHoverChange }: WidgetTileProps) {
+export function WidgetTile({ kind, size, width, height, showPrivate, air, solid, testID, onPress, onContext, onHoverChange }: WidgetTileProps) {
   const env = useWidgetEnv();
   const extensions = useSource(env.hub?.extensions, []);
   const info: WidgetInfo | null = widgetInfo(
     kind,
     extensions.map((each) => each.info),
   );
-  const compact = size === "mini" || size === "compact" || size === "strip";
+  const compact = oneRow(size);
   return (
     <Card
       look={{
@@ -84,11 +89,11 @@ export function WidgetTile({ kind, size, width, height, showPrivate, air, testID
         air,
         houseDown: env.tally.houseDown && !air,
         redact: env.locked && !showPrivate && info?.holdsPrivate === true,
-        glass: env.locked,
       }}
       width={width}
       height={height}
       compact={compact}
+      {...(solid ? { solid } : {})}
       {...(compact && size === "mini" ? { padding: SPACE.gap } : {})}
       {...(testID ? { testID } : {})}
       {...(onPress ? { onPress } : {})}
