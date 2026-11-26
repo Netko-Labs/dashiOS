@@ -190,6 +190,7 @@ export {
   FILE_TINTS,
   type FileCategory,
   type FileIconColors,
+  GLASS,
   GNOME_ACCENTS,
   GTK_DARK,
   GTK_LIGHT,

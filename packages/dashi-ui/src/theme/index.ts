@@ -39,7 +39,7 @@ export {
 } from "./colors.ts";
 export { contrastRatio, parseHex } from "./contrast.ts";
 export { type ControlPalette, controlPalette, DARK_CONTROLS, LIGHT_CONTROLS } from "./controls.ts";
-export { GLASS_TINTS, useGlassTints } from "./glass.ts";
+export { GLASS, GLASS_TINTS, type GlassLevel, type GlassMaterial, type GlassTone, useGlassTints } from "./glass.ts";
 export { GNOME_ACCENTS, GTK_DARK, GTK_LIGHT, GTK_STATUS, type GtkNamedColors, type GtkStatusColors, WINDOW_LIGHTS } from "./gtk.ts";
 export {
   INK_NAMES,
