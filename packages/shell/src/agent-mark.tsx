@@ -169,8 +169,7 @@ export function AgentMark(props: AgentMarkProps) {
   }, [tip]);
   const box = (bounds?: Bounds) => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
   const asking = need > 0;
-  const ink = colour ?? colors.agent;
-  const words = useBarItemColors("agent").ink;
+  const [ink, words] = [colour ?? colors.agent, useBarItemColors("agent").ink];
   // The agents' part is a press of its own; the spark keeps the field.
   const outside = !asking && agents !== undefined && agents.sessions > 0 ? agents : null;
   const press = (to: (right: number) => void) => (event: { bounds?: Bounds }) => {

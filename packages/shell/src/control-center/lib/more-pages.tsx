@@ -46,7 +46,16 @@ export function DisplayPage({ props, snapshot, onBack }: { props: ControlCenterP
           subtitle="Sunset to sunrise"
           glyph={SUNSET}
           onPress={() => flags.toggle("night")}
-          control={<Switch testID="display-night-switch" look="panel" label="Night Shift" on={snapshot.night} focusable={false} onChange={() => flags.toggle("night")} />}
+          control={
+            <Switch
+              testID="display-night-switch"
+              look="panel"
+              label="Night Shift"
+              on={snapshot.night}
+              focusable={false}
+              onChange={() => flags.toggle("night")}
+            />
+          }
         />
         <PageRow
           testID="display-dark"

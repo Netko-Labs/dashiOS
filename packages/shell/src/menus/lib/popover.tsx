@@ -180,6 +180,10 @@ function TitleDropdown({ popover, entries, room, fromKeys: fromBar, controller, 
   );
 }
 
+/** What a player plays, for the Now Playing tile (CC-7): the widgets' source, unless Control Center was given one. */
+const withMedia = (props: PopoverRootProps["controlCenter"], hub: ReturnType<typeof widgetHub>): { media?: NonNullable<ControlCenterProps["media"]> } =>
+  props.media === undefined && hub ? { media: hub.media } : {};
+
 export function PopoverRoot({
   controller,
   appMenus,
@@ -205,8 +209,7 @@ export function PopoverRoot({
   // Esc: back to the bar when the keyboard came from it (bar-keys.ts), else closed.
   const back = () => controller.back();
   const fromBar = bar !== undefined;
-  const hub = widgetHub();
-  const area = { store: notifications, dockInset: dockInset(output), screenWidth: width, onClose: close, onEscape: back, hub, openerOf };
+  const area = { store: notifications, dockInset: dockInset(output), screenWidth: width, onClose: close, onEscape: back, hub: widgetHub(), openerOf };
   // The app took down the menu that is open (it quit, or changed its menus): close it.
   const vanished = popover?.kind === "menu" && popover.id.startsWith("app:") && entries.length === 0;
   useEffect(() => {
@@ -245,8 +248,7 @@ export function PopoverRoot({
       {popover?.kind === "control-center" && (
         <ControlCenterPanel
           {...controlCenter}
-          // What a player plays: the widgets' source, for the Now Playing tile (CC-7).
-          {...(controlCenter.media === undefined && hub ? { media: hub.media } : {})}
+          {...withMedia(controlCenter, area.hub)}
           page={popover.page}
           onPage={(page) => controller.setControlPage(page)}
           onBattery={() => controller.showBatteryFromControlCenter()}
