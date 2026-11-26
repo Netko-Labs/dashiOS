@@ -10,7 +10,8 @@
 //! - clients.rs: who is granted; surfaces.rs: a client surface's committed panes.
 //! - place.rs: panes as elements, behind their surfaces; element.rs: one pane.
 //! - frost.rs, cache.rs: what is behind each pane, drawn small and blurred,
-//!   again only when it changed; kawase.rs, gl.rs, shaders.rs: the blur and look.
+//!   again only when it changed, once for a run of panes side by side
+//!   (group.rs); kawase.rs, gl.rs, shaders.rs: the blur and look.
 //! - tone.rs: the backdrop's colour, for the words on glass; screen.rs: a
 //!   screen's frosting, and where its tones go.
 //! - stats.rs: what it costs, in dashi.log with `DASHI_GLASS_STATS=1`.
@@ -26,6 +27,7 @@ mod gl;
 mod gpu_material_tests;
 #[cfg(test)]
 mod gpu_tests;
+mod group;
 mod kawase;
 mod params;
 mod place;

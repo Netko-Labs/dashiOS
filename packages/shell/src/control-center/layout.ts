@@ -215,3 +215,27 @@ export function parseLayout(value: unknown): Layout | null {
   }
   return items.slice(0, 64);
 }
+
+/**
+ * The tiles a layout saved without `known` was offered: 0.9's default layout, the last before a
+ * saved layout said which tiles it knew. A tile of the default that isn't among them is new to it.
+ */
+export const KNOWN_BEFORE_0_10: readonly string[] = ["wifi", "ethernet", "brightness", "volume", "bluetooth", "focus", "dark", "power", "keyboard", "battery"];
+
+/**
+ * A saved layout with each tile of `defaults` it never knew put in its default place: after the
+ * nearest tile before it in `defaults` that the layout keeps, else first. Once: the store then
+ * saves every default tile as known, so a tile the person removes afterwards stays removed.
+ */
+export function withNewTiles(layout: Layout, known: ReadonlySet<string>, defaults: Layout): Layout {
+  const next = [...layout];
+  defaults.forEach((tile, at) => {
+    if (known.has(tile.id) || next.some((item) => item.id === tile.id)) return;
+    const nearest = defaults
+      .slice(0, at)
+      .map((each) => next.findIndex((item) => item.id === each.id))
+      .findLast((index) => index >= 0);
+    next.splice(nearest === undefined ? 0 : nearest + 1, 0, tile);
+  });
+  return next.length === layout.length ? layout : next.slice(0, 64);
+}

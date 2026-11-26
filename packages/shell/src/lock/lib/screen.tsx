@@ -25,6 +25,7 @@ import {
   lockOpenerOf,
   lockTime,
   type Placement,
+  todayEventsShown,
   useClockDisplay,
   usePlacements,
   useWidgetEnvFor,
@@ -147,6 +148,7 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower, cover = f
         {resting && !cover ? (
           <Glance
             day={face.day}
+            eventsShown={todayEventsShown(placements)}
             onWake={() => {
               setTouched((n) => n + 1);
               wake();

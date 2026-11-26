@@ -9523,3 +9523,95 @@ short words, as the rulebook is written.
   and who signs in stay glass. Today's third compact is the widget on air when it comes compact (a timer
   counting down glows there).
 - **Undo:** bring back `look.glass` and `LOCK_GLASS` from git; nothing else reads them.
+
+### D820. Today's Up next names its events; the person can still hide them
+
+- **Date:** 2026-11-26. `v10/glass-fix` (reversible; LK-1, LK-5).
+- **Choice:** the calendar card on the lock's Today shows its events' titles, as LK-1 ("the Calendar widget
+  wide with the next three events") and lock-v3 C draw it; the installed pass saw "EVENT" and a bare line,
+  the widget's redaction for a placement nobody allowed. Today has no placements of its own, so it follows
+  the person's Calendar widget: hidden only when its `showPrivateWhenLocked` is `false`
+  (`todayEventsShown`). Glance names the next event by the same rule (D825).
+- **Undo:** `todayEventsShown` returns `placement?.showPrivateWhenLocked === true`.
+
+### D821. Of two layer surfaces that take the keyboard, the one shown last keeps it
+
+- **Date:** 2026-11-26. `v10/glass-fix` (reversible; dashi-comp `handlers/layer_keyboard.rs`).
+- **Choice:** every commit of an exclusive-keyboard layer surface used to take the keyboard back, so the
+  launcher over Control Center lost every other key to it ("ab cd ef" became "a c f"; a Space toggled
+  Focus). Each such surface is stamped when it shows (its first commit with a buffer), and a commit takes
+  the keyboard only from a holder shown before it, or from no such surface (a window). When the holder
+  goes, the keyboard goes back to the exclusive surface shown before it, else the window in front.
+  Control Center stays open under the launcher, as before: only the keyboard moved.
+- **Undo:** `takes_keyboard` returns true.
+
+### D822. The veil's floor reads the hardest ground near each pixel; the floor's α is continuous
+
+- **Date:** 2026-11-26. `v10/glass-fix` (reversible; GLASS.veil.floorReach, `pane.glsl`).
+- **Choice:** two causes behind the Light lock's pastel with bands. The bands were the tint's: the floor
+  found its α by six halvings, steps of 1/64 that follow the backdrop's luminance as contours (a float
+  blur kept them; an exact α had none); the halvings now end on a straight line between the last two.
+  The pastel was the floor per pixel: it raised every pixel exactly to the words' need, flattening the
+  lake's light and shade into one luminance, where lock-v3 floors the whole veil once from where its
+  words sit. The veil's floor now reads the hardest of nine grounds within 137 pt (the pixel and eight
+  round it), so its α moves slowly and the photo shows through (simulated on the lake: brighter, its
+  shapes back, close to `c-main-light`). The other materials keep their floor per pixel (`reach` unset).
+- **Undo:** drop `floorReach` from the veil's `glass-style`; the shader falls back to the pixel.
+
+### D823. A pane something clips is sent whole and cut (dashi-chrome-v1 version 3)
+
+- **Date:** 2026-11-26. `v10/glass-fix` and mirin (reversible; `cut_pane`).
+- **Choice:** a widget scrolled under the area's foot was sent as the part that shows, a pane of its own
+  that the compositor rounded again at the cut: "squashed" cards with their words sliced. sumi keeps the
+  pane's whole shape beside what shows (`GlassPane.shape`), and a Dashi of version 3 gets the whole pane
+  and `cut_pane(rect)`: drawn only there, its corners its own, straight at the cut with no rim or keel.
+  An older Dashi gets the old part-that-shows.
+- **Undo:** bind dashi-chrome-v1 at 2 in mirin; the compositor still takes version 2 clients.
+
+### D824. A surface's panes are named back to front
+
+- **Date:** 2026-11-26. `v10/glass-fix` (reversible; dashi-comp `render/glass/place.rs`).
+- **Choice:** mirin sends panes in paint order, back to front; the compositor put them into a screen's
+  front-to-back elements in that order, so a pane drawn over another was under it: the lock's veil hid
+  Today's pane, the initials' disc and the power pills (the lock "off its frame" in three ways). The
+  protocol and the IPC now say back to front, and the compositor reverses them. Panes side by side never
+  showed it.
+- **Undo:** none needed; the order is the protocol's.
+
+### D825. Glance folds Today into words: the next event as its figure line
+
+- **Date:** 2026-11-26. `v10/glass-fix` (reversible; LK-3, `widgets/lib/glance-words.ts`).
+- **Choice:** as `c-glance` draws it: the next event's time at 28 (TY-1's figure; the frame's 34 is off the
+  scale) and "PM · its title" at 15, then the facts at 15: the event in words while it is within an hour
+  and a half ("Design review in 12 min", the title before a colon), the notifications' count, the song.
+  Without an event, what is on air takes the first line as before. The agent's line waits for a status
+  source, as the lock's status chip does.
+- **Undo:** `glanceNext` returns null.
+
+### D826. New Control Center tiles join a saved layout once, in their default place
+
+- **Date:** 2026-11-26. `v10/glass-fix` (reversible; `control-center/layout-store.ts`).
+- **Choice:** a saved layout now keeps the tiles it knew (`known`). A tile of the default it never knew
+  goes after the nearest tile before it in the default that the layout keeps, else first, and the layout
+  is saved with every default tile known, so a tile removed afterwards stays removed. A layout saved
+  before 0.10 has no `known`: it knew 0.9's default (`KNOWN_BEFORE_0_10`), so Now Playing joins it after
+  the battery.
+- **Undo:** the store reads a saved layout as it is again; `known` is ignored.
+
+### D827. Panes side by side share one blur
+
+- **Date:** 2026-11-26. `v10/glass-fix` (reversible; dashi-comp `render/glass/group.rs`).
+- **Choice:** a run of one surface's panes, next to each other in the elements, with the same blur and
+  none over another (the widget column's cards), draws what is behind once over all of them and the
+  blur's reach, and blurs it once; each pane takes its part. One by one each paper card drew and blurred
+  its own backdrop with a reach of some 150 px a side, about two and a half times the column. A card's
+  blur near its edge no longer holds its neighbour's glass, only what is behind both. `DASHI_GLASS_STATS`'s
+  "blurred" counts blurs (a run is one).
+- **Undo:** `run_start` returns `at`.
+
+### D828. An app id ending in a version is named as it is
+
+- **Date:** 2026-11-26. `v10/glass-fix` (reversible; `shared/app-entries` `appIdName`).
+- **Choice:** "gst-launch-1.0" was read as reverse-DNS and named by its last part, "0", in the bar. An id
+  whose last part starts with a digit is no name: the bar shows the id.
+- **Undo:** drop the digit test.

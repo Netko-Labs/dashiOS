@@ -30,7 +30,7 @@ export function glanceNudge(now: number): { x: number; y: number } {
   return { x: x ?? 0, y: y ?? 0 };
 }
 
-export function Glance({ onWake, day = "" }: { onWake: () => void; day?: string }) {
+export function Glance({ onWake, day = "", eventsShown = true }: { onWake: () => void; day?: string; eventsShown?: boolean }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const { now } = useWidgetEnv();
   const measure = (bounds: { width: number; height: number }) => setSize({ width: bounds.width, height: bounds.height });
@@ -41,7 +41,7 @@ export function Glance({ onWake, day = "" }: { onWake: () => void; day?: string 
       onLayout={measure}
       style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: TRUE_BLACK.ground }}
     >
-      {size.width > 0 ? <SplitGlance day={day} layout={lockLayout(size.width, size.height)} nudge={glanceNudge(now)} /> : null}
+      {size.width > 0 ? <SplitGlance day={day} layout={lockLayout(size.width, size.height)} nudge={glanceNudge(now)} eventsShown={eventsShown} /> : null}
     </View>
   );
 }

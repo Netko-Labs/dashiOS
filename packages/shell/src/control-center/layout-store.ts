@@ -3,7 +3,9 @@
  * `$XDG_STATE_HOME/dashi/control-center-layout.json` under the machine's id
  * (`/etc/machine-id`): a home folder shared between two laptops keeps a
  * layout for each. The panel and Settings › Control Center edit it through
- * the same store; nothing saved yet is the default layout.
+ * the same store; nothing saved yet is the default layout. Each layout keeps
+ * the tiles it knew (`known`): a tile Dashi adds later joins it once, in its
+ * default place (`withNewTiles`).
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -12,7 +14,7 @@ import { dirname, join } from "node:path";
 import { isRecord } from "@dashi/shape";
 import { useSyncExternalStore } from "react";
 import { DEFAULT_LAYOUT } from "./catalog.ts";
-import { type Layout, parseLayout } from "./layout.ts";
+import { KNOWN_BEFORE_0_10, type Layout, parseLayout, withNewTiles } from "./layout.ts";
 
 export function layoutPath(env: Record<string, string | undefined> = process.env): string {
   const state = env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state");
@@ -29,9 +31,18 @@ export function machineId(read: (path: string) => string = (path) => readFileSyn
   }
 }
 
-/** The machines' layouts in the file; anything unreadable is left out. */
-export function parseLayouts(text: string): Map<string, Layout> {
-  const out = new Map<string, Layout>();
+/** A machine's saved layout, and the tiles it knew (none said: 0.9's, KNOWN_BEFORE_0_10). */
+interface Saved {
+  layout: Layout;
+  known: readonly string[] | null;
+}
+
+const knownOf = (value: unknown): readonly string[] | null =>
+  Array.isArray(value) ? value.filter((id): id is string => typeof id === "string").slice(0, 64) : null;
+
+/** The machines' saved layouts in the file, with what each knew; anything unreadable is left out. */
+function parseSaved(text: string): Map<string, Saved> {
+  const out = new Map<string, Saved>();
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -42,10 +53,19 @@ export function parseLayouts(text: string): Map<string, Layout> {
   if (!isRecord(machines)) return out;
   for (const [id, entry] of Object.entries(machines)) {
     const layout = parseLayout(entry);
-    if (layout && /^[0-9a-z]{1,64}$/.test(id)) out.set(id, layout);
+    if (layout && /^[0-9a-z]{1,64}$/.test(id)) out.set(id, { layout, known: isRecord(entry) ? knownOf(entry.known) : null });
   }
   return out;
 }
+
+/** The machines' layouts in the file; anything unreadable is left out. */
+export function parseLayouts(text: string): Map<string, Layout> {
+  return new Map([...parseSaved(text)].map(([id, saved]) => [id, saved.layout]));
+}
+
+/** What a layout knows once saved now: what it knew and every tile of the default. */
+const knownNow = (known: readonly string[] | null): string[] =>
+  [...new Set([...(known ?? KNOWN_BEFORE_0_10), ...DEFAULT_LAYOUT.map((tile) => tile.id)])].slice(0, 64);
 
 export class LayoutStore {
   private layout: Layout;
@@ -56,7 +76,10 @@ export class LayoutStore {
     private readonly path: string | null = layoutPath(),
     private readonly machine: string = machineId(),
   ) {
-    this.layout = this.read().get(machine) ?? DEFAULT_LAYOUT;
+    const saved = this.read().get(machine);
+    this.layout = saved ? withNewTiles(saved.layout, new Set(saved.known ?? KNOWN_BEFORE_0_10), DEFAULT_LAYOUT) : DEFAULT_LAYOUT;
+    // A layout given its new tiles, or saved before it said what it knew, is saved now: once.
+    if (saved && (this.layout !== saved.layout || saved.known === null)) this.save();
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -77,10 +100,10 @@ export class LayoutStore {
     this.set(DEFAULT_LAYOUT);
   }
 
-  private read(): Map<string, Layout> {
+  private read(): Map<string, Saved> {
     if (!this.path) return new Map();
     try {
-      return parseLayouts(readFileSync(this.path, "utf8"));
+      return parseSaved(readFileSync(this.path, "utf8"));
     } catch {
       return new Map();
     }
@@ -89,8 +112,10 @@ export class LayoutStore {
   private save(): void {
     if (!this.path) return;
     const all = this.read();
-    all.set(this.machine, this.layout);
-    const machines = Object.fromEntries([...all].map(([id, layout]) => [id, { items: layout.map(({ id: item, size }) => ({ id: item, size })) }]));
+    all.set(this.machine, { layout: this.layout, known: knownNow(all.get(this.machine)?.known ?? null) });
+    const machines = Object.fromEntries(
+      [...all].map(([id, { layout, known }]) => [id, { items: layout.map(({ id: item, size }) => ({ id: item, size })), ...(known ? { known } : {}) }]),
+    );
     try {
       mkdirSync(dirname(this.path), { recursive: true });
       writeFileSync(this.path, `${JSON.stringify({ machines }, null, 1)}\n`);

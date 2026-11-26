@@ -1,5 +1,6 @@
 //! dashi_glass_v1 (dashi-chrome-v1 version 2, protocols/PROTOCOL.md): a
-//! surface's panes of glass, each a rounded rectangle and a material level,
+//! surface's panes of glass, each a rounded rectangle and a material level
+//! (from version 3 cut to what clips it, `cut_pane`),
 //! double-buffered with the surface (render/glass/surfaces.rs). It hears
 //! whether the compositor draws them (`drawing`) and the backdrop's tone.
 
@@ -100,6 +101,7 @@ impl Dispatch<DashiGlassV1, GlassData> for Dashi {
                     rect: Rectangle::new((x, y).into(), (width, height).into()),
                     radius,
                     level,
+                    cut: None,
                 };
                 let mut many = false;
                 surfaces::pending(&surface, |glass| {
@@ -113,6 +115,27 @@ impl Dispatch<DashiGlassV1, GlassData> for Dashi {
                     object.post_error(
                         dashi_glass_v1::Error::TooManyPanes,
                         "more than 16 panes in one commit",
+                    );
+                }
+            }
+            dashi_glass_v1::Request::CutPane {
+                x,
+                y,
+                width,
+                height,
+            } => {
+                let cut = Rectangle::new((x, y).into(), (width.max(0), height.max(0)).into());
+                let mut cut_one = false;
+                surfaces::pending(&surface, |glass| {
+                    if let Some(last) = glass.panes.as_mut().and_then(|panes| panes.last_mut()) {
+                        last.cut = Some(cut);
+                        cut_one = true;
+                    }
+                });
+                if !cut_one {
+                    object.post_error(
+                        dashi_glass_v1::Error::NoPane,
+                        "cut_pane with no pane added since the last commit",
                     );
                 }
             }

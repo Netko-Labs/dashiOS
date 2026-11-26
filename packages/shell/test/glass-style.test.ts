@@ -14,6 +14,9 @@ describe("glass-style: Frost's numbers, as the compositor takes them", () => {
     expect(dark.levels.thick.tint).toBe(withAlpha(GLASS.levels.thick.dark.tint, GLASS.levels.thick.dark.least));
     // The veil has no solid twin: where glass is solid the lock's wallpaper shows sharp.
     expect(light.levels.veil.solid).toBeUndefined();
+    // The veil's floor reads the hardest ground round each pixel (D822); the others' read the pixel.
+    expect(light.levels.veil.reach).toBe(GLASS.veil.floorReach);
+    expect(light.levels.regular.reach).toBeUndefined();
     expect(dark.hairline.color).toBe(withAlpha("#000000", 0.5));
     expect(light.rim.top).toBe(withAlpha("#FFFFFF", 0.85));
     expect(light.floor.ratio).toBeCloseTo(4.65);

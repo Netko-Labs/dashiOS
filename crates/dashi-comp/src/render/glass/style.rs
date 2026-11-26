@@ -74,7 +74,8 @@ pub(crate) struct LevelsParams {
 }
 
 /// One level: `blur` (points), `saturation` (1 none), the `tint` with its least α
-/// (`#rrggbbaa`), and its `solid` twin (`#rrggbb`; none: nothing is drawn where glass is solid).
+/// (`#rrggbbaa`), its `solid` twin (`#rrggbb`; none: nothing is drawn where glass is solid), and
+/// how far (points) the floor looks for the hardest ground (`reach`; none: each pixel its own).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct LevelParams {
@@ -82,6 +83,8 @@ pub(crate) struct LevelParams {
     pub saturation: Real<0, 3_000>,
     pub tint: String,
     pub solid: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reach: Option<Real<0, 512_000>>,
 }
 
 /// The rim: a line `width` points inside the edge, from `top` through `middle` to `bottom`.
@@ -116,6 +119,8 @@ pub(crate) struct Look {
     pub brightness: f32,
     /// The words' relative luminance and the ratio they keep; a ratio of 0 is no floor.
     pub floor: [f32; 2],
+    /// How far the floor looks for the hardest ground round each pixel (0: the pixel's own).
+    pub reach: f64,
     /// Drawn as this colour instead of frosted (the solid twin).
     pub solid: Option<[f32; 3]>,
     /// The rim's width and its colours, top, middle, bottom (premultiplied).
@@ -136,6 +141,7 @@ impl Look {
             xray: false,
             brightness: 1.0,
             floor: [0.0; 2],
+            reach: 0.0,
             solid: None,
             rim: (0.0, [[0.0; 4]; 3]),
             keel: (0.0, [0.0; 4]),
@@ -147,6 +153,7 @@ impl Look {
         Look {
             radius: self.radius * scale,
             blur: self.blur * scale,
+            reach: self.reach * scale,
             rim: (self.rim.0 * scale, self.rim.1),
             keel: (self.keel.0 * scale, self.keel.1),
             ..self
@@ -249,6 +256,7 @@ pub(crate) fn parse(params: &GlassStyleParams) -> Result<Style, String> {
             tint: colour(&level.tint, "tint")?,
             noise: params.grain.get() as f32,
             floor,
+            reach: level.reach.map_or(0.0, |reach| reach.get()),
             solid,
             rim,
             keel,

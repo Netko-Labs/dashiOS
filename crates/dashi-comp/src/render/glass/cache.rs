@@ -1,6 +1,7 @@
 //! What frosting keeps from frame to frame, with the GPU's EGL context: each
-//! pane's backdrop, its own damage tracker, its blur's textures and its tone;
-//! and a one-texel picture solid panes are drawn from.
+//! run of panes' backdrop (group.rs; most runs are one pane), its own damage
+//! tracker, its blur's textures and its tone; each pane's id and commit; and
+//! a one-texel picture solid panes are drawn from.
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
@@ -15,7 +16,7 @@ use smithay::{
             utils::CommitCounter,
         },
     },
-    utils::{Buffer, Rectangle, Size, Transform},
+    utils::{Buffer, Physical, Point, Rectangle, Size, Transform},
 };
 
 use super::{
@@ -27,15 +28,12 @@ use super::{
     tone::Tone,
 };
 
-/// One pane's textures and trackers, kept from frame to frame.
+/// One run's textures and trackers, kept from frame to frame.
 pub(super) struct Cache {
-    pub id: Id,
-    pub commit: CommitCounter,
     pub backdrop: GlesTexture,
     pub tracker: OutputDamageTracker,
     pub pyramid: Pyramid,
     pub sigma: f64,
-    pub look: Option<Look>,
     /// Blurred at least once.
     pub blurred: bool,
     pub used: u64,
@@ -45,8 +43,22 @@ pub(super) struct Cache {
 /// A solid pane's id, commit, the look it was drawn with, and when it was last seen.
 pub(super) type Solid = (Id, CommitCounter, Option<Look>, u64);
 
+/// What a frosted pane was drawn with: its look, where its shape was in what is drawn, its size.
+type Drawn = (Look, Point<i32, Physical>, Size<i32, Physical>);
+
+/// A frosted pane's id and commit, what it was drawn with (its look, and where its shape was
+/// in what is drawn: a cut pane scrolled), and when it was last seen.
+pub(super) struct Member {
+    id: Id,
+    commit: CommitCounter,
+    drawn: Option<Drawn>,
+    used: u64,
+}
+
 pub(super) struct Caches {
     pub panes: HashMap<(String, PaneKey), Cache>,
+    /// Frosted panes' ids and commits, by key.
+    pub members: HashMap<(String, PaneKey), Member>,
     /// Solid panes, which need no backdrop: their id and commit, by key.
     pub solid: HashMap<(String, PaneKey), Solid>,
     pub blank: Option<GlesTexture>,
@@ -59,6 +71,7 @@ impl Default for Caches {
     fn default() -> Self {
         Self {
             panes: HashMap::new(),
+            members: HashMap::new(),
             solid: HashMap::new(),
             blank: None,
             turn: 0,
@@ -105,6 +118,38 @@ pub(super) fn forget(gles: &mut GlesRenderer, caches: &mut Caches, after: u64) {
     caches
         .solid
         .retain(|_, (_, _, _, used)| turn - *used < after);
+    caches
+        .members
+        .retain(|_, member| turn - member.used < after);
+}
+
+/// `glass`'s id and commit as a frosted pane: its commit moves when its run was blurred again,
+/// its look changed, or its shape moved in what is drawn.
+pub(super) fn member(
+    members: &mut HashMap<(String, PaneKey), Member>,
+    key: (String, PaneKey),
+    glass: &GlassElement,
+    again: bool,
+    turn: u64,
+) -> (Id, CommitCounter) {
+    let entry = members.entry(key).or_insert_with(|| Member {
+        id: Id::new(),
+        commit: CommitCounter::default(),
+        drawn: None,
+        used: turn,
+    });
+    let outer = glass.outer();
+    let drawn = Some((
+        glass.look,
+        glass.geometry.loc - outer.loc,
+        glass.geometry.size,
+    ));
+    if again || entry.drawn != drawn {
+        entry.commit.increment();
+        entry.drawn = drawn;
+    }
+    entry.used = turn;
+    (entry.id.clone(), entry.commit)
 }
 
 /// A solid pane: no backdrop, its twin's colour; damaged only when its look changes.
@@ -135,24 +180,19 @@ pub(super) fn solid(
     })
 }
 
-/// New textures for a pane, keeping its id and commit.
+/// New textures for a run.
 pub(super) fn fresh(
     gles: &mut GlesRenderer,
-    id: Id,
-    commit: CommitCounter,
     size: Size<i32, Buffer>,
     passes: usize,
     sigma: f64,
     (scale, turn): (f64, u64),
 ) -> Result<Cache, String> {
     Ok(Cache {
-        id,
-        commit,
         backdrop: gles.create_buffer(Fourcc::Abgr8888, size).map_err(text)?,
         tracker: OutputDamageTracker::new((size.w, size.h), scale, Transform::Normal),
         pyramid: Pyramid::new(gles, size, passes).map_err(text)?,
         sigma,
-        look: None,
         blurred: false,
         used: turn,
         tone: Tone::default(),
