@@ -79,6 +79,7 @@ export function CapsuleView(props: CapsuleViewProps) {
             <Card
               card={shown.card}
               colours={dashi}
+              personaColour={persona.colour}
               name={persona.name}
               talkKey={props.talkKey()}
               listening={shown.listening}

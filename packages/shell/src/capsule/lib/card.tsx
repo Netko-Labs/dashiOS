@@ -27,6 +27,8 @@ export type CardAnswer = { do: "yes" } | { do: "no" } | { do: "choose"; text: st
 export interface CardProps {
   card: OpenCard;
   colours: CapsuleColours;
+  /** The persona's own colour: the card's rim (CP-11). Its disc wears `colours.fill`, darkened for its white mark. */
+  personaColour: string;
   /** Dashi's name, or the persona's. */
   name: string;
   /** How the person answers by voice ("the right ❖ key"), or null when they can't. */
@@ -212,12 +214,12 @@ export function glassCardColours(colors: Palette, persona: CapsuleColours): Caps
 }
 
 /** The card's rim: the persona's colour, or the purple focus rim while it has the keyboard (CP-11). */
-export function cardRim(keyboard: boolean, persona: CapsuleColours, focusRing: string): { borderWidth: number; borderColor: string } {
-  return keyboard ? { borderWidth: CARD.focusRim, borderColor: focusRing } : { borderWidth: CARD.rim, borderColor: persona.fill };
+export function cardRim(keyboard: boolean, personaColour: string, focusRing: string): { borderWidth: number; borderColor: string } {
+  return keyboard ? { borderWidth: CARD.focusRim, borderColor: focusRing } : { borderWidth: CARD.rim, borderColor: personaColour };
 }
 
 export function Card(props: CardProps) {
-  const rim = cardRim(props.card.keyboard, props.colours, useColors().focusRing);
+  const rim = cardRim(props.card.keyboard, props.personaColour, useColors().focusRing);
   return (
     <Frosted
       level="regular"

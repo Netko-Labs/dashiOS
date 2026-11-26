@@ -9105,6 +9105,8 @@ short words, as the rulebook is written.
   in a colour, which mirin's presets didn't have: mirin now takes one shadow spelled out
   (`"0 0 30 3 #rrggbbaa"`, `SpelledShadow`; an older host draws none). The lock's Now bar (y4d's) still
   floods with the tally's ring on its wash (`floods`: only `look.glass`), until the lock wears Frost.
+  The VM showed the area's scrolling list clipping the glow (4 points of room): the list now keeps
+  `AREA_GLOW` (33) left of the column and the area's own top inset above it, the column where it was.
 - **Undo:** `cardColours`' flood for every card on air, and the ring.
 
 ### D793. Edit mode and the gallery on glass, the accent kept out (H23)
@@ -9144,7 +9146,8 @@ short words, as the rulebook is written.
 
 - **Date:** 2026-11-26. `v10/glass-launcher` (reversible; CP-11, D766, board 17).
 - **Choice:** the card is `Frosted level="regular"`, radius 17.5, shadow xl, its rim 1.5 in the persona's
-  colour (`dashiFill`: the colour darkened until white reads on it, the disc's); with the keyboard a 3-point
+  own colour (not `dashiFill`, the disc's colour darkened for its white mark: in the VM that darker green
+  all but vanished on Dark's glass); with the keyboard a 3-point
   rim in the focus purple replaces it (was a white 3-point outline inside a 1.5 ink line). Its words are
   the glass's inks (`glassCardColours`), buttons outlined in the glass edge with the yes filled in ink,
   choices on a fill; the disc is filled in the persona's colour with a white mark. The line under it stays

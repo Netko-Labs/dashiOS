@@ -8,7 +8,7 @@
  * how tall to make it so the stack (stack.ts) can place them in their lane.
  */
 
-import { Button, CLOSE, Frosted, GLASS, GlyphButton, OffGlass, SHADOW, SPACE } from "@dashi/ui";
+import { Button, CLOSE, Frosted, GLASS, GLYPH_BUTTON, GlyphButton, OffGlass, pill, SHADOW, SPACE, useSolidTwin } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type NotificationStore, useNotifications } from "../store.ts";
@@ -110,10 +110,19 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
 /** Where the hover ✕ sits: over the panel's top-left corner (frost-objects board 18). */
 const DISMISS = { at: -SPACE.s } as const;
 
-/** The ✕ under the pointer: a solid disc, never glass (GL-6, as a tooltip), that dismisses the banner. */
+/** The ✕ under the pointer: a solid disc (regular's twin under the kit's filled ✕), never glass (GL-6, as a tooltip), that dismisses the banner. */
 function Dismiss({ onPress }: { onPress: () => void }) {
   return (
-    <View style={{ position: "absolute", left: DISMISS.at, top: DISMISS.at }}>
+    <View
+      style={{
+        position: "absolute",
+        left: DISMISS.at,
+        top: DISMISS.at,
+        borderRadius: pill(GLYPH_BUTTON.small.target),
+        backgroundColor: useSolidTwin("regular"),
+        shadow: SHADOW.sm,
+      }}
+    >
       <OffGlass>
         <GlyphButton testID="banner-dismiss" glyph={CLOSE} label="Dismiss" size="small" filled onPress={onPress} />
       </OffGlass>

@@ -149,6 +149,7 @@ describe("the capsule's card (CP-11)", () => {
     <CapsuleCard
       card={{ what: { ask }, keyboard, armsAt: 0, from: 0, hears: false }}
       colours={dashiColours(DEFAULT_PERSONA.colour)}
+      personaColour={DEFAULT_PERSONA.colour}
       name="Dashi"
       talkKey={null}
       listening={null}
@@ -160,12 +161,11 @@ describe("the capsule's card (CP-11)", () => {
   );
 
   test("regular glass at 17.5, the persona's colour as its 1.5 rim; under the keyboard the 3-point purple rim", async () => {
-    const persona = dashiColours(DEFAULT_PERSONA.colour);
     const rest = await onGlass(card(false));
-    expect(rest("card-glass")).toMatchObject({ material: "regular", cornerRadius: 17.5, borderWidth: 1.5, borderColor: persona.fill });
+    expect(rest("card-glass")).toMatchObject({ material: "regular", cornerRadius: 17.5, borderWidth: 1.5, borderColor: DEFAULT_PERSONA.colour });
     const keys = await onGlass(card(true));
     expect(keys("card-glass")).toMatchObject({ borderWidth: 3, borderColor: lightColors.focusRing });
-    expect(cardRim(true, persona, darkColors.focusRing).borderColor).toBe(darkColors.focusRing);
+    expect(cardRim(true, DEFAULT_PERSONA.colour, darkColors.focusRing).borderColor).toBe(darkColors.focusRing);
   });
 
   test("its words are the glass's inks, its yes filled in ink, its choices on a fill", () => {
