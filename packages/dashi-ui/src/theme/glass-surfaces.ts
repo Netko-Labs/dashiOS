@@ -5,18 +5,27 @@
  */
 
 /**
- * The lock (C · Split, D760): the clock at the left edge (264 / 216 Inter Display ExtraLight, hours over
- * minutes, `inset` from the edge on the laptop, `insetWide` on a 1920-wide screen, the day `dayGap`
- * above), who signs in under it (initials `initials`, a field `field` wide), and Today: a full-height pane
- * of regular glass `today` wide at the right, its title `todayTitle` Inter Display SemiBold. Below
- * `splitMin` points wide the pane becomes a bottom sheet and the clock one line.
+ * The lock (C · Split, D760; every screen size, D806): the clock at the left edge (`clock`: 264 / 216 Inter
+ * Display ExtraLight, hours over minutes), who signs in under it (initials `initials`, a field `field`
+ * wide), and Today. Three shapes:
  *
- * Where lock-v3's frames put things (y4, D803): the day's top `top` from the screen's top; who signs in
- * `footer` from the foot (the row's top: it rides up on a short screen, never over the clock), the power
- * pills `powerBottom` from the foot, thin-glass pills `pill.height` tall with a `pill.glyph` glyph and
- * `pill.padding` at their sides; the field's go arrow a `arrow` disc. Today: its title's top `pane.top`,
- * `pane.padding` in from its sides, a section's caption `pane.section` under what is above it; a
- * notification on it `note` tall and the song `playing` tall, its sleeve `sleeve`.
+ * - wide, a landscape screen at least `wideMin` wide (lock-v3 C's frame): `inset` from the edge (`insetWide`
+ *   on a 1920-wide screen), the day's top `top`, who signs in `footer` above the foot, the thin power pills
+ *   (`pill`) `powerBottom` above it; Today a full-height pane of regular glass `today` wide, its title
+ *   `todayTitle` at `pane.top`, `pane.padding` in, a section's caption `pane.section` under what is above;
+ * - pane, a landscape screen narrower (lock-v3 #narrow's pane, the owner's choice): the clock
+ *   `narrow.scale` of the screen's height (at most `clock`), its line `narrow.line` of its size, `narrow.edge`
+ *   in (`narrow.edgeWide` from `narrow.edgeWideFrom`), the day's top `narrow.top`, who signs in
+ *   `narrow.whoGap` under the clock, the pills `narrow.powerBottom` above the foot; Today `clamp(W −
+ *   panes.room, panes.min, panes.max)` wide, `panes.padding` in, its title at `panes.top`, three small
+ *   widgets from `panes.three` inside, else two;
+ * - vertical, a screen taller than it is wide: the day's top `narrow.topVertical`, the pills beside who signs
+ *   in, Today a bottom sheet of regular glass `sheet.inset` in from the sides, radius `sheet.radius` at the
+ *   top, `sheet.padding` in, open (about `sheet.open` tall) when there is room, else its `sheet.peek` peek
+ *   with a grabber and a `sheet.chevron` chevron that opens it (no password: Today already shows).
+ *
+ * The field's go arrow is a `arrow` disc; a notification on Today `note` tall, the song `playing`, its
+ * sleeve `sleeve`. The status row keeps a full band of frost `band` tall at the top.
  */
 const LOCK = {
   clock: { size: 264, line: 216 },
@@ -27,16 +36,20 @@ const LOCK = {
   field: 280,
   today: 744,
   todayTitle: 24,
-  splitMin: 1280,
+  wideMin: 1646,
   top: 104,
   footer: 315,
   powerBottom: 44,
   pill: { height: 28, glyph: 13, padding: 10 },
   arrow: 20,
   pane: { top: 92, padding: 46, section: 24 },
+  narrow: { scale: 0.3, line: 0.82, edge: 64, edgeWide: 72, edgeWideFrom: 1280, top: 44, topVertical: 120, whoGap: 28, powerBottom: 24 },
+  panes: { room: 600, min: 400, max: 744, padding: 28, top: 56, three: 520 },
+  sheet: { inset: 12, radius: 18, padding: 20, top: 26, peek: 104, open: 676, grabber: 36, chevron: 32 },
   note: 54,
   playing: 76,
   sleeve: 52,
+  band: 56,
 } as const;
 
 /**

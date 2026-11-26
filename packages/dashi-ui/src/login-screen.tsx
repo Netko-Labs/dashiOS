@@ -1,12 +1,12 @@
 /**
  * The screen you sign in on: the lock screen and the login screen (greeter)
- * are both this. The day and the clock (the Inks' clock, hours over minutes:
- * TY-1, D670) over the wallpaper, who is signing in, one field, a line
- * under it saying how it went, and along the bottom Sleep, Restart, and
- * Shut Down, as a Mac's login window has them. Each power button asks for a
- * second click, so a stray one cannot turn the machine off. Tab goes from
- * the field to each of them (and to what the host puts above and below the
- * field), in the purple ring.
+ * are both this. It is the split screen (login-split.tsx, lock-v3 C and
+ * #narrow, LK-1 to LK-5) on every screen size: the day and the clock (hours
+ * over minutes, D670) at the left edge, who is signing in, one field, a line
+ * under it saying how it went, and Sleep, Restart and Shut Down, each asking
+ * for a second click so a stray one cannot turn the machine off; on the lock
+ * where the person is, Today. Tab goes from the field to Today and then to
+ * the power pills, in the purple ring.
  *
  * The login screen is always Dark's look: nobody has signed in to choose.
  * The lock follows the person's mode (`mode`, the owner's Q2, D671).
@@ -15,14 +15,12 @@
  * the host's (the shell's lock controller, the greeter's greetd login).
  */
 
-import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState } from "react";
-import { RESTART, SHUT_DOWN, SLEEP } from "./glyphs.ts";
-import { ClockHead } from "./inks-clock.tsx";
-import { Avatar } from "./login-parts.tsx";
-import { isSplitWidth, SplitLogin, useVeil, WhoSignsIn } from "./login-split.tsx";
-import { LOGIN, type LoginColors, loginColors } from "./theme/colors.ts";
-import { pill, RADIUS, SPACE, TYPE, WEIGHT } from "./theme/measures.ts";
+import type { TodayPlace } from "./lock-layout.ts";
+import { SplitLogin, useVeil } from "./login-split.tsx";
+import { WhoSignsIn } from "./login-who.tsx";
+import { LOGIN, loginColors } from "./theme/colors.ts";
 
 /** The login screen's ground: the wallpaper darkened toward true black (the compositor draws it behind). */
 export const LOGIN_GROUND = LOGIN.ground;
@@ -33,22 +31,6 @@ export const LOGIN_INK = LOGIN.ink;
 export const LOGIN_MUTED = LOGIN.muted;
 
 export type PowerAction = "sleep" | "restart" | "shutdown";
-
-const POWER: readonly { what: PowerAction; label: string; confirm: string; glyph: string }[] = [
-  { what: "sleep", label: "Sleep", confirm: "Click to Sleep", glyph: SLEEP },
-  { what: "restart", label: "Restart", confirm: "Click to Restart", glyph: RESTART },
-  { what: "shutdown", label: "Shut Down", confirm: "Click to Shut Down", glyph: SHUT_DOWN },
-];
-
-/**
- * The screen's own measures. The field: a control's height, wide enough for
- * a long password's dots. A power button: room for "Click to Shut Down" on
- * one line, the buttons 132 apart, center to center; its circle and glyph.
- */
-export const LOGIN_SCREEN = {
-  field: { width: 220, height: 28 },
-  power: { width: 116, circle: 40, glyph: 18 },
-} as const;
 
 /** How long a power button waits for its second click. */
 const CONFIRM_MS = 3000;
@@ -77,19 +59,12 @@ export interface LoginScreenProps {
   below?: ReactNode;
   /** Sleep, restart, or shut down; without it there are no power buttons. */
   onPower?: (what: PowerAction) => void;
-  /** In place of the day and the clock: the lock screen's own head, with its widgets under the clock. */
-  head?: ReactNode;
-  /** Drawn over the whole screen, behind nothing it covers: the lock screen's side column. */
-  around?: ReactNode;
   /** Dark's look (the login screen, always) or Light's (the lock, in Light Mode). */
   mode?: "light" | "dark";
   /** The host draws Inter Display and the light weights: the clock in ExtraLight, else Regular. */
   display?: boolean;
-  /**
-   * On a screen at least `GLASS.lock.splitMin` wide the screen is split (login-split.tsx, LK-1): this is its
-   * right side, the lock's Today, where the person is. `head`, `around` and `above` are the column's only.
-   */
-  today?: ReactNode;
+  /** Today, drawn for its place (lock-layout.ts): the lock's, where the person is. */
+  today?: (place: TodayPlace) => ReactNode;
 }
 
 /** Sleep, Restart and Shut Down ask for a second click within `CONFIRM_MS`: which one is armed, and a press. */
@@ -109,139 +84,45 @@ function usePowerArming(onPower: ((what: PowerAction) => void) | undefined): [Po
 }
 
 export function LoginScreen(props: LoginScreenProps): ReactNode {
-  const [width, setWidth] = useState(0);
+  const [size, setSize] = useState({ width: 0, height: 0 });
   const [arming, press] = usePowerArming(props.onPower);
-  const colors = loginColors(props.mode ?? "dark");
-  const split = isSplitWidth(width);
-  const veil = useVeil(props.mode ?? "dark");
-  // One root for both layouts: the ground, the ring's colour, and the veil once split (LK-4).
-  const root = {
-    testID: "login-screen",
-    onLayout: (bounds: { width: number }) => setWidth(bounds.width),
-    ...(split ? veil : {}),
-    style: { flex: 1, backgroundColor: colors.ground, focusRingColor: colors.focusRing },
-  } as const;
-  if (split) {
-    const { display = false } = props;
-    const who = (
-      <WhoSignsIn
-        {...props}
-        display={display}
-        colors={colors}
-        placeholder={props.placeholder ?? "Password"}
-        secure={props.secure ?? true}
-        error={props.error ?? false}
-      />
-    );
-    return (
-      <View {...root}>
+  const mode = props.mode ?? "dark";
+  const colors = loginColors(mode);
+  const display = props.display ?? false;
+  const veil = useVeil(mode);
+  const who = (
+    <WhoSignsIn
+      {...props}
+      display={display}
+      colors={colors}
+      placeholder={props.placeholder ?? "Password"}
+      secure={props.secure ?? true}
+      error={props.error ?? false}
+    />
+  );
+  // One root: the ground, the ring's colour and the veil (LK-4); its size says where everything goes.
+  return (
+    <View
+      testID="login-screen"
+      onLayout={(bounds) => setSize({ width: bounds.width, height: bounds.height })}
+      {...veil}
+      style={{ flex: 1, backgroundColor: colors.ground, focusRingColor: colors.focusRing }}
+    >
+      {size.width > 0 ? (
         <SplitLogin
           bare
           day={props.day}
           time={props.time}
           display={display}
           colors={colors}
-          width={width}
+          width={size.width}
+          height={size.height}
           who={who}
-          today={props.today}
+          {...(props.today ? { today: props.today } : {})}
           arming={arming}
           {...(props.onPower ? { press } : {})}
         />
-      </View>
-    );
-  }
-  return (
-    <View {...root}>
-      <ColumnLogin {...props} arming={arming} press={press} />
-    </View>
-  );
-}
-
-/** The centred column: a screen narrower than `GLASS.lock.splitMin` (its split is being drawn, D803). */
-function ColumnLogin(props: LoginScreenProps & { arming: PowerAction | null; press: (what: PowerAction) => void }): ReactNode {
-  const { day, time, name, picture, hint, error, above, below, onPower, head, around, mode = "dark", display = false, arming, press } = props;
-  const colors = loginColors(mode);
-  return (
-    <View testID="login-column" style={{ flex: 1, flexDirection: "column", alignItems: "center" }}>
-      {around}
-      {head ?? <ClockHead day={day} time={time} ink={colors.ink} display={display} testID="login-head" />}
-      <View style={{ flex: 1, minHeight: SPACE.page }} />
-      <View style={{ flexDirection: "column", alignItems: "center", gap: SPACE.gap }}>
-        {above}
-        <Avatar name={name} picture={picture} colors={colors} />
-        <Text style={{ fontSize: TYPE.heading.size, fontWeight: WEIGHT.semibold, color: colors.ink }}>{name}</Text>
-        <Field {...props} colors={colors} />
-        <Text style={{ fontSize: TYPE.secondary.size, color: error ? colors.wrong : colors.muted }}>{hint}</Text>
-        {below}
-      </View>
-      {/* In the flow, not pinned: on a short screen the buttons move down instead of over the field. */}
-      <View style={{ flex: 0.6, minHeight: SPACE.xl }} />
-      {onPower && <PowerRow arming={arming} press={press} colors={colors} />}
-    </View>
-  );
-}
-
-/** The one field: a control's height, a pill, its 1 px edge turning the focus ring while it has the keyboard (KB-2). */
-function Field({ value, onChangeText, onSubmit, placeholder = "Password", secure = true, colors }: LoginScreenProps & { colors: LoginColors }): ReactNode {
-  const { width, height } = LOGIN_SCREEN.field;
-  return (
-    <TextInput
-      testID="login-field"
-      value={value}
-      autoFocus
-      secureTextEntry={secure}
-      placeholder={placeholder}
-      accessibilityLabel={placeholder}
-      onChangeText={onChangeText}
-      onSubmitEditing={onSubmit}
-      style={{
-        width,
-        height,
-        // One line in a set height takes padding at its sides only; paddingLeft and paddingRight need a newer host.
-        padding: SPACE.button,
-        borderRadius: pill(height),
-        backgroundColor: colors.field,
-        borderColor: colors.fieldEdge,
-        focusBorderColor: colors.focusRing,
-        fontSize: TYPE.body.size,
-        color: colors.ink,
-        placeholderColor: colors.muted,
-      }}
-    />
-  );
-}
-
-/** Sleep, Restart and Shut Down along the bottom, each asking for a second click. */
-function PowerRow({ arming, press, colors }: { arming: PowerAction | null; press: (what: PowerAction) => void; colors: LoginColors }): ReactNode {
-  const { width, circle, glyph: glyphSize } = LOGIN_SCREEN.power;
-  return (
-    <View testID="login-power" style={{ marginBottom: SPACE.xl, flexDirection: "row", justifyContent: "center", gap: SPACE.page }}>
-      {POWER.map(({ what, label, confirm, glyph }) => (
-        // Tab reaches each after the field, and Space or Return presses it: the first press arms it, as a click does.
-        <View
-          key={what}
-          testID={`login-${what}`}
-          focusable
-          accessibilityRole="button"
-          accessibilityLabel={arming === what ? confirm : label}
-          onPress={() => press(what)}
-          style={{ flexDirection: "column", alignItems: "center", gap: SPACE.s, width, paddingVertical: SPACE.xs, borderRadius: RADIUS.sheet }}
-        >
-          <View
-            style={{
-              width: circle,
-              height: circle,
-              borderRadius: pill(circle),
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: arming === what ? colors.buttonHeld : colors.button,
-            }}
-          >
-            <Svg markup={glyph} size={glyphSize} color={colors.ink} />
-          </View>
-          <Text style={{ fontSize: TYPE.caption.size, color: arming === what ? colors.ink : colors.muted }}>{arming === what ? confirm : label}</Text>
-        </View>
-      ))}
+      ) : null}
     </View>
   );
 }

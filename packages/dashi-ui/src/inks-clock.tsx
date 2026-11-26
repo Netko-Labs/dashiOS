@@ -85,6 +85,8 @@ export interface LockClockProps {
   time: string;
   ink: string;
   display: boolean;
+  /** Its size and line (lock-layout.ts `clockFor`): 264 / 216, or 30 % of a shorter screen's height. */
+  clock?: { size: number; line: number };
   testID?: string;
 }
 
@@ -94,9 +96,9 @@ export interface LockClockProps {
  * draw it at the same place (LK-3). Metal has no tracking or tabular figures yet: the frames' −0.02 em and
  * 0.06 em are left out (D803).
  */
-export function LockClock({ day, time, ink, display, testID }: LockClockProps): ReactNode {
+export function LockClock({ day, time, ink, display, clock = GLASS.lock.clock, testID }: LockClockProps): ReactNode {
   const parts = clockParts(time) ?? [time];
-  const { size, line } = GLASS.lock.clock;
+  const { size, line } = clock;
   const style = { fontSize: size, lineHeight: line, color: ink, ...clockFace(display) };
   return (
     <View {...(testID ? { testID } : {})} style={{ flexDirection: "column", alignItems: "flex-start", gap: GLASS.lock.dayGap }}>

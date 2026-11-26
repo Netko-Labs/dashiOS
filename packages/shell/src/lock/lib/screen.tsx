@@ -1,36 +1,29 @@
 /**
  * The lock screen: @dashi/ui's LoginScreen with the lock's own rules. Enter
  * checks the password (the controller enforces the waits after misses); a
- * wrong one says so and clears the field. Round five's widgets sit round it
- * (widgets/lock.tsx): the stacked clock and its row, the side column, the
- * Now Bar. A press on a widget asks for the password first and says what it
- * will open ("Unlock to open Notes"), then does exactly that. Untouched for
- * a while it rests into Glance; any key or press wakes it.
+ * wrong one says so and clears the field. It is the split lock on every
+ * screen size (lock-v3 C and #narrow, LK-1, D803, D806): the day, the clock
+ * and who signs in at the left edge, the power pills, and Today where the
+ * screen gives it room (widgets/lock-today.tsx: a pane at the right, or a
+ * bottom sheet on a screen taller than wide). A press on a card asks for the
+ * password first and says what it will open ("Unlock to open Notes"), then
+ * does exactly that. Untouched for a while it rests into Glance; any key or
+ * press wakes it.
  *
- * The cover (`cover`, on every other screen: D554) is quieter: the day and
- * the clock, who is signing in and the field, as the login screen's; no
- * widgets, no power buttons, no Glance. Both follow the person's mode, as
- * the widgets do (Q2, D671); the clock is the one clock (D670).
- *
- * On a screen at least 1280 pt wide both are split (lock-v3 C, LK-1, D803):
- * the left half (the day, the 264 clock, who signs in, the power pills) and,
- * where the person is, Today at the right (widgets/lock-today.tsx); the cover
- * is the left half alone, at the same place. A narrower screen keeps the
- * centred column: its split is still being drawn.
+ * The cover (`cover`, on every other screen: D554, MS-6) is the left half
+ * alone, at the same place: no Today, no power buttons, no Glance. Both
+ * follow the person's mode, as the widgets do (Q2, D671).
  */
 
-import { LoginScreen, type PowerAction, useDark } from "@dashi/ui";
+import { LoginScreen, type PowerAction, type TodayPlace, useDark } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState } from "react";
 import { formatLongDay, useClockPrefs, usesHour24 } from "../../shared/time/index.ts";
 import {
   Glance,
-  LockHead,
-  LockSide,
   LockToday,
   lockOpenerOf,
   lockTime,
-  NowBar,
   type Placement,
   useClockDisplay,
   usePlacements,
@@ -148,15 +141,8 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower, cover = f
           hint={status === "idle" ? unlockHint(pending, HINTS.idle) : HINTS[status]}
           error={status === "wrong"}
           {...(onPower ? { onPower } : {})}
-          // On a wide screen, Today at the right where the person is (LK-1); the cover is the left half alone (MS-6).
-          {...(cover ? {} : { today: <LockToday placements={placements} onPress={press} /> })}
-          {...(cover
-            ? {}
-            : {
-                head: <LockHead day={face.day} onPress={(kind) => press({ kind })} />,
-                around: <LockSide placements={placements} onPress={press} />,
-                above: <NowBar />,
-              })}
+          // Today where the person is, in the place this screen gives it (LK-1); the cover is the left half alone (MS-6).
+          {...(cover ? {} : { today: (place: TodayPlace) => <LockToday place={place} placements={placements} onPress={press} /> })}
         />
         {resting && !cover ? (
           <Glance

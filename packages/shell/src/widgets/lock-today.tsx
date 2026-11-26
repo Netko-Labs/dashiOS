@@ -1,210 +1,144 @@
 /**
- * Today (LK-1, lock-v3 C, decisions.md D803): the right side of the split lock, a full-height pane of
- * regular glass with no radius, `GLASS.lock.today` wide. Its title in Inter Display SemiBold; Up next, the
- * Calendar widget wide with the next events; up to three compact widgets; Notifications, each app's as
- * one card with its count, the time and a lock glyph, never who or what (NO-7: hidden by default; no app
- * shows its words yet, the per-app setting isn't built); Playing, the song with buttons that work while
- * locked. A press on a card asks for the password first and opens it after (LK-5, D486). Its words keep
- * the pane's own floor: the glass palette under `Frosted`.
+ * Today (LK-1, lock-v3 C and #narrow, decisions.md D803, D806), where the split lock puts it
+ * (`TodayPlace`, @dashi/ui's lock-layout.ts): a full-height pane of regular glass at the right (744 on a
+ * wide screen, narrower on a smaller landscape one), or on a screen taller than wide a bottom sheet of
+ * regular glass, 12 in from the sides, rounded at the top, open when there is room and else its peek, a
+ * row that a chevron opens with no password (Today already shows on the lock). What it holds is
+ * lib/today-cards.tsx's: Up next, Notifications hidden (NO-7), Playing. A press on a card asks for the
+ * password first and opens it after (LK-5, D486). Its words keep the glass's own floor.
  */
 
-import { Frosted, GLASS, pill, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { CHEVRON_DOWN, CHEVRON_UP, Frosted, GLASS, pill, SPACE, type TodayPlace, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import type { ReactNode } from "react";
-import { glyph } from "../shared/inks/index.ts";
-import { Card } from "./card.tsx";
+import { type ReactNode, useState } from "react";
 import { widgetInfo } from "./catalog.ts";
 import { useWidgetEnv } from "./env.tsx";
-import { SPANS, span } from "./layout.ts";
-import { ago, useSource } from "./lib/data.ts";
-import { WidgetTile } from "./lib/views/widget.tsx";
-import { useCard } from "./look.tsx";
-import { Btn } from "./parts.tsx";
+import { useSource } from "./lib/data.ts";
+import { lockNotes, PeekRow, TodayBody, type TodaySong } from "./lib/today-cards.tsx";
 import type { Placement, WidgetKind } from "./types.ts";
 
-/** The pane's inside width: Today less its padding at both sides. */
-const INSIDE = GLASS.lock.today - 2 * GLASS.lock.pane.padding;
-
-/** Today's row of compacts: the weather and the battery, then the person's first widget that comes compact (a timer, a clock). */
-export function todayRow(placements: readonly Placement[]): WidgetKind[] {
+/** Today's row of compacts: the weather and the battery, then the person's first widget that comes compact (a timer, a clock); `count` of them. */
+export function todayRow(placements: readonly Placement[], count: 2 | 3 = 3): WidgetKind[] {
   const first: WidgetKind[] = ["weather", "battery"];
   const theirs = placements.find((each) => !first.includes(each.kind) && each.kind !== "calendar" && widgetInfo(each.kind)?.sizes.includes("compact"));
-  return [...first, theirs?.kind ?? "clock"];
+  return [...first, theirs?.kind ?? "clock"].slice(0, count);
 }
 
-/** One app's notifications on the lock (NO-7): its name, how many, and when the newest came. */
-export interface LockNote {
-  app: string;
-  count: number;
-  time: number | null;
+interface LockTodayProps {
+  place: TodayPlace;
+  placements: readonly Placement[];
+  onPress: (placement: Pick<Placement, "kind">) => void;
 }
 
-/** The notifications as one note per app, newest app first; the words never show. */
-export function lockNotes(history: readonly object[]): LockNote[] {
-  const byApp = new Map<string, LockNote>();
-  for (const entry of [...history].reverse()) {
-    const name = "appName" in entry && typeof entry.appName === "string" ? entry.appName.trim() : "";
-    const desktop = "desktopEntry" in entry && typeof entry.desktopEntry === "string" ? entry.desktopEntry : "";
-    const app = name || desktop || "Notifications";
-    const time = "time" in entry && typeof entry.time === "number" ? entry.time : null;
-    const had = byApp.get(app);
-    byApp.set(app, { app, count: (had?.count ?? 0) + 1, time: had ? had.time : time });
-  }
-  return [...byApp.values()];
-}
-
-/** "2 new notifications": the count, never what they say. */
-export const noteWords = (count: number): string => `${count} new notification${count === 1 ? "" : "s"}`;
-
-export function LockToday({ placements, onPress }: { placements: readonly Placement[]; onPress: (placement: Pick<Placement, "kind">) => void }) {
-  const colors = useColors();
+/** What Today shows now: up to three apps' hidden notes, and the song. */
+function useTodayData(): { notes: ReturnType<typeof lockNotes>; song: TodaySong | null } {
   const { hub } = useWidgetEnv();
   const notes = lockNotes(useSource(hub?.notices, [])).slice(0, 3);
   const playing = useSource(hub?.media, null);
-  const third = (INSIDE - 2 * SPACE.inset) / 3;
+  return { notes, song: playing ? { title: playing.title, artist: playing.artist, playing: playing.playing } : null };
+}
+
+export function LockToday({ place, placements, onPress }: LockTodayProps) {
+  const data = useTodayData();
+  if (place.kind === "pane") {
+    const inside = place.width - 2 * place.padding;
+    return (
+      <Frosted level="regular" testID="lock-today" style={{ flex: 1, paddingTop: place.top, paddingHorizontal: place.padding }}>
+        <Title />
+        <TodayBody width={inside} row={todayRow(placements, place.smalls)} {...data} onPress={onPress} />
+      </Frosted>
+    );
+  }
+  return <TodayAtFoot open={place.open} width={place.width} placements={placements} onPress={onPress} {...data} />;
+}
+
+function Title({ size = GLASS.lock.todayTitle }: { size?: number }) {
+  const colors = useColors();
+  return <Text style={{ fontSize: size, fontWeight: WEIGHT.semibold, color: colors.text, fontFamily: "display" }}>Today</Text>;
+}
+
+interface AtFootProps extends ReturnType<typeof useTodayData> {
+  open: boolean;
+  width: number;
+  placements: readonly Placement[];
+  onPress: LockTodayProps["onPress"];
+}
+
+/**
+ * The sheet (lock-v3 #narrow): regular glass, rounded at the top (it runs its radius past the screen's foot,
+ * so only the top corners show), open when the screen has room; else its peek, the title and a row of
+ * cards, with a thin-glass chevron that opens it and closes it again.
+ */
+function TodayAtFoot({ open: roomy, width, placements, onPress, notes, song }: AtFootProps) {
+  const [opened, setOpened] = useState(false);
+  const open = roomy || opened;
+  const { sheet } = GLASS.lock;
+  const inside = width - 2 * sheet.padding;
   return (
-    <Frosted level="regular" testID="lock-today" style={{ flex: 1, paddingTop: GLASS.lock.pane.top, paddingHorizontal: GLASS.lock.pane.padding }}>
-      <Text style={{ fontSize: GLASS.lock.todayTitle, fontWeight: WEIGHT.semibold, color: colors.text, fontFamily: "display" }}>Today</Text>
-      <Section title="Up next">
-        <WidgetTile
-          kind="calendar"
-          size="wide"
-          width={INSIDE}
-          height={span(SPANS.wide.rows)}
-          air={false}
-          testID="lock-widget:calendar"
-          onPress={() => onPress({ kind: "calendar" })}
-        />
-        <View testID="lock-row" style={{ flexDirection: "row", gap: SPACE.inset }}>
-          {todayRow(placements).map((kind) => (
-            <WidgetTile
-              key={kind}
-              kind={kind}
-              size="compact"
-              width={third}
-              height={span(SPANS.compact.rows)}
-              air={false}
-              testID={`lock-widget:${kind}`}
-              onPress={() => onPress({ kind })}
-            />
-          ))}
+    <Frosted
+      level="regular"
+      testID="lock-today"
+      style={{
+        marginLeft: sheet.inset,
+        marginRight: sheet.inset,
+        marginBottom: -sheet.radius,
+        paddingTop: open ? sheet.top : SPACE.gap,
+        paddingHorizontal: sheet.padding,
+        paddingBottom: sheet.radius + sheet.padding,
+        borderRadius: sheet.radius,
+      }}
+    >
+      {roomy ? null : <Grabber />}
+      {open ? (
+        <>
+          <SheetHead title={<Title />} chevron={roomy ? null : <Chevron up={false} onPress={() => setOpened(false)} />} />
+          <TodayBody width={inside} row={todayRow(placements)} notes={notes} song={song} onPress={onPress} />
+        </>
+      ) : (
+        <View style={{ height: sheet.peek - SPACE.gap - sheet.padding, flexDirection: "row", alignItems: "center", gap: SPACE.page }}>
+          <Title size={TYPE.title.size} />
+          <PeekRow width={inside - PEEK_ROOM} notes={notes} song={song} onPress={onPress} />
+          <Chevron up onPress={() => setOpened(true)} />
         </View>
-      </Section>
-      {notes.length > 0 ? (
-        <Section title="Notifications">
-          {notes.map((note) => (
-            <NoteCard key={note.app} note={note} />
-          ))}
-        </Section>
-      ) : null}
-      {playing ? (
-        <Section title="Playing">
-          <PlayingCard title={playing.title} artist={playing.artist} playing={playing.playing} onPress={() => onPress({ kind: "media" })} />
-        </Section>
-      ) : null}
+      )}
     </Frosted>
   );
 }
 
-/** A section of Today: its caption (11 SemiBold capitals, secondary), then its cards. */
-function Section({ title, children }: { title: string; children: ReactNode }) {
+/** Room the peek's title and chevron take from its row of cards. */
+const PEEK_ROOM = 160;
+
+function SheetHead({ title, chevron }: { title: ReactNode; chevron: ReactNode }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      {title}
+      {chevron}
+    </View>
+  );
+}
+
+/** The grabber: a short bar at the sheet's top, in the secondary ink (lock-v3 #narrow). */
+function Grabber() {
   const colors = useColors();
-  return (
-    <View style={{ marginTop: GLASS.lock.pane.section, flexDirection: "column", gap: SPACE.m }}>
-      <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{title.toUpperCase()}</Text>
-      {children}
-    </View>
-  );
+  const width = GLASS.lock.sheet.grabber;
+  return <View style={{ alignSelf: "center", width, height: SPACE.s, borderRadius: pill(SPACE.s), backgroundColor: colors.textMuted }} />;
 }
 
-/** One app's notifications, hidden (NO-7): "Messages", "2 new notifications", the lock and when. */
-function NoteCard({ note }: { note: LockNote }) {
-  const { inks, now } = useWidgetEnv();
+/** The chevron that opens Today (up) or closes it (down): thin glass, a circle; Space opens it from the keyboard (LK-5). */
+function Chevron({ up, onPress }: { up: boolean; onPress: () => void }) {
+  const colors = useColors();
+  const size = GLASS.lock.sheet.chevron;
   return (
-    <Card
-      look={{ inks, ink: null, air: false, houseDown: false, redact: false, glass: true }}
-      width={INSIDE}
-      height={GLASS.lock.note}
-      compact
-      testID={`lock-note:${note.app}`}
-    >
-      <NoteBody note={note} now={now} />
-    </Card>
-  );
-}
-
-function NoteBody({ note, now }: { note: LockNote; now: number }) {
-  return (
-    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.gap }}>
-      <NoteWords app={note.app} words={noteWords(note.count)} />
-      <NoteWhen time={note.time} now={now} />
-    </View>
-  );
-}
-
-/** The app (11 SemiBold, secondary) over the count (13 SemiBold, the card's ink), in sentence case as lock-v3 draws them. */
-function NoteWords({ app, words }: { app: string; words: string }) {
-  const card = useCard();
-  return (
-    <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xxs }}>
-      <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: card.secondary }}>
-        {app}
-      </Text>
-      <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: card.ink }}>
-        {words}
-      </Text>
-    </View>
-  );
-}
-
-function NoteWhen({ time, now }: { time: number | null; now: number }) {
-  const { inks } = useWidgetEnv();
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
-      <Svg markup={glyph("lock")} size={TYPE.caption.size} color={inks.text.secondary} />
-      {time !== null ? <Text style={{ fontSize: TYPE.caption.size, color: inks.text.secondary }}>{ago(time, now)}</Text> : null}
-    </View>
-  );
-}
-
-/** The song (LK-5: its buttons work while locked; the card opens Music once unlocked). */
-function PlayingCard({ title, artist, playing, onPress }: { title: string; artist: string; playing: boolean; onPress: () => void }) {
-  const { inks, hub } = useWidgetEnv();
-  const sleeve = GLASS.lock.sleeve;
-  return (
-    <Card
-      look={{ inks, ink: null, air: false, houseDown: false, redact: false, glass: true }}
-      width={INSIDE}
-      height={GLASS.lock.playing}
-      compact
+    <Frosted
+      level="thin"
+      testID={up ? "lock-today-open" : "lock-today-close"}
+      focusable
+      accessibilityRole="button"
+      accessibilityLabel={up ? "Show all of Today" : "Show less of Today"}
       onPress={onPress}
-      testID="lock-playing"
+      style={{ width: size, height: size, borderRadius: pill(size), alignItems: "center", justifyContent: "center" }}
     >
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}>
-        <View
-          style={{
-            width: sleeve,
-            height: sleeve,
-            borderRadius: pill(sleeve),
-            backgroundColor: inks.text.tertiary,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Svg markup={glyph("music")} size={TYPE.title.size} color={inks.paper} />
-        </View>
-        <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xxs }}>
-          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: inks.text.ink }}>
-            {title}
-          </Text>
-          <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: inks.text.secondary }}>
-            {artist}
-          </Text>
-        </View>
-        <Btn icon="prev" round onPress={() => void hub?.media.command("Previous")} testID="lock-previous" />
-        <Btn icon={playing ? "pause" : "play"} round onPress={() => void hub?.media.command("PlayPause")} testID="lock-play" />
-        <Btn icon="next" round onPress={() => void hub?.media.command("Next")} testID="lock-next" />
-      </View>
-    </Card>
+      <Svg markup={up ? CHEVRON_UP : CHEVRON_DOWN} size={SPACE.button} color={colors.text} />
+    </Frosted>
   );
 }

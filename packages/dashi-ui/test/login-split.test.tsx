@@ -1,16 +1,17 @@
 /**
- * The split sign-in screen (lock-v3 C, LK-1 to LK-4, decisions.md D803): at 1280 pt wide and up, the
- * clock at the left edge at 264, who signs in with initials on regular glass, the power pills thin, Today
- * at the right, the veil over the ground where the host draws glass; narrower, the centred column as it was.
+ * The split sign-in screen on every screen size (lock-v3 C and #narrow, LK-1 to LK-5, decisions.md D803,
+ * D806): a wide screen as C's frame; a smaller landscape one with Today a narrower pane and the clock 30 %
+ * of its height; a vertical one with the pills beside who signs in and Today a bottom sheet, open when
+ * there is room. The clock is hours over minutes everywhere.
  */
 
 import { expect, test } from "bun:test";
 import { render, Text } from "@mirinjs/metal";
+import { clockBlock, clockFor, lockLayout, lockShape, paneWidth, WHO_HEIGHT } from "../src/lock-layout.ts";
 import { LoginScreen } from "../src/login-screen.tsx";
-import { initialsOf, isSplitWidth, splitInset } from "../src/login-split.tsx";
+import { initialsOf } from "../src/login-split.tsx";
 import { LOGIN_LIGHT } from "../src/theme/colors.ts";
 import { GLASS } from "../src/theme/glass.ts";
-import { TYPE } from "../src/theme/measures.ts";
 import { fakeHost } from "./host.ts";
 import { settle } from "./support/time.ts";
 
@@ -28,8 +29,8 @@ function all(tree: Node, keep: (node: Node) => boolean, out: Node[] = []): Node[
 const words = (node: Node): string => (node.children ?? []).filter((child) => typeof child === "string").join("");
 const texts = (tree: Node): string[] => all(tree, (node) => node.type === "text").map(words);
 
-/** The login screen drawn on a screen `width` wide: laid out once, as the host does. */
-async function drawnAt(width: number, today = false): Promise<Node> {
+/** The login screen on a screen `width` × `height`: laid out once, as the host does. */
+async function drawnAt(width: number, height: number, today = false): Promise<Node> {
   const host = fakeHost();
   const root = render(
     <LoginScreen
@@ -42,51 +43,85 @@ async function drawnAt(width: number, today = false): Promise<Node> {
       onSubmit={() => {}}
       onPower={() => {}}
       mode="light"
-      {...(today ? { today: <Text>Today</Text> } : {})}
+      {...(today ? { today: (place: { kind: string }) => <Text>{`Today in a ${place.kind}`}</Text> } : {})}
     />,
     host.transport,
   );
   await settle();
   const id = root.nodeId("login-screen");
-  if (id) host.emit({ type: "resize", nodeId: id, bounds: { x: 0, y: 0, width, height: 1029 } });
+  if (id) host.emit({ type: "resize", nodeId: id, bounds: { x: 0, y: 0, width, height } });
   await settle();
   const tree = JSON.parse(host.last()) as Node;
   root.unmount();
   return tree;
 }
 
-test("the split starts at GLASS.lock.splitMin; the inset is 88 on the laptop, 96 on a 1920-wide screen", () => {
-  expect(isSplitWidth(GLASS.lock.splitMin - 1)).toBe(false);
-  expect(isSplitWidth(GLASS.lock.splitMin)).toBe(true);
-  expect(splitInset(1646)).toBe(GLASS.lock.inset);
-  expect(splitInset(1920)).toBe(GLASS.lock.insetWide);
+test("the shapes: wide from 1646 on a landscape screen, the pane below it, vertical when taller than wide", () => {
+  expect(lockShape(1646, 1029)).toBe("wide");
+  expect(lockShape(1645, 1029)).toBe("pane");
+  expect(lockShape(1024, 768)).toBe("pane");
+  expect(lockShape(1080, 1920)).toBe("vertical");
+  expect(paneWidth(1024)).toBe(424);
+  expect(paneWidth(1280)).toBe(680);
+  expect(paneWidth(800)).toBe(GLASS.lock.panes.min);
+  expect(paneWidth(1600)).toBe(GLASS.lock.panes.max);
   expect(initialsOf("Alex Kim")).toBe("AK");
-  expect(initialsOf("alexk")).toBe("A");
   expect(initialsOf("  ")).toBe("?");
 });
 
-test("wide: the day over hours over minutes at 264 on 216, the initials, the field, the three pills, Today", async () => {
-  const tree = await drawnAt(1646, true);
+test("the clock: 30 % of the height, at most 264 / 216, its line 0.82 of its size", () => {
+  expect(clockFor(768)).toEqual({ size: 230, line: 189 });
+  expect(clockFor(800)).toEqual({ size: 240, line: 197 });
+  expect(clockFor(1920)).toEqual(GLASS.lock.clock);
+});
+
+test("wide is C's frame: 88 in (96 at 1920), who signs in 315 above the foot, the pills at the foot, a 744 pane", () => {
+  const laptop = lockLayout(1646, 1029);
+  expect(laptop).toMatchObject({ inset: 88, top: 104, clock: GLASS.lock.clock, who: { top: 1029 - 315 }, power: { left: 88, bottom: 44 } });
+  expect(laptop.today).toMatchObject({ kind: "pane", width: 744, padding: 46, smalls: 3 });
+  expect(lockLayout(1920, 1080).inset).toBe(96);
+});
+
+test("a smaller landscape screen: Today a narrower pane, two small widgets under 520 inside, who signs in under the clock", () => {
+  const small = lockLayout(1024, 768);
+  expect(small).toMatchObject({ shape: "pane", inset: 64, top: 44, clock: { size: 230, line: 189 }, power: { left: 64, bottom: 24 } });
+  expect(small.who.top).toBe(44 + clockBlock(189) + 28);
+  expect(small.today).toEqual({ kind: "pane", width: 424, padding: 28, top: 56, smalls: 2 });
+  const hd = lockLayout(1280, 800);
+  expect(hd.inset).toBe(72);
+  expect(hd.today).toMatchObject({ width: 680, smalls: 3 });
+  // It all fits above the foot.
+  expect(small.who.top + WHO_HEIGHT).toBeLessThan(768);
+});
+
+test("vertical: the pills beside who signs in, Today a sheet open when there is room, its peek when not", () => {
+  const tall = lockLayout(1080, 1920);
+  expect(tall).toMatchObject({ shape: "vertical", inset: 64, top: 120, clock: GLASS.lock.clock, today: { kind: "sheet", open: true } });
+  expect(tall.power).toEqual({ right: 64, top: tall.who.top + (52 - 28) / 2 });
+  const short = lockLayout(686, 1097);
+  expect(short.today).toEqual({ kind: "sheet", open: false, width: 686 - 24 });
+  expect(short.glance.top).toBe(1097 - GLASS.lock.sheet.peek + 30);
+});
+
+test("drawn wide: 264 / 216, hours over minutes, the initials, the three pills after Today in the tree", async () => {
+  const tree = await drawnAt(1646, 1029, true);
   const shown = texts(tree);
   expect(shown).toContain("WEDNESDAY, NOVEMBER 25");
   expect(shown).toContain("AK");
-  expect(shown).toContain("Alex Kim");
-  expect(shown).toContain("Today");
-  expect(shown.filter((each) => ["Sleep", "Restart", "Shut Down"].includes(each))).toEqual(["Sleep", "Restart", "Shut Down"]);
-  const clock = all(tree, (node) => node.type === "text" && node.props.size === GLASS.lock.clock.size);
+  expect(shown).toContain("Today in a pane");
+  const clock = all(tree, (node) => node.type === "text" && node.props.size === 264);
   expect(clock.map(words)).toEqual(["4", "48"]);
-  for (const line of clock) expect(line.props.lineHeight).toBe(GLASS.lock.clock.line);
-  // The power pills come after Today in the tree: Tab reaches the field, Today, then the pills (LK-5).
-  expect(shown.indexOf("Today")).toBeLessThan(shown.indexOf("Sleep"));
+  expect(shown.indexOf("Today in a pane")).toBeLessThan(shown.indexOf("Sleep"));
 });
 
-test("narrow: the centred column as it was, the 120 clock, no Today", async () => {
-  const tree = await drawnAt(1097, true);
-  const shown = texts(tree);
-  expect(shown).not.toContain("Today");
-  const clock = all(tree, (node) => node.type === "text" && node.props.size === TYPE.clock.size);
-  expect(clock.map(words)).toEqual(["4", "48"]);
-  // The column keeps its wash and no veil: only the split frosts (D803).
-  expect(String(tree.props.background).toLowerCase()).toBe(LOGIN_LIGHT.ground.toLowerCase());
-  expect(tree.props.material).toBeUndefined();
+test("drawn small and vertical: still hours over minutes, at the size the height gives; Today a pane, then a sheet", async () => {
+  const small = await drawnAt(1024, 768, true);
+  expect(all(small, (node) => node.type === "text" && node.props.size === 230).map(words)).toEqual(["4", "48"]);
+  expect(texts(small)).toContain("Today in a pane");
+  const vertical = await drawnAt(1080, 1920, true);
+  expect(all(vertical, (node) => node.type === "text" && node.props.size === 264).map(words)).toEqual(["4", "48"]);
+  expect(texts(vertical)).toContain("Today in a sheet");
+  // The ground is the mode's wash; no veil where the host draws no glass.
+  expect(String(vertical.props.background).toLowerCase()).toBe(LOGIN_LIGHT.ground.toLowerCase());
+  expect(vertical.props.material).toBeUndefined();
 });

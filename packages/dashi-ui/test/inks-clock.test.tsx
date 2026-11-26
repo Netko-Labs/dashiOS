@@ -8,7 +8,7 @@ import { LOGIN, LOGIN_LIGHT, loginColors } from "../src/theme/colors.ts";
 import { contrastRatio } from "../src/theme/contrast.ts";
 import { TYPE } from "../src/theme/measures.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
-import { fakeHost } from "./host.ts";
+import { fakeHost, layOut } from "./host.ts";
 import { settle } from "./support/time.ts";
 
 interface Node {
@@ -33,6 +33,8 @@ const words = (node: Node): string => (node.children ?? []).filter((child) => ty
 async function drawn(element: React.ReactElement): Promise<Node> {
   const host = fakeHost();
   const root = render(element, host.transport);
+  await settle();
+  layOut(host, root.nodeId("login-screen"));
   await settle();
   const tree = JSON.parse(host.last()) as Node;
   root.unmount();
@@ -81,12 +83,13 @@ const screen = (mode: "light" | "dark", error = false) => (
 test("the login screen draws the one clock, not a second one", async () => {
   const shown = texts(await drawn(screen("dark")));
   expect(shown.slice(0, 3).map(words)).toEqual(["SUNDAY, NOVEMBER 15", "14", "02"]);
-  expect(shown.some((node) => style(node).size === 88)).toBe(false);
+  expect(shown.filter((node) => style(node).size === 264).map(words)).toEqual(["14", "02"]);
 });
 
 test("the field is a control's height in body type, its edge the focus ring while it has the keyboard (KB-2)", async () => {
   const [field] = all(await drawn(screen("dark")), (node) => node.type === "input");
-  expect(style(field as Node)).toMatchObject({ height: 28, size: TYPE.body.size, borderColor: low(LOGIN.fieldEdge), focusBorderColor: low(LOGIN.focusRing) });
+  // On glass now (LK-1): no edge of its own at rest; the ring's purple while it has the keyboard.
+  expect(style(field as Node)).toMatchObject({ height: 28, size: TYPE.body.size, focusBorderColor: low(LOGIN.focusRing) });
 });
 
 test("a wrong password is the mode's criticalInk, not a pink of its own", async () => {

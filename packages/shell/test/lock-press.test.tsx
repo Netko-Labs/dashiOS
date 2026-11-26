@@ -30,6 +30,8 @@ beforeEach(async () => {
   };
   root = render(<LockScreen name="Alex Kim" onSubmit={async (password) => (password === "right" ? "right" : "wrong")} waitMs={() => 0} />, transport);
   await settle();
+  // The host lays the screen out: a laptop's, so Today is a pane at the right.
+  await emit({ type: "resize", nodeId: node("login-screen"), bounds: { x: 0, y: 0, width: 1646, height: 1029 } });
 });
 afterEach(() => {
   root.unmount();
@@ -52,7 +54,7 @@ const typePassword = async (password: string) => {
   await emit({ type: "submit", nodeId: field(), value: password } as NativeEvent);
 };
 
-test("a card in the row under the clock asks for the password, then opens Notifications", async () => {
+test("a card on Today asks for the password, then opens Notifications", async () => {
   await emit({ type: "press", nodeId: node("lock-widget:weather") } as NativeEvent);
   expect(trees.at(-1)).toContain("Unlock to open Weather in Notifications");
   await typePassword("wrong");
@@ -71,4 +73,20 @@ test("a card with an app of its own opens that app; the rest open the area", () 
   expect(lockOpenerOf({ kind: "battery" }, () => {}).where).toBe("app");
   expect(lockOpenerOf({ kind: "media" }, () => {}).where).toBe("area");
   expect(lockOpenerOf({ kind: "weather" }, () => {}).where).toBe("area");
+});
+
+test("on a short vertical screen Today is a peek, and its chevron opens it with no password (lock-v3 #narrow, D806)", async () => {
+  await emit({ type: "resize", nodeId: node("login-screen"), bounds: { x: 0, y: 0, width: 686, height: 1097 } });
+  expect(root.nodeId("lock-widget:calendar")).toBeUndefined();
+  await emit({ type: "press", nodeId: node("lock-today-open") } as NativeEvent);
+  expect(root.nodeId("lock-widget:calendar")).toBeDefined();
+  expect(trees.at(-1)).not.toContain("Unlock to open");
+  await emit({ type: "press", nodeId: node("lock-today-close") } as NativeEvent);
+  expect(root.nodeId("lock-widget:calendar")).toBeUndefined();
+});
+
+test("on a tall vertical screen Today is open and stays open: no chevron", async () => {
+  await emit({ type: "resize", nodeId: node("login-screen"), bounds: { x: 0, y: 0, width: 1080, height: 1920 } });
+  expect(root.nodeId("lock-widget:calendar")).toBeDefined();
+  expect(root.nodeId("lock-today-open")).toBeUndefined();
 });

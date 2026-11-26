@@ -9110,7 +9110,7 @@ short words, as the rulebook is written.
   dropped on it go to the Trash, except the home folder, the root and the folders the sidebar lists.
 - **Undo:** leave `trash` out of `startDock`.
 
-### D803. The lock is split on wide screens only; the narrow one waits for its drawing
+### D803. The lock is split on wide screens only; the narrow one waits for its drawing (superseded by D806)
 
 - **Date:** 2026-11-26. `v10/glass-dock` (reversible; LK-1 to LK-5, NO-7, MS-6; lock-v3 C).
 - **Choice:** a sign-in screen at least `GLASS.lock.splitMin` (1280) points wide is split (`SplitLogin`,
@@ -9154,3 +9154,32 @@ short words, as the rulebook is written.
   event, and hit-tests nothing meanwhile (mirin c9787d0, with a test that fails without it). Fixed at
   the source (Part A); nothing in Dashi works around it.
 - **Undo:** revert the mirin commit.
+
+### D806. The split lock on every screen size: a narrower pane on landscape, a sheet only on vertical
+
+- **Date:** 2026-11-26. `v10/glass-dock` (the owner's answer on lock-v3 #narrow, 26 Nov; LK-1 to LK-3,
+  MS-6). Supersedes D803's "wide screens only".
+- **The owner chose:** on a landscape screen narrower than 1646 pt Today stays a side pane,
+  `clamp(W − 600, 400, 744)` wide (424 at 1024, 680 at 1280), the clock full size for the screen; the
+  bottom sheet only on a screen taller than it is wide; the clock hours over minutes everywhere (LK-1's
+  "and the clock one line" is gone).
+- **The designer's smaller calls, which stand:** the power pills beside who signs in on a vertical screen
+  (the sheet takes the foot); opening Today needs no password (its contents already show); a full band of
+  frost across the top 56 pt for the status row; on a vertical monitor the other screen's lock sits at the
+  top.
+- **How it is built:** one pure function, `lockLayout(W, H)` (`@dashi/ui` lock-layout.ts), gives every
+  place: `wide` (C's frame, 1646 and up), `pane` (the clock 30 % of the height, at most 264, its line 0.82,
+  64 in, 72 from 1280; who signs in 28 under it; the pills at the foot; Today the narrower pane, two
+  compacts under 520 inside) and `vertical` (the day from 120; the pills beside who signs in; the sheet
+  open when it leaves the left half whole above it, else its 104 peek: the title, the notifications in one
+  card and the song, a thin chevron that opens and closes it). The lock, its other screens, the login
+  screen and Glance all read it, so the old centred column, its 120 clock, the row under it, the side
+  column and the Now Bar are gone (`LockHead`, `LockSide`, `NowBar`, `noticeCounts`).
+- **Decided small, here:** Metal has no per-corner radius, so the sheet runs its 18 radius past the
+  screen's foot (the frame draws it 20 taller too); an opened peek covers the left half's lower part
+  rather than squeezing the clock (the landscape sheet that squeezed it was not chosen); the peek's row
+  holds the notifications as one card and the song, not the frame's five chips (the next event, the
+  weather and the battery need a chip of their own the widgets don't draw yet); the band of frost waits
+  for the status row (the lock has no status source, and the veil's tint is the compositor's, one even
+  tint).
+- **Undo:** `lockShape` returns `wide` for every screen.
