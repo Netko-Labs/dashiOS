@@ -2,7 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Appearance, DARK_CONTROLS, LIGHT_CONTROLS } from "@dashi/ui";
+import { Appearance, DARK_CONTROLS, GLASS, LIGHT_CONTROLS } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import type { PaneContext } from "../src/settings-app/context.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
@@ -71,7 +71,9 @@ test("Settings rings every control in Control Center's purple, Light and Dark (K
     const view = await mount(dark);
     const window = find(view.tree(), view.id("settings-window"));
     expect(window?.props.focusRingColor).toBe(colors.focus);
-    expect(window?.props.background).toBe(colors.window);
+    // The window paints no ground: its sidebar is thick glass (here its twin, the host not saying glass) and its pane opaque (D813).
+    expect(window?.props.background).toBeUndefined();
+    expect(find(view.tree(), view.id("settings-sidebar"))?.props.background).toBe(GLASS.levels.thick[dark ? "dark" : "light"].solid);
     const all = stops(view.tree());
     expect(all.length).toBeGreaterThan(PANES.length - 1);
     expect(all.filter((stop) => stop.ring !== colors.focus)).toEqual([]);

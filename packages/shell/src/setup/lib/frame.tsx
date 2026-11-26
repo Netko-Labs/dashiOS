@@ -4,7 +4,7 @@
  * the page, and the row of buttons with the progress dots.
  */
 
-import { Button, RADIUS, SPACE, Tile, TYPE, useColors, useSurface, WEIGHT, WIZARD_PAGE } from "@dashi/ui";
+import { Button, RADIUS, SPACE, Tile, TYPE, useColors, useSurface, useTitleFace, WIZARD_PAGE } from "@dashi/ui";
 import { ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { FlowView, PageInfo } from "../flow.ts";
@@ -49,6 +49,7 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
   const colors = useColors();
   const surface = useSurface();
   const { controls } = useWindowChrome();
+  const titleFace = useTitleFace();
   return (
     <View style={{ flex: 1, flexDirection: "column", backgroundColor: surface.window, position: "relative" }}>
       {controls && <View testID="setup-toolbar" dragRegion style={{ height: Math.ceil(controls.y + controls.height), flexShrink: 0 }} />}
@@ -65,7 +66,7 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
         >
           {glyph && tint && <Tile glyph={glyph} tint={tint} size={44} />}
           <View testID="setup-title">
-            <Text style={{ fontSize: TYPE.title.size, fontWeight: WEIGHT.bold, color: colors.text, textAlign: "center" }}>{info.title}</Text>
+            <Text style={{ fontSize: TYPE.title.size, ...titleFace, color: colors.text, textAlign: "center" }}>{info.title}</Text>
           </View>
           <View testID="setup-subtitle">
             <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted, textAlign: "center" }}>{info.subtitle}</Text>

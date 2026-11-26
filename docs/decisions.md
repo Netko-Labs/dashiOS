@@ -9070,3 +9070,103 @@ short words, as the rulebook is written.
   window was opaque over its own panes, and a surface offering only `Inherit` got straight alpha.
   Proof: `dashi-0.10.0-review/28-glass-kit/`.
 - **Undo:** revert the shader's cut; surfaces drop their shadows instead.
+
+### D810. Sheets are regular glass at radius 14, from the kit's sheet card
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; UI-5, RA-1, frost-objects 23 to 25).
+- **Question:** how every sheet wears Frost's regular glass and RA-1's 14 without touching the
+  launcher's and the panels' `RADIUS.sheet` (12), which their own engineers move.
+- **Choice:** `SheetCard` is a `Frosted level="regular"` at `SHEET_RADIUS` (14, a named constant beside
+  it); `frosted` asks for glass, otherwise it is regular's solid twin. `Sheet` asks for it on a surface
+  of the shell's own (`place="screen"`) and when hung over a window from one (`hang`); the shortcut
+  sheet and the consent sheet pass it. The compositor draws a pane's rim and hairline, so the card keeps
+  its 1 px edge only where it shows its twin. Force Quit's list sits on a well (a fill, the control
+  edge); fields, tiles and buttons are the kit's on glass already (D772).
+- **Why:** one frame for every sheet (UI-5); 14 is the drawn radius; a separate constant keeps the
+  surfaces still on 12 unchanged until their engineers move them.
+- **Undo:** `SheetCard` back to a `View` on `surface.card` at `RADIUS.sheet`.
+
+### D811. A sheet inside an app's own window is regular's twin
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; GL-3).
+- **Question:** frost-objects draws an app's sheet (Setup's Skip question) frosting the window's own
+  content. The compositor draws a pane behind the surface that wears it; a sheet is drawn inside its
+  window's buffer, over the window's opaque content, so glass there would show nothing behind it and
+  the card, which paints no fill while glass is drawn, would put its words on the scrimmed content.
+- **Choice:** a sheet in an app's window (no `hang`, `place` its window) is regular's solid twin, as
+  GL-3's glass off. The shell's sheets, on surfaces of their own, are glass.
+- **Why:** readable now, and the same look Reduce Transparency gives; frosting a window's own content
+  needs mirin to blur its own frame under a view (a backdrop pass in sumi's renderer), which is mirin's
+  work, not a Dashi workaround.
+- **Undo:** once mirin frosts within a frame, `Sheet` asks for glass in a window too.
+
+### D812. A glass sheet's scrim goes round the card
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; UI-5).
+- **Question:** Change Password hangs over Settings from a surface of the shell's own, over a scrim on
+  that surface. Glass is drawn behind the surface, so a scrim painted under the card lies over its
+  glass (55 % black in Dark).
+- **Choice:** when the card is drawn as glass, the scrim is four bands round the card and the outside
+  of its four rounded corners (`sheet-scrim.tsx`), never under it.
+- **Why:** UI-5 keeps the scrim; the card's glass keeps its tint and its floor.
+- **Undo:** paint the scrim on the whole surface again.
+
+### D813. The window's sidebar is thick glass with focus, its twin at once without
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; GL-2, CO-9, GL-6).
+- **Choice:** `AppWindow`'s sidebar is `Frosted level="thick"` while `useWindowActive()`, and
+  `solid` (thick's twin, neutral inks) without focus; the selection turns neutral with it (D772). With
+  a sidebar the window paints no ground of its own: the content column paints `surface.window`, so
+  the title row, toolbar and content stay opaque. The twin comes at once, which is within GL-2's 180 ms.
+  `ToolbarButton` moved to `toolbar-button.tsx` so `window.tsx` stays under 300 lines.
+- **Why:** frost-v2 frame 9 and frost-objects 29; a cross-fade would re-render or need the compositor
+  to fade a pane, for a change of 0.1 in tint.
+- **Undo:** the sidebar back to a `View` on `surface.sidebar`.
+
+### D814. "Your turn" wears regular glass and keeps its shape
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; frost-objects 18).
+- **Choice:** the agents' "Your turn" card is `Frosted level="regular"` with its purple edge; its
+  radius and size stay as they are (the drawn 560 × 96 pill needs a fixed height, and the lane it
+  pushes is the notifications' engineer's).
+- **Undo:** back to `opaque(colors.launcher)`.
+
+### D815. The capture toolbar is glass, the capture area never
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; GL-6, D728, frost-objects 26).
+- **Choice:** the ⇧❖5 toolbar is regular glass at 14 (no shadow: its surface is its own size). The
+  ⇧❖4 area is no glass: black at 35 % outside it (`CAPTURE_AREA.outside`), clear inside, its edge, and
+  under it "Space: a window · Esc: cancel" and its size on solid chips. The toolbar keeps the kit's
+  segmented control (chosen raised, never the accent), the one segmented look on glass (D772), where the
+  board drew the chosen mode in the accent. The board's eight handles aren't drawn: the area can't be
+  resized after it is let go, and handles would say it can.
+- **Undo:** the toolbar back to `colors.menu`; the area back to a white wash inside.
+
+### D816. Titles of 20 and up through `useTitleFace`
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; TY-2).
+- **Choice:** the kit's `useTitleFace()` gives Inter Display SemiBold on a host that says
+  `displayFont`, Inter SemiBold on one that doesn't (an older host refuses the family). About and
+  Setup's page titles wear it. The Bluetooth sheet's code is a figure, not words, and stays.
+- **Undo:** the titles back to 700.
+
+### D817. The tile preview is a pane of thin glass the shell describes
+
+- **Date:** 2026-11-26. `v10/glass-windows` (reversible; WI-10).
+- **Question:** the compositor drew the preview as a blue wash, a colour it chose itself.
+- **Choice:** `layout` takes `preview: {level, radius, inset}`; the shell sends `GLASS.tilePreview`
+  (thin, 10, 6) and the compositor draws a pane of that level there (`Glass::preview_element`), or a
+  plain white wash where glass can't be drawn or the shell is older. Its tone goes nowhere (no words).
+- **Why:** Rust displays, TypeScript decides: the look is the shell's, as every pane's is.
+- **Undo:** drop `preview`; the compositor draws its wash.
+
+### D818. A window's glass needs mirin to keep its opaque promise off on a configure
+
+- **Date:** 2026-11-26. `v10/glass-windows` (the VM's finding; mirin PR #61, branch `v10-glass-windows`).
+- **Question:** in the VM, Files' sidebar on thick glass was black. sumi's `update_window` (every
+  configure: a focus change, a resize) promised the whole surface opaque while a frame had glass
+  panes, so the compositor drew the window opaque. A window with panes from its first frames always
+  hit it; the gallery's Glass page escaped because its panes came after the configures.
+- **Choice:** fixed in mirin, where it starts (Part A): one rule, `promises_opaque`, for the frame and
+  the configure, with a test. Dashi needs mirin with PR #61 for any window's sidebar to show glass.
+- **Undo:** revert the mirin commit; sidebars show black where glass should be.

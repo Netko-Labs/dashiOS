@@ -23,6 +23,8 @@ use crate::render::GlesAccess;
 pub(crate) enum Owner {
     Shell(String),
     Surface(smithay::reexports::wayland_server::backend::ObjectId),
+    /// Where a dragged window would tile (WI-10): no words on it, so its tone goes nowhere.
+    TilePreview,
 }
 
 /// Which pane this is, from frame to frame: its owner and its place in the list.

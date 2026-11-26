@@ -49,8 +49,8 @@ export const onOf = (colors: Palette): OnColors => ({ on: colors.selection, onIn
  */
 export const AMBER = { fill: "#F0B93C", ink: "#1D1D1F", deep: "#86600A" } as const;
 
-/** The screenshot area (SH-33): a white wash with a light edge, its size label on a dark chip. */
-export const CAPTURE_AREA = { wash: "#ffffff26", edge: "#ffffffd9", labelGround: "#000000a6", labelInk: "#ffffff" } as const;
+/** The screenshot area (SH-33, GL-6): black at 35 % outside it, clear inside, a light edge, its words on dark chips; never glass. */
+export const CAPTURE_AREA = { outside: "#00000059", edge: "#ffffffd9", labelGround: "#000000a6", labelInk: "#ffffff" } as const;
 
 /**
  * The lock screen's glass over the wallpaper, per mode (SH-27; Q2: the lock

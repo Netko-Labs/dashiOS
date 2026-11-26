@@ -14,11 +14,12 @@
  * `notice` that floats over the content's foot and takes no room from it.
  */
 
-import { type PressInfo, Svg, Text, useWindowActive, useWindowChrome, View } from "@mirinjs/metal";
+import { Text, useWindowActive, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { Frosted } from "./frosted.tsx";
 import { SIDEBAR } from "./sidebar.tsx";
-import { CLEAR, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT, WindowFocusContext } from "./theme/index.ts";
-import { TooltipLayer, useTooltip } from "./tooltip.tsx";
+import { CLEAR, SPACE, TYPE, useColors, useSurface, WEIGHT, WindowFocusContext } from "./theme/index.ts";
+import { TooltipLayer } from "./tooltip.tsx";
 import { WindowTitle } from "./window-title.tsx";
 
 /** The toolbar's height when the compositor reports no window controls to line up with. */
@@ -120,43 +121,36 @@ export function AppWindow({
   const focused = useWindowActive();
   return (
     // The focus ring is kombu in every control inside (KB-2).
+    // With a sidebar the window paints no ground of its own: the sidebar is glass (or its twin), the content opaque (GL-6).
     <View
-      style={{ flex: 1, flexDirection: "row", backgroundColor: seeThrough ? CLEAR : surface.window, position: "relative", focusRingColor: colors.focusRing }}
+      style={{
+        flex: 1,
+        flexDirection: "row",
+        backgroundColor: seeThrough || sidebar !== undefined ? CLEAR : surface.window,
+        position: "relative",
+        focusRingColor: colors.focusRing,
+      }}
     >
       <WindowFocusContext.Provider value={focused}>
         <TooltipLayer>
           {sidebar !== undefined && (
-            <WindowSidebar width={sidebarWidth} top={inset.unified ? height : WINDOW_SIDEBAR_TOP}>
+            <WindowSidebar width={sidebarWidth} top={inset.unified ? height : WINDOW_SIDEBAR_TOP} focused={focused}>
               {sidebar}
             </WindowSidebar>
           )}
-          <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+          <View style={{ flex: 1, flexDirection: "column", minWidth: 0, ...(sidebar !== undefined && !seeThrough ? { backgroundColor: surface.window } : {}) }}>
             {(inset.unified || toolbar !== undefined || titleSlot !== undefined) && (
-              <View
-                testID="window-toolbar"
-                dragRegion
-                style={{
-                  height,
-                  flexShrink: 0,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: SPACE.gap,
-                  paddingLeft: toolbarInset(inset.leading, sidebar === undefined ? 0 : sidebarWidth),
-                  paddingRight: SPACE.inset,
-                  borderBottomWidth: 1,
-                  borderColor: colors.separator,
-                  ...(seeThrough ? { backgroundColor: surface.window } : {}),
-                }}
-              >
-                {leading}
-                {titleSlot}
-                {!titleGone && inset.unified ? (
-                  <WindowTitle title={title} {...(detail ? { detail } : {})} {...(afterTitle !== undefined ? { after: afterTitle } : {})} />
-                ) : (
-                  titleSlot === undefined && <View style={{ flex: 1 }} />
-                )}
-                {toolbar}
-              </View>
+              <WindowToolbar
+                height={height}
+                inset={toolbarInset(inset.leading, sidebar === undefined ? 0 : sidebarWidth)}
+                ground={seeThrough}
+                title={
+                  !titleGone && inset.unified ? (
+                    <WindowTitle title={title} {...(detail ? { detail } : {})} {...(afterTitle !== undefined ? { after: afterTitle } : {})} />
+                  ) : null
+                }
+                {...{ leading, titleSlot, toolbar }}
+              />
             )}
             <View style={{ flex: 1, flexDirection: "column", minHeight: 0, position: "relative" }}>
               {children}
@@ -170,6 +164,52 @@ export function AppWindow({
           {overlay}
         </TooltipLayer>
       </WindowFocusContext.Provider>
+    </View>
+  );
+}
+
+/** The toolbar row: its leading controls, the title (or what takes its room), its controls; a grab handle. */
+function WindowToolbar({
+  height,
+  inset,
+  ground,
+  title,
+  leading,
+  titleSlot,
+  toolbar,
+}: {
+  height: number;
+  inset: number;
+  /** Paint the window's ground (a see-through window's toolbar stays opaque, GL-6). */
+  ground: boolean;
+  title: ReactNode;
+  leading: ReactNode;
+  titleSlot: ReactNode;
+  toolbar: ReactNode;
+}) {
+  const colors = useColors();
+  const surface = useSurface();
+  return (
+    <View
+      testID="window-toolbar"
+      dragRegion
+      style={{
+        height,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.gap,
+        paddingLeft: inset,
+        paddingRight: SPACE.inset,
+        borderBottomWidth: 1,
+        borderColor: colors.separator,
+        ...(ground ? { backgroundColor: surface.window } : {}),
+      }}
+    >
+      {leading}
+      {titleSlot}
+      {title ?? (titleSlot === undefined && <View style={{ flex: 1 }} />)}
+      {toolbar}
     </View>
   );
 }
@@ -192,92 +232,19 @@ export function SidebarSection({ title, children }: { title?: string; children: 
   );
 }
 
-/**
- * What names a toolbar button, one or both: a glyph-only button is named by
- * its tooltip, a worded one by its label. Without either a screen reader and
- * an agent's read_window could not say what it is, so the type asks for one.
- */
-export type ToolbarButtonName = { label: string; tooltip?: string } | { tooltip: string; label?: string };
-
-/**
- * A glyph button in a toolbar: square, quiet until hovered. A glyph-only
- * button names itself with `tooltip`, shown under it when the pointer rests
- * on it (UI-3); one with a `label` shows its words instead. A toolbar's
- * "More" is one of these: the `MORE` glyph, the tooltip "More", `active`
- * while its menu is open, the menu hung by its right edge under the
- * button's (`PopupMenu`'s `anchor` "end").
- */
-export function ToolbarButton({
-  glyph,
-  onPress,
-  testID,
-  disabled,
-  label,
-  tooltip,
-  active = false,
-}: {
-  glyph: string;
-  /** With the press: the button's bounds, for a menu that opens under it (PA-9). */
-  onPress: (event: PressInfo) => void;
-  testID: string;
-  disabled?: boolean;
-  /** Held lit, as under the pointer: the menu it opened is open ("…"'s). */
-  active?: boolean;
-} & ToolbarButtonName) {
-  const colors = useColors();
-  const tip = useTooltip(tooltip);
-  return (
-    <View
-      testID={testID}
-      focusable={!disabled}
-      accessibilityRole="button"
-      accessibilityLabel={tooltip ?? label}
-      accessibilityState={{ disabled: disabled === true }}
-      onPress={
-        disabled
-          ? undefined
-          : (event) => {
-              tip.hide();
-              onPress(event);
-            }
-      }
-      onHoverChange={tip.onHoverChange}
-      style={{
-        height: 28,
-        minWidth: 32,
-        // Its words never wrap and it never shrinks: a toolbar's one row gives way elsewhere.
-        flexShrink: 0,
-        paddingHorizontal: label ? SPACE.gap : 0,
-        flexDirection: "row",
-        gap: SPACE.s,
-        borderRadius: RADIUS.control,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: active && !disabled ? colors.button : CLEAR,
-        hoverBackgroundColor: disabled ? CLEAR : colors.button,
-        focusRingColor: colors.focusRing,
-      }}
-    >
-      <Svg markup={glyph} size={16} color={disabled ? colors.textDisabled : colors.textMuted} />
-      {label !== undefined && (
-        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: disabled ? colors.textDisabled : colors.text }}>
-          {label}
-        </Text>
-      )}
-      {tip.node}
-    </View>
-  );
-}
-
 /** The sidebar's strip under the window controls when the title bar is the compositor's. */
 const WINDOW_SIDEBAR_TOP = 10;
 
-/** The sidebar: its own ground and edge, its top strip a grab handle. */
-function WindowSidebar({ width, top, children }: { width: number; top: number; children: ReactNode }) {
+/**
+ * The sidebar, its top strip a grab handle: thick glass while its window has focus, thick's solid twin
+ * with neutral inks without it (GL-2, decisions.md D813). The twin comes at once, within MOTION.exit.
+ */
+function WindowSidebar({ width, top, focused, children }: { width: number; top: number; focused: boolean; children: ReactNode }) {
   const colors = useColors();
-  const surface = useSurface();
   return (
-    <View
+    <Frosted
+      level="thick"
+      solid={!focused}
       testID="window-sidebar"
       style={{
         width,
@@ -286,13 +253,12 @@ function WindowSidebar({ width, top, children }: { width: number; top: number; c
         gap: SPACE.xxs,
         paddingHorizontal: SPACE.gap,
         paddingBottom: SPACE.gap,
-        backgroundColor: surface.sidebar,
         borderRightWidth: 1,
         borderColor: colors.separator,
       }}
     >
       <View dragRegion style={{ height: top, flexShrink: 0, marginLeft: -SPACE.gap, marginRight: -SPACE.gap }} />
       {children}
-    </View>
+    </Frosted>
   );
 }
