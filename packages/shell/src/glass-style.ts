@@ -5,7 +5,9 @@
  * changes:
  * - Reduce Transparency (Settings › Appearance, `appearance.reduceTransparency`): every level is its
  *   solid twin, rims and hairlines kept (GL-3);
- * - battery saver (the low-power mode): the wallpaper only, blurred once and kept (x-ray; D723);
+ * - battery saver (the low-power mode): the wallpaper only, blurred once and kept (x-ray; D723), while
+ *   Settings › Battery › Lighter glass on battery saver is on (`appearance.lighterGlassOnSaver`, D729);
+ * - Tint glass with the wallpaper (`appearance.tintGlass`, GL-4) off: every level's saturation is 1;
  * - a GPU that can't frost (`{frosted: false}`): the compositor draws no glass, and clients paint their
  *   own fills (dashi_glass_v1 `drawing(none)`); `frosted` says so to the shell's own surfaces.
  * Other apps get glass too unless the person turns it off (`appearance.glassForApps`, D731); the
@@ -25,6 +27,10 @@ export interface GlassInputs {
   dark: boolean;
   reduceTransparency: boolean;
   batterySaver: boolean;
+  /** Battery saver turns glass to the wallpaper only (on by default). */
+  lighterOnSaver: boolean;
+  /** The wallpaper's colour comes through by saturation (on by default); off, saturation 1. */
+  tintGlass: boolean;
 }
 
 type Level = { blur: number; saturation: number; tint: string; solid?: string };
@@ -52,11 +58,14 @@ export function withAlpha(hex: string, alpha: number): string {
   return `${hex.slice(0, 7)}${byte.toString(16).padStart(2, "0").toUpperCase()}`;
 }
 
-/** How glass is drawn: Reduce Transparency wins (solid), then battery saver (wallpaper only). */
-export function glassMode({ reduceTransparency, batterySaver }: Omit<GlassInputs, "dark">): GlassMode {
+/** How glass is drawn: Reduce Transparency wins (solid), then battery saver (wallpaper only, unless the person said not to). */
+export function glassMode({ reduceTransparency, batterySaver, lighterOnSaver }: Omit<GlassInputs, "dark" | "tintGlass">): GlassMode {
   if (reduceTransparency) return "solid";
-  return batterySaver ? "xray" : "frosted";
+  return batterySaver && lighterOnSaver ? "xray" : "frosted";
 }
+
+/** No saturation lift: the wallpaper's colour no longer comes through (GL-4). */
+const UNTINTED = 1;
 
 /** Frost's numbers for `inputs`' mode, as the compositor takes them. */
 export function glassStyle(inputs: GlassInputs): GlassStyle {
@@ -64,7 +73,8 @@ export function glassStyle(inputs: GlassInputs): GlassStyle {
   const level = (name: GlassLevel): Level => {
     const material = GLASS.levels[name];
     const look = material[tone];
-    return { blur: material.blur, saturation: material.saturation, tint: withAlpha(look.tint, look.least), solid: look.solid };
+    const saturation = inputs.tintGlass ? material.saturation : UNTINTED;
+    return { blur: material.blur, saturation, tint: withAlpha(look.tint, look.least), solid: look.solid };
   };
   const veil = GLASS.veil;
   const rim = GLASS.rim[tone];
@@ -77,7 +87,7 @@ export function glassStyle(inputs: GlassInputs): GlassStyle {
       regular: level("regular"),
       thick: level("thick"),
       paper: level("paper"),
-      veil: { blur: veil.blur, saturation: veil.saturation, tint: withAlpha(veil[tone].tint, veil[tone].least) },
+      veil: { blur: veil.blur, saturation: inputs.tintGlass ? veil.saturation : UNTINTED, tint: withAlpha(veil[tone].tint, veil[tone].least) },
     },
     grain: GLASS.grain.amount,
     rim: { width: GLASS.rim.width, top: withAlpha(WHITE, rim.top), middle: withAlpha(WHITE, rim.middle), bottom: withAlpha(WHITE, rim.bottom) },
@@ -92,7 +102,7 @@ export function glassStyle(inputs: GlassInputs): GlassStyle {
 export class GlassSync {
   /** Nothing is sent before Dark Mode is known (a first style in the wrong mode would flash). */
   private dark: boolean | null = null;
-  private inputs: Omit<GlassInputs, "dark"> = { reduceTransparency: false, batterySaver: false };
+  private inputs: Omit<GlassInputs, "dark"> = { reduceTransparency: false, batterySaver: false, lighterOnSaver: true, tintGlass: true };
   private sentStyle = "";
   private sentClients = "";
   /** Whether the compositor frosts (null until it answered): false, the shell's own glass paints its fill. */

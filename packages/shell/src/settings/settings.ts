@@ -173,6 +173,8 @@ export function parseSettings(value: unknown): Loaded {
   settings.appearance.reduceMotion = appearance.reduceMotion ?? false;
   settings.appearance.reduceTransparency = appearance.reduceTransparency ?? false;
   settings.appearance.glassForApps = appearance.glassForApps ?? true;
+  settings.appearance.tintGlass = appearance.tintGlass ?? true;
+  settings.appearance.lighterGlassOnSaver = appearance.lighterGlassOnSaver ?? true;
   settings.appearance.highlightActiveWindow = appearance.highlightActiveWindow ?? false;
   settings.appearance.pointerSize = appearance.pointerSize ?? DEFAULT_POINTER_SIZE;
   settings.appearance.textSize = appearance.textSize ?? DEFAULT_TEXT_SIZE;

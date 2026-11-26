@@ -201,6 +201,11 @@ export function AppearancePane({ flags, settings, pick }: { flags: FlagsStore; s
         <Setting id="appearance/reduce-motion" detail="Fades instead of springs." control="appearance-reduce-motion" />
         <Setting id="appearance/highlight-active-window" control="appearance-highlight-window" />
       </Group>
+      <Group testID="appearance-glass">
+        <Setting id="appearance/reduce-transparency" control="appearance-reduce-transparency" />
+        <Setting id="appearance/tint-glass" control="appearance-tint-glass" />
+        <Setting id="appearance/glass-for-apps" control="appearance-glass-for-apps" />
+      </Group>
       <Caption>
         Light and Dark are the same choice as Control Center's Dark Mode. The accent never colors the tally, a widget's number, the agents' purple, the
         microphone or an error: those keep their meaning whatever you pick. Other apps follow it where they can.

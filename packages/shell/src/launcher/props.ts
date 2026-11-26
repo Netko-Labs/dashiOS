@@ -69,8 +69,6 @@ export interface LauncherReach {
   host?: LauncherHost;
   /** Where the compositor draws windows' live pictures, in the surface's pixels; empty clears them (launcher/pictures.ts). */
   onPictures?: (rects: PictureRect[]) => void;
-  /** Its panel is frosted glass (`DASHI_GLASS`, glass.ts): no fill of its own; where it is as it lays out, the tint, and its faintest words. */
-  onGlass?: (panel: { x: number; y: number; width: number; height: number }, look: { tint: string; ink: string }) => void;
   onClose: () => void;
 }
 

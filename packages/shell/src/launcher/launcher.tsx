@@ -27,8 +27,8 @@
  *   narrows the panel to its rows behind a chip; Esc leaves it.
  */
 
-import { SHADOW, useColors, useGlassTints } from "@dashi/ui";
-import { type Bounds, View } from "@mirinjs/metal";
+import { SHADOW, useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { fieldAccess } from "./access.ts";
 import { useCommands, useExtraKeys } from "./lib/commands.ts";
 import { FieldRow } from "./lib/field.tsx";
@@ -60,7 +60,6 @@ export function Launcher(props: LauncherProps) {
 
 function LauncherPanel(props: LauncherProps) {
   const colors = useColors();
-  const tints = useGlassTints();
   // Type and rows at the person's text size, and how many rows fit (launcher/lib/measures.ts).
   const m = useMeasures();
   const s = useLauncherState(props);
@@ -92,14 +91,12 @@ function LauncherPanel(props: LauncherProps) {
       />
       <View
         occlude
-        {...(props.onGlass ? { onLayout: (panel: Bounds) => props.onGlass?.(panel, { tint: tints.launcher, ink: colors.textMuted }) } : {})}
         style={{
           width: LAUNCHER.width,
           flexDirection: "column",
           borderRadius: LAUNCHER.radius,
           // Opaque in every mode: no window's words read through the field or the rows (DE-4, D697; the conversation's since D261).
-          // Over frosted glass (a spike, D710), none: the compositor blurs what is behind and tints it.
-          ...(props.onGlass ? {} : { backgroundColor: colors.launcher }),
+          backgroundColor: colors.launcher,
           borderWidth: 1,
           borderColor: colors.separator,
           shadow: SHADOW.xl,

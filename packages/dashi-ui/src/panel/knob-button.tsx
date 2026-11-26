@@ -11,8 +11,9 @@
  */
 
 import { type Bounds, type PressInfo, Svg, View } from "@mirinjs/metal";
+import { useFocusGap } from "../frosted.tsx";
 import { pill } from "../theme/index.ts";
-import { useControlColors } from "./colors.ts";
+import { knobEdge, useControlColors } from "./colors.ts";
 
 /** Its default measures: a 40 knob, an 18 glyph. */
 export const KNOB_BUTTON = { size: 40, glyph: 18 } as const;
@@ -62,6 +63,7 @@ export function KnobButton({
   const filled = inked === true || checked === true;
   const fill = filled ? colors.fill : lit ? colors.knobOn : (ground ?? colors.knobOff);
   const glyphInk = filled ? colors.fillInk : lit ? colors.onInk : (ink ?? colors.offInk);
+  const gap = useFocusGap(lit === true, colors.onInk);
   return (
     <View
       testID={testID}
@@ -80,6 +82,8 @@ export function KnobButton({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: fill,
+        ...knobEdge(colors, filled || lit === true),
+        ...gap,
         focusRingColor: colors.focus,
       }}
     >

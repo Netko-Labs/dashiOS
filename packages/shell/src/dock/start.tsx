@@ -9,7 +9,6 @@
 import { type Bounds, type NativeHostOptions, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import type { Compositor } from "../compositor/index.ts";
-import { GlassPanes } from "../glass.ts";
 import type { MenuController } from "../menus/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import type { App } from "../shared/apps/index.ts";
@@ -42,7 +41,7 @@ export interface StartDockOptions {
   /** Told where the icons are, for the compositor's minimize animation (animation-targets.ts); optional. */
   tiles?: TileStore;
   /** Null without dashi-comp: the Dock then cannot hide itself, it has no way to know where the pointer is. */
-  compositor: (Pick<Compositor, "inputRegion" | "edges" | "on"> & Partial<Pick<Compositor, "glass">>) | null;
+  compositor: Pick<Compositor, "inputRegion" | "edges" | "on"> | null;
   /** A Dock surface's host died by itself (on `output`): the shell decides whether the screen went with it. */
   onLost(output: string | undefined): void;
   /** Reduce Motion is on: the Dock appears and leaves without its entrance and exit. */
@@ -129,13 +128,11 @@ function signed(style: "dock" | "taskbar", output: string | undefined, openView:
 
 /**
  * The Dock's surface spans the screen's width with the panel in its middle: the compositor lets
- * clicks beside the panel through to the windows there (IPC `input-region`), and frosts the panel
- * when `DASHI_GLASS` names the Dock (glass.ts). Sent when it changes; null is the whole surface.
+ * clicks beside the panel through to the windows there (IPC `input-region`). Sent when it changes;
+ * null is the whole surface.
  */
 function regionSender(compositor: StartDockOptions["compositor"]): (rects: readonly Bounds[] | null) => void {
   let region = "";
-  const frost = compositor?.glass;
-  const glass = new GlassPanes(frost ? { glass: frost } : null, "dock", DOCK_NAMESPACE);
   return (rects) => {
     const wire = rects?.map(({ x, y, width, height }) => ({ x, y, width, height })) ?? null;
     const key = JSON.stringify(wire);
@@ -145,7 +142,6 @@ function regionSender(compositor: StartDockOptions["compositor"]): (rects: reado
     const panel = rects?.[0];
     const place = dockSign.place.getSnapshot();
     if (place && panel) dockSign.place.set({ ...place, panel: { x: panel.x, width: panel.width } });
-    glass.set(panel ? [panel] : "whole", DOCK.radius);
     compositor
       ?.inputRegion({ namespace: DOCK_NAMESPACE, rects: wire })
       .catch((error) => console.error("dashi-shell: the Dock takes clicks across the screen:", error instanceof Error ? error.message : error));

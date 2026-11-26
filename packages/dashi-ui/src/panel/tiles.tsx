@@ -17,9 +17,10 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { useFocusGap } from "../frosted.tsx";
 import { fillLength, levelAt } from "../slider-math.ts";
 import { OPACITY, pill, RADIUS, SPACE, TYPE, WEIGHT } from "../theme/index.ts";
-import { useControlColors } from "./colors.ts";
+import { knobEdge, useControlColors } from "./colors.ts";
 import { useSpring } from "./motion.ts";
 import { GlyphDisc, InkFill, LimitBar } from "./parts.tsx";
 
@@ -66,6 +67,7 @@ export function WideTile({ look, onToggle, onOpen }: { look: TileLook } & TilePr
   const colors = useControlColors();
   const radius = useTileRadius(look.on);
   const ink = look.on ? colors.onInk : colors.offInk;
+  const gap = useFocusGap(look.on, colors.onInk);
   return (
     <View
       testID={look.testID}
@@ -82,6 +84,7 @@ export function WideTile({ look, onToggle, onOpen }: { look: TileLook } & TilePr
         paddingRight: SPACE.button,
         borderRadius: radius,
         backgroundColor: look.on ? colors.on : colors.off,
+        ...gap,
         ...dimmed(look.dim),
       }}
     >
@@ -98,6 +101,7 @@ export function WideTile({ look, onToggle, onOpen }: { look: TileLook } & TilePr
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: look.on ? colors.knobOn : colors.knobOff,
+          ...knobEdge(colors, look.on),
         }}
       >
         <Svg markup={look.glyph} size={TILE.glyph} color={ink} />
@@ -120,6 +124,7 @@ export function RoundTile({ look, onToggle, onOpen }: { look: TileLook } & TileP
   const colors = useControlColors();
   const radius = useTileRadius(look.on);
   const ink = look.on ? colors.onInk : colors.offInk;
+  const gap = useFocusGap(look.on, colors.onInk);
   return (
     <View
       testID={look.testID}
@@ -135,6 +140,7 @@ export function RoundTile({ look, onToggle, onOpen }: { look: TileLook } & TileP
         gap: SPACE.xxs,
         borderRadius: radius,
         backgroundColor: look.on ? colors.on : colors.off,
+        ...gap,
         ...dimmed(look.dim),
       }}
     >

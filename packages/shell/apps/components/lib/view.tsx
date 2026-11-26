@@ -14,6 +14,7 @@ import { useAppMenus } from "../../kit/index.ts";
 import { AppsPage } from "./exhibits/apps.tsx";
 import { ButtonsPage, FieldsPage, PickersPage, SwitchesPage } from "./exhibits/controls.tsx";
 import { AlertsPage, MenusPage, NoticesPage, ProgressPage } from "./exhibits/feedback.tsx";
+import { GlassPage } from "./exhibits/glass.tsx";
 import { ChecksPage, PanelPage, PicksPage, StatesPage } from "./exhibits/kit.tsx";
 import { LoginPage } from "./exhibits/login.tsx";
 import { MeasuresPage } from "./exhibits/measures.tsx";
@@ -45,6 +46,7 @@ const PAGE_VIEWS: Readonly<Record<PageId, () => ReactNode>> = {
   shortcuts: () => <ShortcutsPage />,
   login: () => <LoginPage />,
   tinted: () => <TintedPage />,
+  glass: () => <GlassPage />,
   colors: () => <ColorsPage />,
   grounds: () => <GroundsPage />,
   tints: () => <TintsPage />,
@@ -81,6 +83,8 @@ export function GalleryWindow({ initialPage = "buttons" }: { initialPage?: PageI
           sidebar={sidebar}
           toolbar={<Segmented testID="components:mode" options={MODES} value={mode} onChange={setMode} />}
           overlay={overlay}
+          // The Glass page paints no ground, so its glass frosts what is behind the window.
+          seeThrough={page === "glass"}
         >
           {overlay === null && (
             <KeySink

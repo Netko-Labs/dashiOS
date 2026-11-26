@@ -16,6 +16,7 @@
  */
 
 import { createContext, createElement, type ReactNode, useContext, useSyncExternalStore } from "react";
+import { OnGlassContext, paintedPalette, WindowFocusContext } from "./on-glass.ts";
 import type { Palette } from "./palette.ts";
 import { paletteFor } from "./palette-for.ts";
 
@@ -50,6 +51,11 @@ export function useDark(): boolean {
   return fixed ?? live;
 }
 
+/** Dark Mode itself, whatever an `Appearance` above fixed: the mode the compositor draws glass in. */
+export function useSessionDark(): boolean {
+  return useSyncExternalStore(source.subscribe, source.isDark);
+}
+
 const noAccent = (): null => null;
 
 /** The accent's seed right now (null: Kombu); repaints the caller when it changes. */
@@ -57,7 +63,11 @@ export function useAccent(): string | null {
   return useSyncExternalStore(source.subscribe, source.accent ?? noAccent);
 }
 
-/** The palette to paint with right now. */
+/**
+ * The palette to paint with right now: on glass (`Frosted` above) its glass twin, and in a window without
+ * focus with a neutral selection (theme/on-glass.ts).
+ */
 export function useColors(): Palette {
-  return paletteFor(useDark(), useAccent());
+  const dark = useDark();
+  return paintedPalette(paletteFor(dark, useAccent()), dark, useContext(OnGlassContext), useContext(WindowFocusContext));
 }

@@ -104,6 +104,16 @@ export const MACHINE_ROWS = [
     stack: true,
   },
   {
+    id: "battery/lighter-glass",
+    glyph: BATTERY,
+    title: "Lighter glass on battery saver",
+    detail: "Glass shows only the wallpaper, blurred once, never what moves behind it.",
+    keywords: ["glass", "blur", "battery saver", "low power", "transparency"],
+    kind: "switch",
+    value: storedSwitch("appearance", "lighterGlassOnSaver", true),
+    agent: "lighter_glass_on_saver",
+  },
+  {
     id: "battery/stop-charging",
     glyph: PLUG,
     title: "Stop charging early",
