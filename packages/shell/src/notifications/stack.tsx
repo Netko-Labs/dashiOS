@@ -1,6 +1,7 @@
 /**
- * The banner stack: one Metal overlay per visible notification, top right
- * under the menu bar, stacked downward in the order they arrived.
+ * The banner stack: one Metal overlay per visible notification, in the
+ * banners' lane (NO-6: under the menu bar, top-aligned with the widget
+ * column and never over it, `bannerLane`), newest on top, 8 apart.
  *
  * A host can't move or resize its layer surface, so a banner whose place or
  * size changes (one above it went away, its text was replaced) gets a new
@@ -10,6 +11,7 @@
  */
 
 import { type NativeHostOptions, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
+import { COLUMN_RIGHT } from "./lib/area.ts";
 import { BANNER, Banner, bannerHeight, bannerSurface } from "./lib/banner.tsx";
 import type { NotificationStore } from "./store.ts";
 import type { Notification } from "./types.ts";
@@ -34,15 +36,16 @@ export interface Placement {
   height: number;
 }
 
-/** Where each banner goes: stacked top to bottom, the panels one shadow-width apart. */
+/** Where each banner goes (`banners` oldest first, as the store keeps them): the newest on top, the panels 8 apart. */
 export function place(banners: readonly Pick<Notification, "id" | "body" | "actions">[]): Placement[] {
   let top = 0;
-  return banners.map((banner) => {
+  const placed = [...banners].reverse().map((banner) => {
     const height = bannerHeight(banner);
     const placement = { id: banner.id, top, height };
-    top += height + BANNER.shadow;
+    top += height + BANNER.gap;
     return placement;
   });
+  return placed.reverse();
 }
 
 export class BannerStack {
@@ -59,6 +62,12 @@ export class BannerStack {
     private readonly handoffMs = HANDOFF_MS,
     /** Which screen a run of banners appears on (an output name); the compositor's choice when it gives none. */
     private readonly screen?: () => Promise<string | undefined>,
+    /**
+     * The banners' lane: how far a banner's panel stands from the screen's right edge (place.ts
+     * `bannerLane`). The area hides banners while it shows the widget column (store.ts `setCenterOpen`),
+     * so a banner takes the column's place at the edge.
+     */
+    private readonly lane: () => number = () => COLUMN_RIGHT,
   ) {}
 
   start(): () => void {
@@ -133,7 +142,7 @@ export class BannerStack {
         surface: {
           layer: "overlay",
           anchor: ["top", "right"],
-          margin: { top: placement.top },
+          margin: { top: placement.top, right: this.lane() - BANNER.shadow },
           namespace: BANNER_NAMESPACE,
           ...(this.output === undefined ? {} : { output: this.output }),
         },

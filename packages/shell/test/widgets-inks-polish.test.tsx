@@ -59,16 +59,16 @@ describe("Music on air", () => {
   test("at Small, the player's name and the Now tag; off air, the card as drawn (no header)", async () => {
     const onAir = await print(music("small", true));
     expect(onAir).toContain('"HELIUM"');
-    expect(onAir).toContain(`"NOW"`);
+    expect(onAir).toContain(`"Now"`);
     const quiet = await print(music("small", false));
-    expect(quiet).not.toContain(`"NOW"`);
+    expect(quiet).not.toContain(`"Now"`);
     expect(quiet).not.toContain('"HELIUM"');
   });
 
   test("at Wide, the player's name stays beside the Now tag", async () => {
     const onAir = await print(music("wide", true));
     expect(onAir).toContain('"MUSIC · HELIUM"');
-    expect(onAir).toContain(`"NOW"`);
+    expect(onAir).toContain(`"Now"`);
   });
 
   test("the bar has a capsule with the track's words, never a bare dot by the clock", () => {

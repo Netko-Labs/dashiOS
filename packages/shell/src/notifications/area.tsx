@@ -31,10 +31,11 @@ import {
   type WidgetHub,
   Words,
 } from "../widgets/index.ts";
+import { AREA, AREA_GLOW, COLUMN_RIGHT } from "./lib/area.ts";
 import { foldGroups } from "./lib/ceiling.ts";
 import { groupByApp } from "./lib/group.ts";
 import { PaperNote } from "./lib/paper-note.tsx";
-import { AREA, type AreaPlace, areaBottom, galleryPlace } from "./lib/place.ts";
+import { type AreaPlace, areaBottom, galleryPlace } from "./lib/place.ts";
 import { useNotifications } from "./store.ts";
 import type { HistoryEntry } from "./types.ts";
 
@@ -68,11 +69,19 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
         <View
           occlude
           testID="notification-center"
-          style={{ position: "absolute", right: AREA.right, top: AREA.top, bottom: areaBottom(dockInset), width: COLUMN_WIDTH + 8 }}
+          style={{ position: "absolute", right: 0, top: 0, bottom: areaBottom(dockInset), width: COLUMN_WIDTH + COLUMN_RIGHT + AREA_GLOW }}
         >
           <View testID="nc-list" style={{ flex: 1, overflow: "scroll" }}>
+            {/* The column stands where it always did; the room round it is for a card on air's glow, which the list would clip (CO-12). */}
             <View
-              style={{ flexDirection: "column", gap: AREA.gap, paddingLeft: SPACE.xs, paddingRight: SPACE.xs, paddingTop: SPACE.xs, paddingBottom: SPACE.m }}
+              style={{
+                flexDirection: "column",
+                gap: AREA.gap,
+                paddingLeft: AREA_GLOW,
+                paddingRight: COLUMN_RIGHT,
+                paddingTop: AREA.top + SPACE.xs,
+                paddingBottom: SPACE.m,
+              }}
             >
               {editing ? (
                 <EditWidgets placements={placements} session={session} onDone={done} />

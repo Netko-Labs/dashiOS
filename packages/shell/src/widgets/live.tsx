@@ -1,6 +1,6 @@
 /**
  * Live cards at the top of the area: a running timer, an agent's run, a
- * question that waits. The holder floods; one standby card shows with a
+ * question that waits. The holder glows in its ink (CO-12); one standby card shows with a
  * hollow ring; more than two fold into one row of glyphs and numbers (#23).
  * A right-click pins a card (the design's long press, D403).
  */

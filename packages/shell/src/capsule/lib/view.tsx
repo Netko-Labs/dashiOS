@@ -4,14 +4,14 @@
  * its bounds, which is all of it that takes the pointer.
  */
 
-import { CLEAR, useDark } from "@dashi/ui";
+import { useDark } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { type ReactNode, useSyncExternalStore } from "react";
 import { type Cell, type DictationCommand, goesToVoice, type Persona, type VoiceModeCommand } from "../../shared/pill/index.ts";
 import type { Place, Shown } from "../types.ts";
 import { Card, type CardAnswer } from "./card.tsx";
 import { Capsule, DictationLine } from "./line.tsx";
-import { CARD, dashiColours, inkColours } from "./measures.ts";
+import { dashiColours, inkColours } from "./measures.ts";
 import { VoiceLine } from "./voice-line.tsx";
 
 /** What shows, and where. */
@@ -75,19 +75,11 @@ export function CapsuleView(props: CapsuleViewProps) {
     return (
       <View style={{ flex: 1, position: "relative" }}>
         <View style={{ position: "absolute", left: 0, right: 0, bottom: cardBottom, flexDirection: "row", justifyContent: "center" }}>
-          {/* With the keyboard the white outline wears an ink line outside it, so it shows on a white window too. */}
-          <View
-            onLayout={props.onBounds}
-            style={{
-              flexShrink: 0,
-              borderRadius: CARD.radius + CARD.focusLine,
-              borderWidth: CARD.focusLine,
-              borderColor: shown.card.keyboard ? CARD.focusInk : CLEAR,
-            }}
-          >
+          <View onLayout={props.onBounds} style={{ flexShrink: 0 }}>
             <Card
               card={shown.card}
               colours={dashi}
+              personaColour={persona.colour}
               name={persona.name}
               talkKey={props.talkKey()}
               listening={shown.listening}
