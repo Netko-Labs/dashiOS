@@ -3,7 +3,7 @@ import { GLASS } from "@dashi/ui";
 import { GlassSync, glassMode, glassStyle, withAlpha } from "../src/glass-style.ts";
 import { settle } from "./support/time.ts";
 
-const LIGHT = { dark: false, reduceTransparency: false, batterySaver: false };
+const LIGHT = { dark: false, reduceTransparency: false, batterySaver: false, lighterOnSaver: true, tintGlass: true };
 
 describe("glass-style: Frost's numbers, as the compositor takes them", () => {
   test("each level takes its blur, saturation, tint at its least α and solid twin, per mode", () => {
@@ -24,9 +24,26 @@ describe("glass-style: Frost's numbers, as the compositor takes them", () => {
   });
 
   test("Reduce Transparency is solid, battery saver the wallpaper only; Reduce Transparency wins", () => {
-    expect(glassMode({ reduceTransparency: false, batterySaver: false })).toBe("frosted");
-    expect(glassMode({ reduceTransparency: false, batterySaver: true })).toBe("xray");
-    expect(glassMode({ reduceTransparency: true, batterySaver: true })).toBe("solid");
+    const on = { lighterOnSaver: true };
+    expect(glassMode({ ...on, reduceTransparency: false, batterySaver: false })).toBe("frosted");
+    expect(glassMode({ ...on, reduceTransparency: false, batterySaver: true })).toBe("xray");
+    expect(glassMode({ ...on, reduceTransparency: true, batterySaver: true })).toBe("solid");
+  });
+
+  test("Lighter glass on battery saver off keeps glass frosted on battery saver (GL-3, D729)", () => {
+    expect(glassMode({ reduceTransparency: false, batterySaver: true, lighterOnSaver: false })).toBe("frosted");
+    expect(glassStyle({ ...LIGHT, batterySaver: true, lighterOnSaver: false }).mode).toBe("frosted");
+  });
+
+  test("Tint glass with the wallpaper off: every level's saturation is 1, the rest unchanged (GL-4)", () => {
+    const tinted = glassStyle(LIGHT);
+    const gray = glassStyle({ ...LIGHT, tintGlass: false });
+    for (const level of ["thin", "regular", "thick", "paper", "veil"] as const) {
+      expect(gray.levels[level].saturation).toBe(1);
+      expect(gray.levels[level].blur).toBe(tinted.levels[level].blur);
+      expect(gray.levels[level].tint).toBe(tinted.levels[level].tint);
+    }
+    expect(tinted.levels.regular.saturation).toBe(GLASS.levels.regular.saturation);
   });
 
   test("α as two hex digits", () => {

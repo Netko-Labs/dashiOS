@@ -139,7 +139,8 @@ function applySettings(look: Applied, settings: Settings, desktops: Desktops, do
   chromeStyle?.setReduceMotion(settings.appearance.reduceMotion);
   hostAbilities.setReduceMotion(settings.appearance.reduceMotion);
   windowStyle?.set({ highlight: settings.appearance.highlightActiveWindow, reduceMotion: settings.appearance.reduceMotion });
-  look.glass?.set({ reduceTransparency: settings.appearance.reduceTransparency });
+  const { reduceTransparency, lighterGlassOnSaver, tintGlass } = settings.appearance;
+  look.glass?.set({ reduceTransparency, lighterOnSaver: lighterGlassOnSaver, tintGlass });
   look.glass?.setApps(settings.appearance.glassForApps);
   state.wallpaperChoice = settings.appearance.wallpaper;
   if (state.liveWallpaper) state.liveWallpaper.apply(state.wallpaperChoice);

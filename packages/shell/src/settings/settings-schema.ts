@@ -73,6 +73,8 @@ export const APPEARANCE = {
   reduceMotion: REDUCE_MOTION,
   reduceTransparency: bool(),
   glassForApps: bool(),
+  tintGlass: bool(),
+  lighterGlassOnSaver: bool(),
   highlightActiveWindow: bool(),
   auto: bool(),
   pointerSize: POINTER_SIZE,

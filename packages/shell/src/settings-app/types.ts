@@ -49,6 +49,14 @@ export interface AppearanceSettings {
   cornerRadius?: CornerName;
   /** Window animations off (the compositor's; motion/). */
   reduceMotion?: boolean;
+  /** Every glass material is its solid twin (glass-style.ts, GL-3); off when not set. */
+  reduceTransparency?: boolean;
+  /** The wallpaper's colour comes through glass (GL-4); on when not set. */
+  tintGlass?: boolean;
+  /** Apps that aren't Dashi's get glass where they ask (D731); on when not set. */
+  glassForApps?: boolean;
+  /** Battery saver shows the wallpaper only behind glass (GL-3, D729); on when not set. */
+  lighterGlassOnSaver?: boolean;
   /** A ring in the accent color around the window with the keyboard (appearance/window-style.ts); off when not set. */
   highlightActiveWindow?: boolean;
   /** Dark Mode follows the time of day: dark in the evening and night (appearance/auto.ts). */

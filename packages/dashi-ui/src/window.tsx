@@ -14,10 +14,10 @@
  * `notice` that floats over the content's foot and takes no room from it.
  */
 
-import { type PressInfo, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
+import { type PressInfo, Svg, Text, useWindowActive, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { SIDEBAR } from "./sidebar.tsx";
-import { CLEAR, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "./theme/index.ts";
+import { CLEAR, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT, WindowFocusContext } from "./theme/index.ts";
 import { TooltipLayer, useTooltip } from "./tooltip.tsx";
 import { WindowTitle } from "./window-title.tsx";
 
@@ -89,6 +89,8 @@ export interface AppWindowProps {
   notice?: ReactNode;
   /** Above everything: a sheet or a popup menu. */
   overlay?: ReactNode;
+  /** The content paints no ground, so glass shown in it frosts what is behind the window: the gallery's Glass page only (GL-6). */
+  seeThrough?: boolean;
   children: ReactNode;
 }
 
@@ -105,6 +107,7 @@ export function AppWindow({
   rail,
   notice,
   overlay,
+  seeThrough = false,
   children,
 }: AppWindowProps) {
   const colors = useColors();
@@ -113,53 +116,60 @@ export function AppWindow({
   const height = Math.max(inset.top, TOOLBAR_HEIGHT);
   const sidebarWidth = rail ? SIDEBAR.rail : wide;
   const titleGone = hideTitle === true || titleSlot !== undefined;
+  // Without focus every selection in it turns neutral (CO-9).
+  const focused = useWindowActive();
   return (
     // The focus ring is kombu in every control inside (KB-2).
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative", focusRingColor: colors.focusRing }}>
-      <TooltipLayer>
-        {sidebar !== undefined && (
-          <WindowSidebar width={sidebarWidth} top={inset.unified ? height : WINDOW_SIDEBAR_TOP}>
-            {sidebar}
-          </WindowSidebar>
-        )}
-        <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-          {(inset.unified || toolbar !== undefined || titleSlot !== undefined) && (
-            <View
-              testID="window-toolbar"
-              dragRegion
-              style={{
-                height,
-                flexShrink: 0,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: SPACE.gap,
-                paddingLeft: toolbarInset(inset.leading, sidebar === undefined ? 0 : sidebarWidth),
-                paddingRight: SPACE.inset,
-                borderBottomWidth: 1,
-                borderColor: colors.separator,
-              }}
-            >
-              {leading}
-              {titleSlot}
-              {!titleGone && inset.unified ? (
-                <WindowTitle title={title} {...(detail ? { detail } : {})} {...(afterTitle !== undefined ? { after: afterTitle } : {})} />
-              ) : (
-                titleSlot === undefined && <View style={{ flex: 1 }} />
-              )}
-              {toolbar}
-            </View>
+    <View
+      style={{ flex: 1, flexDirection: "row", backgroundColor: seeThrough ? CLEAR : surface.window, position: "relative", focusRingColor: colors.focusRing }}
+    >
+      <WindowFocusContext.Provider value={focused}>
+        <TooltipLayer>
+          {sidebar !== undefined && (
+            <WindowSidebar width={sidebarWidth} top={inset.unified ? height : WINDOW_SIDEBAR_TOP}>
+              {sidebar}
+            </WindowSidebar>
           )}
-          <View style={{ flex: 1, flexDirection: "column", minHeight: 0, position: "relative" }}>
-            {children}
-            {notice !== undefined && notice !== null && notice !== false && (
-              <View testID="window-notice" style={{ position: "absolute", left: 16, right: 16, bottom: 14, alignItems: "center" }}>
-                {notice}
+          <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+            {(inset.unified || toolbar !== undefined || titleSlot !== undefined) && (
+              <View
+                testID="window-toolbar"
+                dragRegion
+                style={{
+                  height,
+                  flexShrink: 0,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: SPACE.gap,
+                  paddingLeft: toolbarInset(inset.leading, sidebar === undefined ? 0 : sidebarWidth),
+                  paddingRight: SPACE.inset,
+                  borderBottomWidth: 1,
+                  borderColor: colors.separator,
+                  ...(seeThrough ? { backgroundColor: surface.window } : {}),
+                }}
+              >
+                {leading}
+                {titleSlot}
+                {!titleGone && inset.unified ? (
+                  <WindowTitle title={title} {...(detail ? { detail } : {})} {...(afterTitle !== undefined ? { after: afterTitle } : {})} />
+                ) : (
+                  titleSlot === undefined && <View style={{ flex: 1 }} />
+                )}
+                {toolbar}
               </View>
             )}
+            <View style={{ flex: 1, flexDirection: "column", minHeight: 0, position: "relative" }}>
+              {children}
+              {notice !== undefined && notice !== null && notice !== false && (
+                <View testID="window-notice" style={{ position: "absolute", left: 16, right: 16, bottom: 14, alignItems: "center" }}>
+                  {notice}
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-        {overlay}
-      </TooltipLayer>
+          {overlay}
+        </TooltipLayer>
+      </WindowFocusContext.Provider>
     </View>
   );
 }

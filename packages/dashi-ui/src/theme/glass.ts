@@ -3,28 +3,13 @@
  * GL-4): four neutral materials, each a blur of what is behind, a saturation lift, a tint per mode that
  * the contrast floor raises (never lowers) until the surface's weakest words keep 4.5:1, a static grain,
  * a light rim and a dark hairline. Every number here is the shell's (D713): the compositor only draws
- * them (y3), mirin's `material` names the level (y2), and the kit's surfaces wear it (y4). Values only,
- * all in `GLASS` (at the end): nothing reads them yet but design.html (H24).
- *
- * `GLASS_TINTS` is the spike's (D710, D713): the launcher's tint, still what `DASHI_GLASS` draws.
+ * them (y3), mirin's `material` names the level (y2), and the kit's surfaces wear it (y4: `Frosted`, and
+ * on-glass.ts for what is painted on it). Values only, all in `GLASS` (at the end).
  */
 
-import { useDark } from "./appearance.ts";
 import { GLASS_SURFACES } from "./glass-surfaces.ts";
 import { INK_PAPER } from "./inks.ts";
 import type { Oklch } from "./lib/oklch.ts";
-import { lightColors, TRUE_BLACK } from "./palette.ts";
-
-/** Each frosted surface's tint, by mode (the spike's, D713). */
-export const GLASS_TINTS = {
-  light: { launcher: `${lightColors.launcher}b3` },
-  dark: { launcher: `${TRUE_BLACK.lift}b3` },
-} as const;
-
-/** The tints for the mode right now. */
-export function useGlassTints(): { launcher: string } {
-  return useDark() ? GLASS_TINTS.dark : GLASS_TINTS.light;
-}
 
 /** Frost's four materials, thinnest first. */
 export type GlassLevel = "thin" | "regular" | "thick" | "paper";

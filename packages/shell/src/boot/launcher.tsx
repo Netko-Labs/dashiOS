@@ -10,7 +10,6 @@ import type { AgentStore, Agents } from "../agents/index.ts";
 import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { launchEntry } from "../entries.ts";
-import { GlassPanes } from "../glass.ts";
 import type { LauncherFiles, PictureRect, Presented } from "../launcher/index.ts";
 import {
   AppIndex,
@@ -223,7 +222,6 @@ export function startLauncher(needs: LauncherNeeds): LauncherParts {
     launchFromLauncher,
     openWith,
     pictures,
-    glass: new GlassPanes(compositor, "launcher", "dashi.launcher"),
     heightMs,
     access,
   };

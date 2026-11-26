@@ -9,6 +9,7 @@
 
 import { type Bounds, createPortal, Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
+import { OffGlass, useSolidTwin } from "./frosted.tsx";
 import { RADIUS, SHADOW, SPACE, TYPE, useColors } from "./theme/index.ts";
 
 /** How long the pointer rests before the tip shows. */
@@ -43,8 +44,18 @@ export function TooltipLayer({ children }: { children: ReactNode }) {
   );
 }
 
-function Tip({ text, anchor, layer }: { text: string; anchor: Bounds; layer: Layer }) {
+/** A tip is never glass (GL-6, T-1): regular's solid twin, in a window's inks, whatever it hangs over. */
+function Tip(props: { text: string; anchor: Bounds; layer: Layer }) {
+  return (
+    <OffGlass>
+      <TipView {...props} />
+    </OffGlass>
+  );
+}
+
+function TipView({ text, anchor, layer }: { text: string; anchor: Bounds; layer: Layer }) {
   const colors = useColors();
+  const ground = useSolidTwin("regular");
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const at = tooltipOrigin(anchor, size ?? { width: 0, height: 0 }, layer.width);
   return createPortal(
@@ -64,7 +75,7 @@ function Tip({ text, anchor, layer }: { text: string; anchor: Bounds; layer: Lay
         borderRadius: RADIUS.row,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: colors.menu,
+        backgroundColor: ground,
         borderWidth: 1,
         borderColor: colors.separator,
         shadow: SHADOW.sm,

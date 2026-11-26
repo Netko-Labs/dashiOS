@@ -27,6 +27,10 @@ export interface Settings {
     reduceTransparency: boolean;
     /** Apps that aren't Dashi's get glass where they ask (glass-style.ts, D731). */
     glassForApps: boolean;
+    /** The wallpaper's colour comes through glass by its saturation; off, saturation 1 (GL-4). */
+    tintGlass: boolean;
+    /** Battery saver keeps glass, the wallpaper only behind it (GL-3, D729); off, glass stays as it is. */
+    lighterGlassOnSaver: boolean;
     highlightActiveWindow: boolean;
     pointerSize: number;
     /** What the shell's type is multiplied by (text-size.ts). */
@@ -62,6 +66,8 @@ export function defaults(): Settings {
       reduceMotion: false,
       reduceTransparency: false,
       glassForApps: true,
+      tintGlass: true,
+      lighterGlassOnSaver: true,
       highlightActiveWindow: false,
       pointerSize: DEFAULT_POINTER_SIZE,
       textSize: DEFAULT_TEXT_SIZE,

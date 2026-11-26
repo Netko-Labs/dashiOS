@@ -4,13 +4,21 @@
  * a menu's lit row in them, and a floating panel's edge.
  */
 
-import { createContext } from "react";
+import { createContext, useContext } from "react";
 import type { MenuHighlight } from "../menu-row.tsx";
-import { type ControlPalette, controlPalette, DARK_CONTROLS, useAccent, useDark } from "../theme/index.ts";
+import { type ControlPalette, controlPalette, DARK_CONTROLS, glassControls, OnGlassContext, useAccent, useDark } from "../theme/index.ts";
 
+/** The panel look's colours right now; on glass, their glass twins (theme/on-glass.ts). */
 export function useControlColors(): ControlPalette {
-  return controlPalette(useDark(), useAccent());
+  const dark = useDark();
+  const base = controlPalette(dark, useAccent());
+  const glass = useContext(OnGlassContext);
+  return glass ? glassControls(base, dark, glass) : base;
 }
+
+/** On glass an off knob wears the glass control edge (CC-1); a lit one sits on the accent and needs none. */
+export const knobEdge = (colors: ControlPalette, on: boolean): { borderWidth?: number; borderColor?: string } =>
+  colors.edge !== undefined && !on ? { borderWidth: 1, borderColor: colors.edge } : {};
 
 /**
  * Whether a panel control sits on a card. Settings' cards (and the

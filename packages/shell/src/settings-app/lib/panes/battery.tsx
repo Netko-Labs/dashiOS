@@ -183,6 +183,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
             />
           </Setting>
         )}
+        <Setting id="battery/lighter-glass" control="battery-lighter-glass" />
         {/* The charge limit and battery health only while a battery is there (SE-17). */}
         {services.laptop && battery && limit !== null && <ChargeLimitRow laptop={services.laptop} settings={settings} />}
       </Group>

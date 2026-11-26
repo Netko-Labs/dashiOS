@@ -134,7 +134,8 @@ function PanelButton({
         backgroundColor: primary && state.pressed ? primaryPressed : rest,
         hoverBackgroundColor: disabled ? rest : primary ? (state.pressed ? primaryPressed : primaryHover) : colors.knobOff,
         borderWidth: primary ? 0 : m.edge,
-        borderColor: colors.line,
+        // On glass the outline is the glass control edge (CO-6).
+        borderColor: colors.edge ?? colors.line,
         opacity: state.opacity,
         focusRingColor: colors.focus,
       }}

@@ -8979,3 +8979,88 @@ short words, as the rulebook is written.
     compositor's part is also missing.
   - Not taken: holding a widget's category figures at 3:1 as large text (lock-v3's question 4). The wakame
     step makes it pass at 4.5:1, and a threshold is not loosened when an ink can move instead (Part A).
+
+### D770. A surface wears a level through the kit's `Frosted`, its solid twin as its fill
+
+- **Date:** 2026-11-26. `v10/glass-kit` (reversible; decided here).
+- **Question:** how does a Dashi surface wear Frost (DE-4): mirin's `material` directly, or through the kit?
+- **Choice:** `@dashi/ui`'s `<Frosted level="…">` (`packages/dashi-ui/src/frosted.tsx`): a view whose
+  `backgroundColor` is the level's solid twin in the mode in use, and which sends `material` only to a
+  host whose protocol line says `glass` (an older one refuses the tree), read through mirin's
+  `useWindowGlass()`. Below it, `OnGlassContext` says the level and the backdrop's tone, and the kit's
+  palettes turn to their glass twins (D771, D772). A third `Frosted` in a tree is its twin with neutral
+  inks (GL-2: the compositor's overlap rule, D734, catches glass over glass from other surfaces);
+  `solid` turns glass off for one surface; `OffGlass` puts a window's ground back (a tooltip, GL-6).
+- **Why:** the twin must be right wherever the compositor draws no glass (another compositor, glass off
+  for the app, the first frame), and every control under the surface has to know it is on glass; one
+  component does both, so no surface can forget either.
+- **Cost:** a surface's glass is a React subtree, not a prop on any view.
+- **Undo:** surfaces pass `material` themselves and wrap their trees in `OnGlassContext`.
+
+### D771. The vibrant inks: the token's lightness, the backdrop's hue, its chroma up to the token's
+
+- **Date:** 2026-11-26. `v10/glass-kit` (reversible; decided here).
+- **Question:** GL-1's words "lean a breath to the backdrop's hue". How much, from what?
+- **Choice:** `vibrantInks(dark, tone)` (`theme/on-glass.ts`): `GLASS.ink`'s L, the tone's hue (OKLCH),
+  and the smaller of the token's C and the tone's own C, so a grey backdrop gives grey words. Neutral
+  (C 0) until the compositor says a tone, on a third layer and with glass off. The tone is the window's
+  (mirin reads `dashi_glass_v1.tone` for its first pane: `useWindowGlass().tone`, `useGlassTone()`), not
+  per pane. Words keep 4.5:1 on each level's twin (tested); the floor keeps them over the backdrop.
+- **Why:** the floor measures neutral grey at this lightness (glass-style's `floor.ink`), and the
+  chroma it adds moves luminance by less than the floor's margin; one tone per window is what the
+  protocol sends.
+- **Undo:** C from the token alone; or neutral inks always.
+
+### D772. The palettes on glass, and a selection without focus
+
+- **Date:** 2026-11-26. `v10/glass-kit` (reversible; frost-objects' builder's table, owner's round 2).
+- **Choice:** under `Frosted`, `useColors()` is `paintedPalette(…)`: words and `dot` the vibrant inks,
+  disabled words primary at 40 %, `controlEdge` and `checkbox` the glass edge (`GLASS.edge`), `button`
+  and `tile` white at `GLASS.fill` (hover 12 points more), `ume`, `critical`, `criticalInk` and
+  `batteryLow` the stepped ume (Light `#A0324A`, Dark `#F6859B`: Dark's step for "on a fill" is used for
+  all of Dark's ume on glass, lighter being safer on dark glass), Light's microphone `#9F4800` on a 12 %
+  wash, `accentInk` primary (a link on glass is ink), a selection the accent at 22 % under primary
+  words. `useControlColors()` (the panel look): off tiles and chips a fill, words vibrant, and a new
+  `edge` (the glass edge) that off knobs, outline pills and the panel switch's off outline wear.
+  `useSurface()`: a field, a card and a stripe are fills. The Inks on glass: `glassInkTokens` steps
+  Light matcha and wakame. A chosen segment is raised on paper (`glassRaised`: white, Dark `#4A4A50`).
+  A window without focus (`AppWindow` reads mirin's `useWindowActive()` into `WindowFocusContext`)
+  turns every selection neutral, on glass or not: ink at 10 %, its bar ink at 55 % (CO-9 says "a window
+  without focus", not only glass).
+- **Cost:** `useColors()` reads two contexts; a window's focus change repaints its selection's users.
+- **Undo:** the glass twins only where a control asks; the neutral selection only on glass.
+
+### D773. The shell's glass switches reach the compositor through `glass-style`
+
+- **Date:** 2026-11-26. `v10/glass-kit` (reversible; the brief's rows, the owner's round 2).
+- **Choice:** Settings › Appearance gets a glass group: Reduce transparency
+  (`appearance.reduceTransparency`), Tint glass with the wallpaper (`appearance.tintGlass`, on: off sends
+  every level's and the veil's saturation as 1, GL-4), Glass for other apps (`appearance.glassForApps`,
+  `glass-clients`). Settings › Battery gets Lighter glass on battery saver
+  (`appearance.lighterGlassOnSaver`, on: off keeps glass frosted on battery saver, GL-3, D729). The
+  battery row's value lives in `appearance` with the others: one section holds how glass looks. Each is
+  an agent setting too (`set_setting`). The spike's `DASHI_GLASS` and its panes (`src/glass.ts`: the
+  launcher's, the Dock's and the bar's) are gone; the launcher is solid until its engineer moves it.
+- **Undo:** drop the rows; settings.json still takes the keys.
+
+### D774. The ring's gap on the accent is mirin's, inherited like the ring's colour
+
+- **Date:** 2026-11-26. `v10/glass-kit` (reversible; KB-2, D763).
+- **Choice:** mirin draws a 1.5 px band of `focusRingGapColor` just inside the ring (PR #60), set on a
+  view for it and the focusable views inside, as `focusRingColor` is. The kit's `useFocusGap(lit,
+  onAccent)` sets it on a lit tile, a lit knob and an on switch, only for a host that says `focusGap`.
+  A lit tile's own ring gets the gap too, which shows as a white halo between purple and the tile:
+  harmless, and one rule.
+- **Why:** the ring is Metal's (KB-2: nothing draws one by hand), so its gap is too.
+- **Undo:** drop the style; the ring is purple on the accent again.
+
+### D775. A shadow is cut out of its view, in mirin
+
+- **Date:** 2026-11-26. `v10/glass-kit` (reversible; y3's finding, the brief's item 3).
+- **Question:** the launcher's glass read 19 % dark: `SHADOW.xl` under a view with no fill.
+- **Choice:** mirin's engine cuts every drop shadow out of its caster, as CSS clips an outer
+  `box-shadow` to outside the border box (`Shadow::caster_bounds`; mirin PR #60). Floating glass keeps
+  `SHADOW.xl` (DE-1).
+- **Why:** the host's bug, fixed where it starts (Part A); a view with a translucent fill was darkened
+  by its own shadow too.
+- **Undo:** revert the shader's cut; surfaces drop their shadows instead.

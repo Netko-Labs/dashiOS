@@ -44,6 +44,8 @@ export interface ControlPalette {
   knobRest: string;
   /** The soft ink wash on the row a link or the search lands on (purple stays the keyboard's and the agents'). */
   lit: string;
+  /** On glass only: the glass control edge (CO-6, CC-1), a knob's, an outline pill's and an off switch's outline. */
+  edge?: string;
 }
 
 /** The knob's wash on an on tile: the words' colour, faint. */

@@ -14,6 +14,7 @@ import { useContext } from "react";
 import type { Look } from "./button-measures.ts";
 import { ControlName } from "./control-name.ts";
 import { useControlState } from "./control-state.tsx";
+import { useFocusGap, useOnGlass } from "./frosted.tsx";
 import { useControlColors } from "./panel/index.ts";
 import { CLEAR, INK_PAPER, INK_TEXT, KNOB, onOf, pill, SHADOW, useColors, useDark } from "./theme/index.ts";
 
@@ -53,10 +54,14 @@ export function Switch({ on, testID, onChange, disabled, focused, focusable = tr
   const shade = onOf(colors);
   const onFill = state.pressed ? colors.selectionPressed : shade.on;
   const m = look === "panel" ? PANEL_SWITCH : look === "inks" ? INKS_SWITCH : SWITCH;
-  const offEdge = look === "panel" && !on;
+  const glass = useOnGlass() !== null;
+  // On glass an off switch is the glass edge only (CO-6); the panel look's outline takes that edge too.
+  const offEdge = (look === "panel" || (look === "window" && glass)) && !on;
+  const edgeWidth = look === "panel" ? PANEL_SWITCH.edge : 1;
+  const gap = useFocusGap(on && look !== "inks", shade.onInk);
   const onLit = lit && on;
   const panelTrack = state.pressed ? panel.knobOff : CLEAR;
-  const windowTrack = state.pressed ? colors.pressed : colors.track;
+  const windowTrack = state.pressed ? colors.pressed : glass ? CLEAR : colors.track;
   const track =
     look === "inks" ? (on ? INK_TEXT[mode].ink : INK_TEXT[mode].hairline) : onLit ? shade.onInk : on ? onFill : look === "panel" ? panelTrack : windowTrack;
   const knob = look === "inks" ? INK_PAPER[mode] : onLit ? shade.on : look === "panel" ? (on ? shade.onInk : panel.muted) : KNOB;
@@ -76,12 +81,13 @@ export function Switch({ on, testID, onChange, disabled, focused, focusable = tr
         flexShrink: 0,
         borderRadius: pill(m.height),
         // The outline takes its width from the inset, so the knob sits where it does when on.
-        padding: offEdge ? m.inset - PANEL_SWITCH.edge : m.inset,
+        padding: offEdge ? m.inset - edgeWidth : m.inset,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: on ? "flex-end" : "flex-start",
         backgroundColor: track,
-        ...(offEdge ? { borderWidth: PANEL_SWITCH.edge, borderColor: panel.muted } : {}),
+        ...(offEdge ? { borderWidth: edgeWidth, borderColor: look === "panel" ? (panel.edge ?? panel.muted) : colors.controlEdge } : {}),
+        ...gap,
         opacity: state.opacity,
         focusRingColor: colors.focusRing,
       }}

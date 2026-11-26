@@ -16,6 +16,7 @@
  */
 
 import { createContext, createElement, type ReactNode, useContext, useSyncExternalStore } from "react";
+import { OnGlassContext, paintedPalette, WindowFocusContext } from "./on-glass.ts";
 import type { Palette } from "./palette.ts";
 import { paletteFor } from "./palette-for.ts";
 
@@ -57,7 +58,11 @@ export function useAccent(): string | null {
   return useSyncExternalStore(source.subscribe, source.accent ?? noAccent);
 }
 
-/** The palette to paint with right now. */
+/**
+ * The palette to paint with right now: on glass (`Frosted` above) its glass twin, and in a window without
+ * focus with a neutral selection (theme/on-glass.ts).
+ */
 export function useColors(): Palette {
-  return paletteFor(useDark(), useAccent());
+  const dark = useDark();
+  return paintedPalette(paletteFor(dark, useAccent()), dark, useContext(OnGlassContext), useContext(WindowFocusContext));
 }

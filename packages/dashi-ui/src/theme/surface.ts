@@ -5,7 +5,9 @@
  * Dock) paints from the palette directly.
  */
 
+import { useContext } from "react";
 import { useDark } from "./appearance.ts";
+import { glassSurface, OnGlassContext } from "./on-glass.ts";
 import { TRUE_BLACK } from "./palette.ts";
 
 export interface Surface {
@@ -37,6 +39,9 @@ export const DARK_SURFACE: Surface = {
   canvas: TRUE_BLACK.ground,
 };
 
+/** The grounds right now; on glass a field, a card and a stripe are fills laid on it. */
 export function useSurface(): Surface {
-  return useDark() ? DARK_SURFACE : LIGHT_SURFACE;
+  const dark = useDark();
+  const base = dark ? DARK_SURFACE : LIGHT_SURFACE;
+  return useContext(OnGlassContext) ? glassSurface(base, dark) : base;
 }

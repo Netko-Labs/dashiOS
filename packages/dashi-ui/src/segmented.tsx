@@ -14,9 +14,10 @@ import { createContext, useContext } from "react";
 import type { Look } from "./button-measures.ts";
 import type { Choice } from "./choices.tsx";
 import { useControlState } from "./control-state.tsx";
+import { useOnGlass } from "./frosted.tsx";
 import { CHEVRON_DOWN } from "./glyphs.ts";
 import { useControlColors, useSpring } from "./panel/index.ts";
-import { CLEAR, SHADOW, SPACE, TYPE, useColors, useSurface, WEIGHT } from "./theme/index.ts";
+import { CLEAR, glassRaised, SHADOW, SPACE, TYPE, useColors, useDark, useSurface, WEIGHT } from "./theme/index.ts";
 
 /** The window look's measures: a track 26 tall at radius 8, 2 in; a segment one step in at 6; a glyph 16. */
 export const SEGMENTED_WINDOW = { height: 26, inset: 2, trackRadius: 8, segmentRadius: 6, padding: SPACE.inset, glyph: 16 } as const;
@@ -113,7 +114,10 @@ function WindowSegment<T>({
   const colors = useColors();
   const surface = useSurface();
   const state = useControlState({ disabled: onPress === undefined });
-  const rest = chosen ? surface.card : CLEAR;
+  const glass = useOnGlass() !== null;
+  const dark = useDark();
+  // On glass the chosen segment is raised on paper, never the accent (frost-objects board 30).
+  const rest = chosen ? (glass ? glassRaised(dark) : surface.card) : CLEAR;
   return (
     <View
       testID={testID}

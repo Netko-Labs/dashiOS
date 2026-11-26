@@ -39,7 +39,7 @@ export {
 } from "./colors.ts";
 export { contrastRatio, parseHex } from "./contrast.ts";
 export { type ControlPalette, controlPalette, DARK_CONTROLS, LIGHT_CONTROLS } from "./controls.ts";
-export { GLASS, GLASS_TINTS, type GlassLevel, type GlassMaterial, type GlassTone, useGlassTints } from "./glass.ts";
+export { GLASS, type GlassLevel, type GlassMaterial, type GlassTone } from "./glass.ts";
 export { GNOME_ACCENTS, GTK_DARK, GTK_LIGHT, GTK_STATUS, type GtkNamedColors, type GtkStatusColors, WINDOW_LIGHTS } from "./gtk.ts";
 export {
   INK_NAMES,
@@ -74,6 +74,20 @@ export {
   type TypeSet,
   WEIGHT,
 } from "./measures.ts";
+export {
+  glassControls,
+  glassEdge,
+  glassFill,
+  glassInkTokens,
+  glassRaised,
+  glassSurface,
+  type OnGlass,
+  OnGlassContext,
+  paintedPalette,
+  vibrantInks,
+  WindowFocusContext,
+  withAlpha,
+} from "./on-glass.ts";
 export { darkColors, lightColors, type Palette, TRUE_BLACK } from "./palette.ts";
 export { paletteFor } from "./palette-for.ts";
 export {
